@@ -16,7 +16,8 @@ import '../../features/cook/cook_inbox_screen.dart';
 import '../../features/impact/impact_screen.dart';
 import '../../features/seller/add_listing_screen.dart';
 import '../../features/seller/seller_dashboard_screen.dart';
-import '../../features/shared/placeholder_screen.dart';
+import '../../features/seller/seller_insights_screen.dart';
+import '../../features/seller/seller_orders_screen.dart';
 import '../../features/shared/profile_screen.dart';
 import '../../features/volunteer/volunteer_tasks_screen.dart';
 import '../models/user_role.dart';
@@ -81,15 +82,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
         branches: [
           _branch('/seller/dashboard', const SellerDashboardScreen()),
-          _branch('/seller/orders', const PlaceholderScreen(
-              title: 'Order requests',
-              icon: Icons.receipt_long_outlined,
-              message: 'Approve or reject incoming orders — coming in M5.')),
+          _branch('/seller/orders', const SellerOrdersScreen()),
           _branch('/seller/add', const AddListingScreen()),
-          _branch('/seller/insights', const PlaceholderScreen(
-              title: 'Vendor insights',
-              icon: Icons.insights_outlined,
-              message: 'Demand prediction and impact insights (M11).')),
+          _branch('/seller/insights', const SellerInsightsScreen()),
           _branch('/seller/profile', const ProfileScreen()),
         ],
       ),
