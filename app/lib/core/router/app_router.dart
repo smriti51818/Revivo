@@ -6,6 +6,12 @@ import '../../features/auth/login_screen.dart';
 import '../../features/auth/register_screen.dart';
 import '../../features/auth/role_select_screen.dart';
 import '../../features/auth/splash_screen.dart';
+import '../../features/buyer/buyer_market_screen.dart';
+import '../../features/buyer/buyer_orders_screen.dart';
+import '../../features/buyer/domain/offer.dart';
+import '../../features/buyer/domain/order.dart';
+import '../../features/buyer/order_confirmed_screen.dart';
+import '../../features/buyer/product_details_screen.dart';
 import '../../features/seller/add_listing_screen.dart';
 import '../../features/seller/seller_dashboard_screen.dart';
 import '../../features/shared/placeholder_screen.dart';
@@ -28,6 +34,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/register',
         builder: (_, state) => RegisterScreen(role: state.extra as UserRole?),
+      ),
+
+      // Buyer flow screens presented above the shell (full-page, with back).
+      GoRoute(
+        path: '/buyer/product',
+        builder: (_, state) =>
+            ProductDetailsScreen(offer: state.extra as Offer),
+      ),
+      GoRoute(
+        path: '/buyer/order-confirmed',
+        builder: (_, state) =>
+            OrderConfirmedScreen(order: state.extra as Order),
       ),
 
       // ─── Seller shell ───────────────────────────────────────────
@@ -99,14 +117,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           ],
         ),
         branches: [
-          _branch('/buyer/home', const PlaceholderScreen(
-              title: 'Nearby surplus',
-              icon: Icons.storefront_outlined,
-              message: 'Nearby & aggregated listings with freshness bands (M5).')),
-          _branch('/buyer/orders', const PlaceholderScreen(
-              title: 'My orders',
-              icon: Icons.receipt_long_outlined,
-              message: 'Current and past orders (M5).')),
+          _branch('/buyer/home', const BuyerMarketScreen()),
+          _branch('/buyer/orders', const BuyerOrdersScreen()),
           _branch('/buyer/impact', const PlaceholderScreen(
               title: 'Impact',
               icon: Icons.eco_outlined,
