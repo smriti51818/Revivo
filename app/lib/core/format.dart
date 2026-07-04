@@ -9,3 +9,14 @@ String formatKg(double value) {
   final whole = value == value.roundToDouble();
   return '${whole ? value.toStringAsFixed(0) : value.toStringAsFixed(1)} kg';
 }
+
+/// Groups an integer with thousands separators, e.g. 48600 -> "48,600".
+String formatCount(num value) {
+  final digits = value.round().abs().toString();
+  final buf = StringBuffer(value < 0 ? '-' : '');
+  for (var i = 0; i < digits.length; i++) {
+    if (i > 0 && (digits.length - i) % 3 == 0) buf.write(',');
+    buf.write(digits[i]);
+  }
+  return buf.toString();
+}

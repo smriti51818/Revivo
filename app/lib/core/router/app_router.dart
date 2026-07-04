@@ -13,6 +13,7 @@ import '../../features/buyer/domain/order.dart';
 import '../../features/buyer/order_confirmed_screen.dart';
 import '../../features/buyer/product_details_screen.dart';
 import '../../features/cook/cook_inbox_screen.dart';
+import '../../features/impact/impact_screen.dart';
 import '../../features/seller/add_listing_screen.dart';
 import '../../features/seller/seller_dashboard_screen.dart';
 import '../../features/shared/placeholder_screen.dart';
@@ -121,10 +122,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         branches: [
           _branch('/buyer/home', const BuyerMarketScreen()),
           _branch('/buyer/orders', const BuyerOrdersScreen()),
-          _branch('/buyer/impact', const PlaceholderScreen(
-              title: 'Impact',
-              icon: Icons.eco_outlined,
-              message: 'Savings vs market price and surplus utilised (M10).')),
+          _branch('/buyer/impact', const ImpactScreen()),
           _branch('/buyer/profile', const PlaceholderScreen(
               title: 'Profile',
               icon: Icons.person_outline,
@@ -153,10 +151,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
         branches: [
           _branch('/cook/inbox', const CookInboxScreen()),
-          _branch('/cook/impact', const PlaceholderScreen(
-              title: 'Impact',
-              icon: Icons.eco_outlined,
-              message: 'Rescues accepted, kg transformed, meals served (M10).')),
+          _branch('/cook/impact', const ImpactScreen()),
           _branch('/cook/profile', const PlaceholderScreen(
               title: 'Profile',
               icon: Icons.person_outline,
