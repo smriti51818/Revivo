@@ -12,9 +12,11 @@ import '../../features/buyer/domain/offer.dart';
 import '../../features/buyer/domain/order.dart';
 import '../../features/buyer/order_confirmed_screen.dart';
 import '../../features/buyer/product_details_screen.dart';
+import '../../features/cook/cook_inbox_screen.dart';
 import '../../features/seller/add_listing_screen.dart';
 import '../../features/seller/seller_dashboard_screen.dart';
 import '../../features/shared/placeholder_screen.dart';
+import '../../features/volunteer/volunteer_tasks_screen.dart';
 import '../models/user_role.dart';
 import '../widgets/scaffold_with_nav_bar.dart';
 
@@ -150,10 +152,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           ],
         ),
         branches: [
-          _branch('/cook/inbox', const PlaceholderScreen(
-              title: 'Rescue inbox',
-              icon: Icons.inbox_outlined,
-              message: 'Incoming rescues with Bedrock explanations (M8).')),
+          _branch('/cook/inbox', const CookInboxScreen()),
           _branch('/cook/impact', const PlaceholderScreen(
               title: 'Impact',
               icon: Icons.eco_outlined,
@@ -181,10 +180,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           ],
         ),
         branches: [
-          _branch('/volunteer/tasks', const PlaceholderScreen(
-              title: 'Pickup tasks',
-              icon: Icons.local_shipping_outlined,
-              message: 'Two-tap pickup: Picked up → Delivered (M9).')),
+          _branch('/volunteer/tasks', const VolunteerTasksScreen()),
           _branch('/volunteer/profile', const PlaceholderScreen(
               title: 'Profile',
               icon: Icons.person_outline,
