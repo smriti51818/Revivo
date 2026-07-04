@@ -91,3 +91,65 @@ def to_public_listing(item: dict) -> dict:
     if item.get("gps"):
         public["gps"] = item["gps"]
     return public
+
+
+def build_order_item(
+    data: dict,
+    buyer: dict,
+    listing: dict,
+    now: int | None = None,
+) -> dict:
+    """Build an ORDER item from validated input + the referenced listing.
+
+    Price fields are snapshotted from the listing so the order is immutable
+    even if the listing later changes. `listing` numerics are Decimal.
+    """
+    now = now if now is not None else int(time.time())
+    order_id = new_id("ord")
+    qty = _dec(data["quantityKg"])
+    price_per_kg = listing.get("recommendedPrice", Decimal("0"))
+    market_price = listing.get("basePrice", price_per_kg)
+    total = (qty * price_per_kg).quantize(Decimal("0.01"))
+
+    return {
+        "PK": f"ORDER#{order_id}",
+        "SK": "META",
+        "type": "ORDER",
+        "orderId": order_id,
+        "buyerId": buyer["id"],
+        "buyerName": buyer["name"],
+        "listingId": listing.get("listingId"),
+        "vendorId": listing.get("vendorId"),
+        "vendorName": listing.get("vendorName"),
+        "vegetable": listing.get("vegetable"),
+        "band": listing.get("band"),
+        "quantityKg": qty,
+        "pricePerKg": price_per_kg,
+        "marketPricePerKg": market_price,
+        "total": total,
+        "status": "CONFIRMED",
+        "createdAt": now,
+        # Access patterns: buyer's orders (GSI1), vendor's incoming (GSI3).
+        "GSI1PK": f"BUYER#{buyer['id']}",
+        "GSI1SK": f"ORDER#{now}#{order_id}",
+        "GSI3PK": f"VENDOR#{listing.get('vendorId')}",
+        "GSI3SK": f"ORDER#{now}#{order_id}",
+    }
+
+
+def to_public_order(item: dict) -> dict:
+    """Project a stored ORDER item to the shape the app consumes."""
+    return {
+        "id": item.get("orderId"),
+        "buyerName": item.get("buyerName"),
+        "vendorName": item.get("vendorName"),
+        "vegetable": item.get("vegetable"),
+        "listingId": item.get("listingId"),
+        "band": item.get("band"),
+        "quantityKg": item.get("quantityKg"),
+        "pricePerKg": item.get("pricePerKg"),
+        "marketPricePerKg": item.get("marketPricePerKg"),
+        "total": item.get("total"),
+        "status": item.get("status"),
+        "createdAt": item.get("createdAt"),
+    }

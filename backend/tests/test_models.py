@@ -4,8 +4,17 @@ from decimal import Decimal
 import pytest
 
 from shared.freshness import estimate_freshness
-from shared.models import build_listing_item, to_public_listing
-from shared.validation import ValidationError, validate_listing_input
+from shared.models import (
+    build_listing_item,
+    build_order_item,
+    to_public_listing,
+    to_public_order,
+)
+from shared.validation import (
+    ValidationError,
+    validate_listing_input,
+    validate_order_input,
+)
 
 NOW = 1_700_000_000
 
@@ -117,3 +126,51 @@ def test_public_listing_includes_gps_when_present():
     fr = estimate_freshness("Tomato", data["purchasedAt"], "ROOM", 28, NOW)
     item = build_listing_item(data, {"id": "v1", "name": "R"}, fr, now=NOW)
     assert to_public_listing(item)["gps"]["lat"] == Decimal("11.0")
+
+
+# ─── orders ─────────────────────────────────────────────────────────
+def _listing_item():
+    data = validate_listing_input(_valid_body(basePrice=40), now=NOW)
+    fr = estimate_freshness("Tomato", data["purchasedAt"], "ROOM", 28, NOW)
+    return build_listing_item(data, {"id": "v1", "name": "GreenLeaf"}, fr, now=NOW)
+
+
+def test_validate_order_requires_listing_and_quantity():
+    with pytest.raises(ValidationError):
+        validate_order_input({"quantityKg": 5})
+    with pytest.raises(ValidationError):
+        validate_order_input({"listingId": "lst_1", "quantityKg": 0})
+
+
+def test_build_order_snapshots_listing_price_and_keys():
+    listing = _listing_item()
+    order = validate_order_input(
+        {"listingId": listing["listingId"], "quantityKg": 4}
+    )
+    item = build_order_item(order, {"id": "b1", "name": "Hotel"}, listing, now=NOW)
+
+    assert item["PK"].startswith("ORDER#")
+    assert item["SK"] == "META"
+    assert item["type"] == "ORDER"
+    assert item["GSI1PK"] == "BUYER#b1"
+    assert item["GSI3PK"] == f"VENDOR#{listing['vendorId']}"
+    assert item["pricePerKg"] == listing["recommendedPrice"]
+    assert item["marketPricePerKg"] == listing["basePrice"]
+    # total = qty * recommended price, quantized to paise.
+    assert item["total"] == (Decimal("4") * listing["recommendedPrice"]).quantize(
+        Decimal("0.01")
+    )
+    assert item["status"] == "CONFIRMED"
+
+
+def test_public_order_hides_internal_keys():
+    listing = _listing_item()
+    order = validate_order_input(
+        {"listingId": listing["listingId"], "quantityKg": 4}
+    )
+    item = build_order_item(order, {"id": "b1", "name": "Hotel"}, listing, now=NOW)
+    public = to_public_order(item)
+    assert public["id"] == item["orderId"]
+    assert public["vendorName"] == "GreenLeaf"
+    for hidden in ("PK", "SK", "GSI1PK", "GSI3PK"):
+        assert hidden not in public

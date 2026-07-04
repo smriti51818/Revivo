@@ -70,3 +70,14 @@ def validate_listing_input(body: dict, now: int | None = None) -> dict:
         "gps": gps,
         "imageKey": image_key,
     }
+
+
+def validate_order_input(body: dict) -> dict:
+    """Validate a buyer's order request: a listing id + a quantity."""
+    listing_id = str(body.get("listingId", "")).strip()
+    if not listing_id or len(listing_id) > 60:
+        raise ValidationError("listingId is required")
+
+    quantity_kg = _num(body.get("quantityKg"), "quantityKg", 0.1, 1000)
+
+    return {"listingId": listing_id, "quantityKg": quantity_kg}

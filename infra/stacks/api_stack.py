@@ -61,6 +61,16 @@ class ApiStack(Stack):
         )
         table.grant_read_data(my_listings_fn)
 
+        create_order_fn = self._fn(
+            "CreateOrderFn", "create_order", common_env, use_shared=True
+        )
+        table.grant_read_write_data(create_order_fn)
+
+        my_orders_fn = self._fn(
+            "MyOrdersFn", "list_my_orders", common_env, use_shared=True
+        )
+        table.grant_read_data(my_orders_fn)
+
         upload_fn = self._fn(
             "CreateUploadUrlFn", "create_upload_url", common_env, use_shared=True
         )
@@ -100,6 +110,10 @@ class ApiStack(Stack):
         self._protected(listings, "POST", create_listing_fn)
         self._protected(listings, "GET", list_listings_fn)
         self._protected(listings.add_resource("mine"), "GET", my_listings_fn)
+
+        orders = api.root.add_resource("orders")
+        self._protected(orders, "POST", create_order_fn)
+        self._protected(orders, "GET", my_orders_fn)
 
         self._protected(
             api.root.add_resource("uploads"), "POST", upload_fn
