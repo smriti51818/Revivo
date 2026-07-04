@@ -6,6 +6,8 @@ import '../../features/auth/login_screen.dart';
 import '../../features/auth/register_screen.dart';
 import '../../features/auth/role_select_screen.dart';
 import '../../features/auth/splash_screen.dart';
+import '../../features/seller/add_listing_screen.dart';
+import '../../features/seller/seller_dashboard_screen.dart';
 import '../../features/shared/placeholder_screen.dart';
 import '../models/user_role.dart';
 import '../widgets/scaffold_with_nav_bar.dart';
@@ -56,18 +58,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           ],
         ),
         branches: [
-          _branch('/seller/dashboard', const PlaceholderScreen(
-              title: 'Seller dashboard',
-              icon: Icons.dashboard_outlined,
-              message: 'Your inventory, sales, and listings land here in M4.')),
+          _branch('/seller/dashboard', const SellerDashboardScreen()),
           _branch('/seller/orders', const PlaceholderScreen(
               title: 'Order requests',
               icon: Icons.receipt_long_outlined,
               message: 'Approve or reject incoming orders — coming in M5.')),
-          _branch('/seller/add', const PlaceholderScreen(
-              title: 'Add listing',
-              icon: Icons.add_circle_outline,
-              message: 'Photo → AI ID → freshness band → publish (M4).')),
+          _branch('/seller/add', const AddListingScreen()),
           _branch('/seller/insights', const PlaceholderScreen(
               title: 'Vendor insights',
               icon: Icons.insights_outlined,
