@@ -51,6 +51,16 @@ class ApiStack(Stack):
         )
         table.grant_read_write_data(create_listing_fn)
 
+        list_listings_fn = self._fn(
+            "ListListingsFn", "list_listings", common_env, use_shared=True
+        )
+        table.grant_read_data(list_listings_fn)
+
+        my_listings_fn = self._fn(
+            "MyListingsFn", "list_my_listings", common_env, use_shared=True
+        )
+        table.grant_read_data(my_listings_fn)
+
         upload_fn = self._fn(
             "CreateUploadUrlFn", "create_upload_url", common_env, use_shared=True
         )
@@ -85,9 +95,12 @@ class ApiStack(Stack):
 
         # Protected (Cognito JWT)
         self._protected(api.root.add_resource("me"), "GET", whoami_fn)
-        self._protected(
-            api.root.add_resource("listings"), "POST", create_listing_fn
-        )
+
+        listings = api.root.add_resource("listings")
+        self._protected(listings, "POST", create_listing_fn)
+        self._protected(listings, "GET", list_listings_fn)
+        self._protected(listings.add_resource("mine"), "GET", my_listings_fn)
+
         self._protected(
             api.root.add_resource("uploads"), "POST", upload_fn
         )

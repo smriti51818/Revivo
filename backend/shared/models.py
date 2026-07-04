@@ -64,3 +64,30 @@ def build_listing_item(
             "lng": _dec(data["gps"]["lng"]),
         }
     return item
+
+
+# Internal keys (PK/SK/GSIs/ttl) never leave the API — only the client-facing
+# projection below does. Decimal values pass through and are serialised by the
+# DecimalEncoder in shared.responses.
+def to_public_listing(item: dict) -> dict:
+    """Project a stored LISTING item to the shape the app consumes."""
+    public = {
+        "id": item.get("listingId"),
+        "vegetable": item.get("vegetable"),
+        "vendorId": item.get("vendorId"),
+        "vendorName": item.get("vendorName"),
+        "quantityKg": item.get("quantityKg"),
+        "band": item.get("band"),
+        "timeRange": item.get("timeRange"),
+        "basePrice": item.get("basePrice"),
+        "recommendedPrice": item.get("recommendedPrice"),
+        "priceFactor": item.get("priceFactor"),
+        "storage": item.get("storage"),
+        "imageKey": item.get("imageKey", ""),
+        "createdAt": item.get("createdAt"),
+        "expiryEpoch": item.get("expiryEpoch"),
+        "status": item.get("status"),
+    }
+    if item.get("gps"):
+        public["gps"] = item["gps"]
+    return public

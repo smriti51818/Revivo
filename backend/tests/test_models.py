@@ -4,7 +4,7 @@ from decimal import Decimal
 import pytest
 
 from shared.freshness import estimate_freshness
-from shared.models import build_listing_item
+from shared.models import build_listing_item, to_public_listing
 from shared.validation import ValidationError, validate_listing_input
 
 NOW = 1_700_000_000
@@ -91,3 +91,29 @@ def test_numeric_fields_are_decimal_for_dynamodb():
     assert isinstance(item["quantityKg"], Decimal)
     assert isinstance(item["basePrice"], Decimal)
     assert isinstance(item["recommendedPrice"], Decimal)
+
+
+# ─── public projection ──────────────────────────────────────────────
+def test_public_listing_projects_client_fields_only():
+    data = validate_listing_input(_valid_body(), now=NOW)
+    fr = estimate_freshness("Tomato", data["purchasedAt"], "ROOM", 28, NOW)
+    item = build_listing_item(data, {"id": "v1", "name": "Rajesh"}, fr, now=NOW)
+
+    public = to_public_listing(item)
+
+    assert public["id"] == item["listingId"]
+    assert public["vendorName"] == "Rajesh"
+    assert public["band"] == fr.band
+    assert public["recommendedPrice"] == item["recommendedPrice"]
+    # Internal single-table keys must never be exposed.
+    for hidden in ("PK", "SK", "GSI1PK", "GSI2PK", "GSI2SK", "ttl"):
+        assert hidden not in public
+
+
+def test_public_listing_includes_gps_when_present():
+    data = validate_listing_input(
+        _valid_body(gps={"lat": 11.0, "lng": 76.9}), now=NOW
+    )
+    fr = estimate_freshness("Tomato", data["purchasedAt"], "ROOM", 28, NOW)
+    item = build_listing_item(data, {"id": "v1", "name": "R"}, fr, now=NOW)
+    assert to_public_listing(item)["gps"]["lat"] == Decimal("11.0")
