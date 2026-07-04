@@ -13,6 +13,8 @@ from aws_cdk import (
 )
 from constructs import Construct
 
+from .shared_layer import build_shared_layer
+
 # Repo-root-relative path to the Lambda source.
 _BACKEND = os.path.join(
     os.path.dirname(__file__), "..", "..", "backend", "functions"
@@ -32,15 +34,29 @@ class ApiStack(Stack):
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
+        self.shared_layer = build_shared_layer(self)
         common_env = {
             "TABLE_NAME": table.table_name,
             "UPLOADS_BUCKET": uploads_bucket.bucket_name,
         }
 
-        # Health check — public, verifies the API + Lambda + table wiring.
+        # ─── Lambda functions ───────────────────────────────────────
         health_fn = self._fn("HealthFn", "health", common_env)
         table.grant_read_data(health_fn)
 
+        whoami_fn = self._fn("WhoAmIFn", "whoami", common_env)
+
+        create_listing_fn = self._fn(
+            "CreateListingFn", "create_listing", common_env, use_shared=True
+        )
+        table.grant_read_write_data(create_listing_fn)
+
+        upload_fn = self._fn(
+            "CreateUploadUrlFn", "create_upload_url", common_env, use_shared=True
+        )
+        uploads_bucket.grant_put(upload_fn)
+
+        # ─── REST API ───────────────────────────────────────────────
         api = apigw.RestApi(
             self,
             "RevivoApi",
@@ -58,29 +74,34 @@ class ApiStack(Stack):
             ),
         )
 
-        # Cognito JWT authorizer — attach to protected routes as they land.
         self.authorizer = apigw.CognitoUserPoolsAuthorizer(
             self, "Authorizer", cognito_user_pools=[user_pool]
         )
 
-        health = api.root.add_resource("health")
-        health.add_method("GET", apigw.LambdaIntegration(health_fn))
+        # Public
+        api.root.add_resource("health").add_method(
+            "GET", apigw.LambdaIntegration(health_fn)
+        )
 
-        # Protected route — proves the Cognito authorizer + role claims flow.
-        whoami_fn = self._fn("WhoAmIFn", "whoami", common_env)
-        me = api.root.add_resource("me")
-        me.add_method(
-            "GET",
-            apigw.LambdaIntegration(whoami_fn),
-            authorizer=self.authorizer,
-            authorization_type=apigw.AuthorizationType.COGNITO,
+        # Protected (Cognito JWT)
+        self._protected(api.root.add_resource("me"), "GET", whoami_fn)
+        self._protected(
+            api.root.add_resource("listings"), "POST", create_listing_fn
+        )
+        self._protected(
+            api.root.add_resource("uploads"), "POST", upload_fn
         )
 
         self.api = api
         CfnOutput(self, "ApiUrl", value=api.url)
 
+    # ─── helpers ────────────────────────────────────────────────────
     def _fn(
-        self, cid: str, folder: str, environment: dict
+        self,
+        cid: str,
+        folder: str,
+        environment: dict,
+        use_shared: bool = False,
     ) -> lambda_.Function:
         """Standard Python Lambda from backend/functions/<folder>."""
         return lambda_.Function(
@@ -92,4 +113,15 @@ class ApiStack(Stack):
             timeout=Duration.seconds(15),
             memory_size=256,
             environment=environment,
+            layers=[self.shared_layer] if use_shared else None,
+        )
+
+    def _protected(
+        self, resource: apigw.Resource, method: str, fn: lambda_.Function
+    ) -> None:
+        resource.add_method(
+            method,
+            apigw.LambdaIntegration(fn),
+            authorizer=self.authorizer,
+            authorization_type=apigw.AuthorizationType.COGNITO,
         )
