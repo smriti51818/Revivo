@@ -17,6 +17,7 @@ import '../../features/impact/impact_screen.dart';
 import '../../features/seller/add_listing_screen.dart';
 import '../../features/seller/seller_dashboard_screen.dart';
 import '../../features/shared/placeholder_screen.dart';
+import '../../features/shared/profile_screen.dart';
 import '../../features/volunteer/volunteer_tasks_screen.dart';
 import '../models/user_role.dart';
 import '../widgets/scaffold_with_nav_bar.dart';
@@ -89,10 +90,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               title: 'Vendor insights',
               icon: Icons.insights_outlined,
               message: 'Demand prediction and impact insights (M11).')),
-          _branch('/seller/profile', const PlaceholderScreen(
-              title: 'Profile',
-              icon: Icons.person_outline,
-              message: 'Account, trust badge, and settings.')),
+          _branch('/seller/profile', const ProfileScreen()),
         ],
       ),
 
@@ -123,10 +121,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           _branch('/buyer/home', const BuyerMarketScreen()),
           _branch('/buyer/orders', const BuyerOrdersScreen()),
           _branch('/buyer/impact', const ImpactScreen()),
-          _branch('/buyer/profile', const PlaceholderScreen(
-              title: 'Profile',
-              icon: Icons.person_outline,
-              message: 'Account and settings.')),
+          _branch('/buyer/profile', const ProfileScreen()),
         ],
       ),
 
@@ -152,10 +147,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         branches: [
           _branch('/cook/inbox', const CookInboxScreen()),
           _branch('/cook/impact', const ImpactScreen()),
-          _branch('/cook/profile', const PlaceholderScreen(
-              title: 'Profile',
-              icon: Icons.person_outline,
-              message: 'Kitchen capacity, hours, and preferences.')),
+          _branch('/cook/profile', const ProfileScreen()),
         ],
       ),
 
@@ -176,10 +168,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
         branches: [
           _branch('/volunteer/tasks', const VolunteerTasksScreen()),
-          _branch('/volunteer/profile', const PlaceholderScreen(
-              title: 'Profile',
-              icon: Icons.person_outline,
-              message: 'NSS unit and documented service hours.')),
+          _branch('/volunteer/profile', const ProfileScreen()),
         ],
       ),
     ],
