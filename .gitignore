@@ -1,0 +1,61 @@
+# ─── Environment / secrets ───────────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+aws-exports.json
+amplifyconfiguration.dart
+
+# ─── macOS ───────────────────────────────────────────────
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# ─── IDE / editors ───────────────────────────────────────
+.idea/
+.vscode/
+*.iml
+*.swp
+
+# ─── Claude Code (local settings only) ───────────────────
+.claude/settings.local.json
+
+# ─── Flutter / Dart ──────────────────────────────────────
+app/.dart_tool/
+app/.flutter-plugins
+app/.flutter-plugins-dependencies
+app/build/
+app/.pub-cache/
+app/.pub/
+app/ios/Pods/
+app/ios/.symlinks/
+app/android/.gradle/
+app/android/local.properties
+app/**/GeneratedPluginRegistrant.*
+*.g.dart.bak
+coverage/
+
+# ─── Python (backend + infra) ────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# ─── AWS CDK ─────────────────────────────────────────────
+infra/cdk.out/
+infra/.cdk.staging/
+cdk.context.json
+
+# ─── Node (CDK CLI, tooling) ─────────────────────────────
+node_modules/
+npm-debug.log*
+
+# ─── Build artifacts / logs ──────────────────────────────
+*.log
+dist/
+build/
+tmp/

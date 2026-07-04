@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  flutter:
+    name: Flutter analyze
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Skip if app not scaffolded
+        id: check
+        run: |
+          if [ -f app/pubspec.yaml ]; then echo "run=true" >> "$GITHUB_OUTPUT";
+          else echo "run=false" >> "$GITHUB_OUTPUT"; echo "app/ not scaffolded yet — skipping"; fi
+      - uses: subosito/flutter-action@v2
+        if: steps.check.outputs.run == 'true'
+        with:
+          flutter-version: '3.44.0'
+          channel: stable
+      - name: pub get + analyze
+        if: steps.check.outputs.run == 'true'
+        run: |
+          cd app
+          flutter pub get
+          flutter analyze
+
+  backend:
+    name: Backend lint + test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install tooling
+        run: pip install ruff pytest
+      - name: Lint (backend + infra)
+        run: |
+          [ -d backend ] && ruff check backend || echo "backend/ empty — skipping"
+          [ -d infra ] && ruff check infra || echo "infra/ empty — skipping"
+      - name: Test
+        run: |
+          if ls backend/**/*test*.py backend/tests/*.py >/dev/null 2>&1; then
+            cd backend && pytest -q
+          else
+            echo "no backend tests yet — skipping"
+          fi
