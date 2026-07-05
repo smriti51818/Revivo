@@ -49,12 +49,14 @@ class OfferCard extends StatelessWidget {
                     left: 10,
                     child: Row(
                       children: [
-                        _pill(
-                          icon: Icons.place_outlined,
-                          label: '${offer.distanceKm.toStringAsFixed(1)} km',
-                        ),
+                        if (offer.distanceKm > 0)
+                          _pill(
+                            icon: Icons.place_outlined,
+                            label: '${offer.distanceKm.toStringAsFixed(1)} km',
+                          ),
                         if (offer.organic) ...[
-                          const SizedBox(width: 6),
+                          if (offer.distanceKm > 0)
+                            const SizedBox(width: 6),
                           _tag('ORGANIC'),
                         ],
                       ],

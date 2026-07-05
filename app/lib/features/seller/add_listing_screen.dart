@@ -97,10 +97,19 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
       organic: _organic,
       imagePath: _photo?.path,
       createdAt: DateTime.now(),
+      purchasedAt: _purchasedAt,
     );
 
     setState(() => _submitting = true);
-    await ref.read(listingsProvider.notifier).addListing(listing);
+    try {
+      await ref.read(listingsProvider.notifier).addListing(listing);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _submitting = false);
+        _toast('Could not publish: $e');
+      }
+      return;
+    }
     if (!mounted) return;
     _toast('Listing published');
     context.go('/seller/dashboard');

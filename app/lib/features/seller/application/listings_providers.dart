@@ -1,11 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/api/providers.dart';
+import '../data/http_listings_repository.dart';
 import '../data/listings_repository.dart';
 import '../domain/listing.dart';
 
-final listingsRepositoryProvider = Provider<ListingsRepository>(
-  (ref) => InMemoryListingsRepository(),
-);
+final listingsRepositoryProvider = Provider<ListingsRepository>((ref) {
+  final config = ref.read(appConfigProvider);
+  if (!config.useLiveApi) return InMemoryListingsRepository();
+  return HttpListingsRepository(ref.read(apiClientProvider));
+});
 
 /// Holds the seller's listings. Async so the swap to a live API is seamless.
 class ListingsController extends AsyncNotifier<List<Listing>> {

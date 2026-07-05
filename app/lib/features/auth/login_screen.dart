@@ -2,13 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/api/providers.dart';
+import '../../core/auth/cognito_service.dart';
 import '../../core/models/user_role.dart';
 import '../../core/session/session_controller.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/primary_button.dart';
 
-/// Login screen. In M1 authentication is mocked locally; M3 wires Cognito.
+/// Login screen — authenticates against Amazon Cognito (or a local mock when
+/// `useLiveApi` is off).
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key, this.role});
 
@@ -19,8 +22,8 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  final _email = TextEditingController(text: 'demo@revivo.app');
-  final _password = TextEditingController(text: 'password');
+  final _email = TextEditingController();
+  final _password = TextEditingController();
   bool _obscure = true;
   bool _loading = false;
 
@@ -34,15 +37,49 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _login() async {
+    final email = _email.text.trim();
+    final password = _password.text;
+    if (email.isEmpty || password.isEmpty) {
+      _toast('Enter your email and password');
+      return;
+    }
+
+    final config = ref.read(appConfigProvider);
     setState(() => _loading = true);
-    await Future.delayed(const Duration(milliseconds: 600));
-    if (!mounted) return;
-    ref.read(sessionProvider.notifier).signIn(
-          name: _role.label,
-          email: _email.text.trim(),
-          role: _role,
-        );
-    context.go(_role.homeRoute);
+    try {
+      if (config.useLiveApi) {
+        final result = await ref
+            .read(cognitoServiceProvider)
+            .signIn(email: email, password: password);
+        if (!mounted) return;
+        final role = UserRole.fromValue(result.role) ?? _role;
+        ref.read(sessionProvider.notifier).setAuthenticated(
+              name: result.name.isEmpty ? role.label : result.name,
+              email: result.email.isEmpty ? email : result.email,
+              role: role,
+              idToken: result.idToken,
+              userId: result.sub,
+            );
+        context.go(role.homeRoute);
+      } else {
+        await Future.delayed(const Duration(milliseconds: 400));
+        if (!mounted) return;
+        ref
+            .read(sessionProvider.notifier)
+            .signIn(name: _role.label, email: email, role: _role);
+        context.go(_role.homeRoute);
+      }
+    } on AuthException catch (e) {
+      if (mounted) _toast(e.message);
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  void _toast(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -179,7 +216,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       );
 
   Widget _socialButton(IconData icon, String label) => OutlinedButton.icon(
-        onPressed: _login,
+        onPressed: () => _toast('$label sign-in coming soon'),
         icon: Icon(icon, size: 22, color: AppColors.textPrimary),
         label: Text(label),
       );

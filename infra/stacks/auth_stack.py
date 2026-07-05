@@ -1,16 +1,36 @@
 """AuthStack — Cognito user pool with role-based access."""
+import os
+
 from aws_cdk import (
     CfnOutput,
+    Duration,
     RemovalPolicy,
     Stack,
     aws_cognito as cognito,
+    aws_lambda as lambda_,
 )
 from constructs import Construct
+
+_BACKEND = os.path.join(
+    os.path.dirname(__file__), "..", "..", "backend", "functions"
+)
 
 
 class AuthStack(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
+
+        # Pre-sign-up trigger auto-confirms users + verifies email, so the
+        # first run needs no emailed code — smooth for the pilot and demo.
+        pre_signup_fn = lambda_.Function(
+            self,
+            "PreSignupFn",
+            runtime=lambda_.Runtime.PYTHON_3_12,
+            handler="handler.handler",
+            code=lambda_.Code.from_asset(os.path.join(_BACKEND, "pre_signup")),
+            timeout=Duration.seconds(10),
+            memory_size=128,
+        )
 
         # One pool for all four roles; `custom:role` carries the persona so
         # API Gateway + Lambda can authorize by role with zero custom code.
@@ -36,6 +56,7 @@ class AuthStack(Stack):
                 require_digits=True,
             ),
             account_recovery=cognito.AccountRecovery.EMAIL_ONLY,
+            lambda_triggers=cognito.UserPoolTriggers(pre_sign_up=pre_signup_fn),
             removal_policy=RemovalPolicy.DESTROY,
         )
 

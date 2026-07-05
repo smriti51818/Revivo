@@ -2,13 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/api/providers.dart';
+import '../../core/auth/cognito_service.dart';
 import '../../core/models/user_role.dart';
 import '../../core/session/session_controller.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/primary_button.dart';
 
-/// Registration. Mocked in M1; M3 creates a Cognito user with `custom:role`.
+/// Registration — creates an Amazon Cognito user with `custom:role` (or a local
+/// mock when `useLiveApi` is off). The pre-sign-up trigger auto-confirms, so
+/// the user is signed straight in.
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key, this.role});
 
@@ -35,15 +39,51 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 
   Future<void> _register() async {
+    final email = _email.text.trim();
+    final password = _password.text;
+    final name = _name.text.trim().isEmpty ? _role.label : _name.text.trim();
+    if (email.isEmpty || password.isEmpty) {
+      _toast('Enter an email and password');
+      return;
+    }
+
+    final config = ref.read(appConfigProvider);
     setState(() => _loading = true);
-    await Future.delayed(const Duration(milliseconds: 700));
-    if (!mounted) return;
-    ref.read(sessionProvider.notifier).signIn(
-          name: _name.text.trim().isEmpty ? _role.label : _name.text.trim(),
-          email: _email.text.trim(),
-          role: _role,
-        );
-    context.go(_role.homeRoute);
+    try {
+      if (config.useLiveApi) {
+        final result = await ref.read(cognitoServiceProvider).signUp(
+              email: email,
+              password: password,
+              name: name,
+              role: _role.value,
+            );
+        if (!mounted) return;
+        ref.read(sessionProvider.notifier).setAuthenticated(
+              name: result.name.isEmpty ? name : result.name,
+              email: result.email.isEmpty ? email : result.email,
+              role: UserRole.fromValue(result.role) ?? _role,
+              idToken: result.idToken,
+              userId: result.sub,
+            );
+      } else {
+        await Future.delayed(const Duration(milliseconds: 500));
+        if (!mounted) return;
+        ref
+            .read(sessionProvider.notifier)
+            .signIn(name: name, email: email, role: _role);
+      }
+      context.go(_role.homeRoute);
+    } on AuthException catch (e) {
+      if (mounted) _toast(e.message);
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  void _toast(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override

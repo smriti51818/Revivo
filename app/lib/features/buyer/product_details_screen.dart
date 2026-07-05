@@ -41,11 +41,19 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
 
   Future<void> _placeOrder() async {
     setState(() => _placing = true);
-    final order = await ref
-        .read(ordersProvider.notifier)
-        .placeOrder(offer: offer, quantityKg: _qty);
-    if (!mounted) return;
-    context.go('/buyer/order-confirmed', extra: order);
+    try {
+      final order = await ref
+          .read(ordersProvider.notifier)
+          .placeOrder(offer: offer, quantityKg: _qty);
+      if (!mounted) return;
+      context.go('/buyer/order-confirmed', extra: order);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _placing = false);
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text('Could not place order: $e')));
+    }
   }
 
   @override
@@ -94,17 +102,19 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                   ),
                 ),
                 const Spacer(),
-                const Icon(Icons.place_outlined,
-                    size: 14, color: AppColors.textMuted),
-                const SizedBox(width: 2),
-                Text(
-                  '${offer.distanceKm.toStringAsFixed(1)} km away',
-                  style: const TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textMuted,
+                if (offer.distanceKm > 0) ...[
+                  const Icon(Icons.place_outlined,
+                      size: 14, color: AppColors.textMuted),
+                  const SizedBox(width: 2),
+                  Text(
+                    '${offer.distanceKm.toStringAsFixed(1)} km away',
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textMuted,
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
             const SizedBox(height: 4),

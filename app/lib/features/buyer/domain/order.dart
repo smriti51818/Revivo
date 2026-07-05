@@ -10,6 +10,13 @@ enum OrderStatus {
 
   const OrderStatus(this.label);
   final String label;
+
+  static OrderStatus fromValue(String? value) => switch (value?.toUpperCase()) {
+        'PREPARING' => OrderStatus.preparing,
+        'READY_FOR_PICKUP' || 'READYFORPICKUP' => OrderStatus.readyForPickup,
+        'COMPLETED' => OrderStatus.completed,
+        _ => OrderStatus.confirmed,
+      };
 }
 
 /// A buyer's order placed against a surplus [offer].

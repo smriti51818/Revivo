@@ -1,12 +1,16 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/api/providers.dart';
+import '../data/http_marketplace_repository.dart';
 import '../data/marketplace_repository.dart';
 import '../domain/offer.dart';
 import '../domain/order.dart';
 
-final marketplaceRepositoryProvider = Provider<MarketplaceRepository>(
-  (ref) => InMemoryMarketplaceRepository(),
-);
+final marketplaceRepositoryProvider = Provider<MarketplaceRepository>((ref) {
+  final config = ref.read(appConfigProvider);
+  if (!config.useLiveApi) return InMemoryMarketplaceRepository();
+  return HttpMarketplaceRepository(ref.read(apiClientProvider));
+});
 
 /// Nearby surplus offers surfaced to the buyer.
 class OffersController extends AsyncNotifier<List<Offer>> {

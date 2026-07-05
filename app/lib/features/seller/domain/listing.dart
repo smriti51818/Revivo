@@ -8,6 +8,12 @@ enum StorageCondition {
   const StorageCondition(this.value, this.label);
   final String value;
   final String label;
+
+  static StorageCondition fromValue(String? value) => switch (value?.toUpperCase()) {
+        'REFRIGERATED' => StorageCondition.refrigerated,
+        'COLD_STORAGE' => StorageCondition.coldStorage,
+        _ => StorageCondition.room,
+      };
 }
 
 /// A surplus listing shown on the seller dashboard.
@@ -24,6 +30,8 @@ class Listing {
     required this.createdAt,
     this.organic = false,
     this.imagePath,
+    this.purchasedAt,
+    this.tempC,
   });
 
   final String id;
@@ -37,6 +45,11 @@ class Listing {
   final DateTime createdAt;
   final bool organic;
   final String? imagePath;
+
+  /// When the produce was purchased/harvested — sent to the server so it can
+  /// compute the authoritative freshness band. Null for seeded demo data.
+  final DateTime? purchasedAt;
+  final double? tempC;
 
   bool get isLowStock => quantityKg <= 3;
 }
