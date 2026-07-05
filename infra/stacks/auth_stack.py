@@ -60,6 +60,23 @@ class AuthStack(Stack):
             removal_policy=RemovalPolicy.DESTROY,
         )
 
+        # Explicitly grant the app client read + write on custom:role so it is
+        # written at sign-up, returned in the ID token, and updatable — without
+        # this the role claim can be missing and the app falls back to a
+        # default persona.
+        client_read = (
+            cognito.ClientAttributes()
+            .with_standard_attributes(
+                email=True, email_verified=True, fullname=True
+            )
+            .with_custom_attributes("role")
+        )
+        client_write = (
+            cognito.ClientAttributes()
+            .with_standard_attributes(email=True, fullname=True)
+            .with_custom_attributes("role")
+        )
+
         self.user_pool_client = self.user_pool.add_client(
             "AppClient",
             user_pool_client_name="revivo-app",
@@ -67,6 +84,8 @@ class AuthStack(Stack):
                 user_password=True,
                 user_srp=True,
             ),
+            read_attributes=client_read,
+            write_attributes=client_write,
             prevent_user_existence_errors=True,
         )
 

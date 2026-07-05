@@ -59,10 +59,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               role: _role.value,
             );
         if (!mounted) return;
+        // The role the user just picked is authoritative for registration.
         ref.read(sessionProvider.notifier).setAuthenticated(
               name: result.name.isEmpty ? name : result.name,
               email: result.email.isEmpty ? email : result.email,
-              role: UserRole.fromValue(result.role) ?? _role,
+              role: _role,
               idToken: result.idToken,
               userId: result.sub,
             );

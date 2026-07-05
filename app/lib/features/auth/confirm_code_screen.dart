@@ -60,12 +60,14 @@ class _ConfirmCodeScreenState extends ConsumerState<ConfirmCodeScreen> {
     try {
       final service = ref.read(cognitoServiceProvider);
       await service.confirmSignUp(email: widget.args.email, code: code);
-      final result = await service.signIn(
+      // Reconcile the stored role to the persona the user picked at sign-up.
+      final result = await service.signInWithRole(
         email: widget.args.email,
         password: widget.args.password,
+        desiredRole: widget.args.role.value,
       );
       if (!mounted) return;
-      final role = UserRole.fromValue(result.role) ?? widget.args.role;
+      final role = widget.args.role;
       ref.read(sessionProvider.notifier).setAuthenticated(
             name: result.name.isEmpty ? widget.args.name : result.name,
             email: result.email.isEmpty ? widget.args.email : result.email,

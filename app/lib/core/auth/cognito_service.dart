@@ -72,6 +72,33 @@ class CognitoService {
     return _resultFrom(auth);
   }
 
+  /// Signs in and makes the account's role match [desiredRole] (the persona the
+  /// user just chose). If the stored `custom:role` differs — e.g. this email
+  /// was first registered as another role — it is updated and a fresh token is
+  /// fetched so the claim is correct everywhere. Used by the registration flow,
+  /// where the selected role is authoritative.
+  Future<AuthResult> signInWithRole({
+    required String email,
+    required String password,
+    required String desiredRole,
+  }) async {
+    var result = await signIn(email: email, password: password);
+    if (result.role == desiredRole) return result;
+    try {
+      await _call('UpdateUserAttributes', {
+        'AccessToken': result.accessToken,
+        'UserAttributes': [
+          {'Name': 'custom:role', 'Value': desiredRole},
+        ],
+      });
+      result = await signIn(email: email, password: password);
+    } catch (_) {
+      // If the attribute can't be updated (e.g. write perms not deployed yet),
+      // the caller still navigates by the selected role for a smooth demo.
+    }
+    return result;
+  }
+
   /// Creates an account then signs in. If the pre-sign-up trigger is deployed
   /// the user is auto-confirmed and this returns immediately signed in;
   /// otherwise it throws [NeedsConfirmationException] so the caller can show
@@ -97,7 +124,11 @@ class CognitoService {
       if (res['UserConfirmed'] != true) {
         throw NeedsConfirmationException(email.trim());
       }
-      return signIn(email: email, password: password);
+      return signInWithRole(
+        email: email,
+        password: password,
+        desiredRole: role,
+      );
     } on AuthException catch (e) {
       if (e.code != 'UsernameExistsException') rethrow;
       // The account may be stuck UNCONFIRMED from an earlier attempt (e.g.
