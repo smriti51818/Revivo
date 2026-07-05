@@ -41,6 +41,18 @@ class OrdersController extends AsyncNotifier<List<Order>> {
     state = AsyncData([order, ...current]);
     return order;
   }
+
+  /// Silently re-fetches (no loading flicker) — used to poll while the Step
+  /// Functions lifecycle advances an order's status server-side.
+  Future<void> reload() async {
+    try {
+      final orders =
+          await ref.read(marketplaceRepositoryProvider).fetchOrders();
+      state = AsyncData(orders);
+    } catch (_) {
+      // Keep the current data on a transient poll failure.
+    }
+  }
 }
 
 final ordersProvider =

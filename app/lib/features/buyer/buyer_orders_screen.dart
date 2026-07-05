@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -9,11 +11,33 @@ import '../../core/widgets/status_chip.dart';
 import 'application/marketplace_providers.dart';
 import 'domain/order.dart';
 
-class BuyerOrdersScreen extends ConsumerWidget {
+class BuyerOrdersScreen extends ConsumerStatefulWidget {
   const BuyerOrdersScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<BuyerOrdersScreen> createState() => _BuyerOrdersScreenState();
+}
+
+class _BuyerOrdersScreenState extends ConsumerState<BuyerOrdersScreen> {
+  Timer? _poll;
+
+  @override
+  void initState() {
+    super.initState();
+    // Poll so the Step Functions lifecycle updates show up live.
+    _poll = Timer.periodic(const Duration(seconds: 8), (_) {
+      ref.read(ordersProvider.notifier).reload();
+    });
+  }
+
+  @override
+  void dispose() {
+    _poll?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final orders = ref.watch(ordersProvider);
 
     return Scaffold(
