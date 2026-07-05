@@ -71,6 +71,21 @@ class ApiStack(Stack):
         )
         table.grant_read_data(my_orders_fn)
 
+        create_rescue_fn = self._fn(
+            "CreateRescueFn", "create_rescue", common_env, use_shared=True
+        )
+        table.grant_read_write_data(create_rescue_fn)
+
+        list_rescues_fn = self._fn(
+            "ListRescuesFn", "list_rescues", common_env, use_shared=True
+        )
+        table.grant_read_data(list_rescues_fn)
+
+        transition_rescue_fn = self._fn(
+            "TransitionRescueFn", "transition_rescue", common_env, use_shared=True
+        )
+        table.grant_read_write_data(transition_rescue_fn)
+
         upload_fn = self._fn(
             "CreateUploadUrlFn", "create_upload_url", common_env, use_shared=True
         )
@@ -114,6 +129,13 @@ class ApiStack(Stack):
         orders = api.root.add_resource("orders")
         self._protected(orders, "POST", create_order_fn)
         self._protected(orders, "GET", my_orders_fn)
+
+        rescues = api.root.add_resource("rescues")
+        self._protected(rescues, "POST", create_rescue_fn)
+        self._protected(rescues, "GET", list_rescues_fn)
+        self._protected(
+            rescues.add_resource("{rescueId}"), "POST", transition_rescue_fn
+        )
 
         self._protected(
             api.root.add_resource("uploads"), "POST", upload_fn

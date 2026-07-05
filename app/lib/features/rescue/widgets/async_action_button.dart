@@ -27,6 +27,12 @@ class _AsyncActionButtonState extends State<AsyncActionButton> {
     setState(() => _busy = true);
     try {
       await widget.onRun();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(SnackBar(content: Text('Action failed: $e')));
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }

@@ -12,6 +12,14 @@ enum RescueStatus {
 
   const RescueStatus(this.label);
   final String label;
+
+  static RescueStatus fromValue(String? value) => switch (value?.toUpperCase()) {
+        'ACCEPTED' => RescueStatus.accepted,
+        'ASSIGNED' => RescueStatus.assigned,
+        'PICKED_UP' || 'PICKEDUP' => RescueStatus.pickedUp,
+        'DELIVERED' => RescueStatus.delivered,
+        _ => RescueStatus.offered,
+      };
 }
 
 /// Surplus produce routed to an NGO kitchen when it enters the rescue window.

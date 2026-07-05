@@ -153,3 +153,56 @@ def to_public_order(item: dict) -> dict:
         "status": item.get("status"),
         "createdAt": item.get("createdAt"),
     }
+
+
+# ─── Rescues ─────────────────────────────────────────────────────────
+# Surplus routed to an NGO kitchen. One rescue item moves through this
+# lifecycle; the map is action -> (required current status, resulting status)
+# so transitions are validated with a DynamoDB conditional update.
+RESCUE_TRANSITIONS = {
+    "ACCEPT": ("OFFERED", "ACCEPTED"),
+    "CLAIM": ("ACCEPTED", "ASSIGNED"),
+    "PICKUP": ("ASSIGNED", "PICKED_UP"),
+    "DELIVER": ("PICKED_UP", "DELIVERED"),
+}
+
+
+def build_rescue_item(data: dict, now: int | None = None) -> dict:
+    """Build a RESCUE item (starts OFFERED) from validated input."""
+    now = now if now is not None else int(time.time())
+    rescue_id = new_id("rsc")
+    return {
+        "PK": f"RESCUE#{rescue_id}",
+        "SK": "META",
+        "type": "RESCUE",
+        "rescueId": rescue_id,
+        "vendorName": data["vendorName"],
+        "pickupArea": data["pickupArea"],
+        "vegetable": data["vegetable"],
+        "quantityKg": _dec(data["quantityKg"]),
+        "band": data.get("band", "RESCUE"),
+        "timeRange": data.get("timeRange", ""),
+        "distanceKm": _dec(data.get("distanceKm", 0)),
+        "status": "OFFERED",
+        "createdAt": now,
+        # One partition lists the whole board, newest-first (GSI2).
+        "GSI2PK": "RESCUE#BOARD",
+        "GSI2SK": f"{now}#{rescue_id}",
+    }
+
+
+def to_public_rescue(item: dict) -> dict:
+    """Project a stored RESCUE item to the shape the app consumes."""
+    return {
+        "id": item.get("rescueId"),
+        "vendorName": item.get("vendorName"),
+        "pickupArea": item.get("pickupArea"),
+        "vegetable": item.get("vegetable"),
+        "quantityKg": item.get("quantityKg"),
+        "band": item.get("band"),
+        "timeRange": item.get("timeRange"),
+        "distanceKm": item.get("distanceKm"),
+        "status": item.get("status"),
+        "ngoName": item.get("ngoName"),
+        "createdAt": item.get("createdAt"),
+    }

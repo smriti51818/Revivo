@@ -5,15 +5,20 @@ import pytest
 
 from shared.freshness import estimate_freshness
 from shared.models import (
+    RESCUE_TRANSITIONS,
     build_listing_item,
     build_order_item,
+    build_rescue_item,
     to_public_listing,
     to_public_order,
+    to_public_rescue,
 )
 from shared.validation import (
     ValidationError,
     validate_listing_input,
     validate_order_input,
+    validate_rescue_action,
+    validate_rescue_input,
 )
 
 NOW = 1_700_000_000
@@ -174,3 +179,61 @@ def test_public_order_hides_internal_keys():
     assert public["vendorName"] == "GreenLeaf"
     for hidden in ("PK", "SK", "GSI1PK", "GSI3PK"):
         assert hidden not in public
+
+
+# ─── rescues ────────────────────────────────────────────────────────
+def _rescue_body(**overrides):
+    body = {
+        "vendorName": "Kovai Fresh Mart",
+        "pickupArea": "RS Puram",
+        "vegetable": "Baby Spinach",
+        "quantityKg": 4,
+        "band": "RESCUE",
+        "timeRange": "~2-3 h",
+        "distanceKm": 0.8,
+    }
+    body.update(overrides)
+    return body
+
+
+def test_build_rescue_starts_offered_on_board():
+    item = build_rescue_item(validate_rescue_input(_rescue_body()), now=NOW)
+    assert item["PK"].startswith("RESCUE#")
+    assert item["type"] == "RESCUE"
+    assert item["status"] == "OFFERED"
+    assert item["GSI2PK"] == "RESCUE#BOARD"
+    assert item["quantityKg"] == Decimal("4")
+
+
+def test_public_rescue_hides_internal_keys():
+    item = build_rescue_item(validate_rescue_input(_rescue_body()), now=NOW)
+    public = to_public_rescue(item)
+    assert public["id"] == item["rescueId"]
+    assert public["vendorName"] == "Kovai Fresh Mart"
+    for hidden in ("PK", "SK", "GSI2PK", "GSI2SK"):
+        assert hidden not in public
+
+
+def test_rescue_missing_vendor_rejected():
+    with pytest.raises(ValidationError):
+        validate_rescue_input(_rescue_body(vendorName="  "))
+
+
+def test_rescue_action_accept_requires_ngo():
+    with pytest.raises(ValidationError):
+        validate_rescue_action({"action": "ACCEPT"})
+    ok = validate_rescue_action({"action": "ACCEPT", "ngoName": "Seva"})
+    assert ok == {"action": "ACCEPT", "ngoName": "Seva"}
+
+
+def test_rescue_action_rejects_unknown():
+    with pytest.raises(ValidationError):
+        validate_rescue_action({"action": "TELEPORT"})
+
+
+def test_rescue_transitions_form_a_chain():
+    # Each action's result is the next action's required current status.
+    assert RESCUE_TRANSITIONS["ACCEPT"] == ("OFFERED", "ACCEPTED")
+    assert RESCUE_TRANSITIONS["CLAIM"][0] == RESCUE_TRANSITIONS["ACCEPT"][1]
+    assert RESCUE_TRANSITIONS["PICKUP"][0] == RESCUE_TRANSITIONS["CLAIM"][1]
+    assert RESCUE_TRANSITIONS["DELIVER"][0] == RESCUE_TRANSITIONS["PICKUP"][1]

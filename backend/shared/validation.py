@@ -81,3 +81,43 @@ def validate_order_input(body: dict) -> dict:
     quantity_kg = _num(body.get("quantityKg"), "quantityKg", 0.1, 1000)
 
     return {"listingId": listing_id, "quantityKg": quantity_kg}
+
+
+VALID_RESCUE_ACTIONS = {"ACCEPT", "CLAIM", "PICKUP", "DELIVER"}
+
+
+def validate_rescue_input(body: dict) -> dict:
+    """Validate a new rescue offer."""
+    vendor = str(body.get("vendorName", "")).strip()
+    if not vendor or len(vendor) > 60:
+        raise ValidationError("vendorName is required")
+
+    vegetable = str(body.get("vegetable", "")).strip()
+    if not vegetable or len(vegetable) > 50:
+        raise ValidationError("vegetable is required")
+
+    quantity_kg = _num(body.get("quantityKg"), "quantityKg", 0.1, 1000)
+    distance_km = _num(body.get("distanceKm", 0), "distanceKm", 0, 100)
+
+    return {
+        "vendorName": vendor,
+        "pickupArea": str(body.get("pickupArea", "")).strip()[:60],
+        "vegetable": vegetable,
+        "quantityKg": quantity_kg,
+        "band": str(body.get("band", "RESCUE")).upper()[:20],
+        "timeRange": str(body.get("timeRange", "")).strip()[:40],
+        "distanceKm": distance_km,
+    }
+
+
+def validate_rescue_action(body: dict) -> dict:
+    """Validate a rescue lifecycle action (ACCEPT/CLAIM/PICKUP/DELIVER)."""
+    action = str(body.get("action", "")).upper()
+    if action not in VALID_RESCUE_ACTIONS:
+        raise ValidationError(
+            f"action must be one of {sorted(VALID_RESCUE_ACTIONS)}"
+        )
+    ngo_name = str(body.get("ngoName", "")).strip()[:60]
+    if action == "ACCEPT" and not ngo_name:
+        raise ValidationError("ngoName is required to accept a rescue")
+    return {"action": action, "ngoName": ngo_name}

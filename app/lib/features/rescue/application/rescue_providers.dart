@@ -1,11 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/api/providers.dart';
+import '../data/http_rescue_repository.dart';
 import '../data/rescue_repository.dart';
 import '../domain/rescue.dart';
 
-final rescueRepositoryProvider = Provider<RescueRepository>(
-  (ref) => InMemoryRescueRepository(),
-);
+final rescueRepositoryProvider = Provider<RescueRepository>((ref) {
+  final config = ref.read(appConfigProvider);
+  if (!config.useLiveApi) return InMemoryRescueRepository();
+  return HttpRescueRepository(ref.read(apiClientProvider));
+});
 
 /// The shared rescue board. Cook/NGO and Volunteer views both watch this and
 /// drive the same item through its lifecycle.
