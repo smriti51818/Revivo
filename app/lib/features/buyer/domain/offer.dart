@@ -16,6 +16,7 @@ class Offer {
     required this.distanceKm,
     this.organic = false,
     this.imagePath,
+    this.imageUrl,
   });
 
   final String id;
@@ -34,6 +35,9 @@ class Offer {
   final double distanceKm;
   final bool organic;
   final String? imagePath;
+
+  /// Remote (presigned) URL of the produce photo, for display.
+  final String? imageUrl;
 
   double get savingsPerKg =>
       (marketPrice - offerPrice).clamp(0, marketPrice).toDouble();

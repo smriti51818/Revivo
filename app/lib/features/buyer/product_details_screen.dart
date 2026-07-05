@@ -9,6 +9,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/app_card.dart';
 import '../../core/widgets/band_chip.dart';
 import '../../core/widgets/primary_button.dart';
+import '../../core/widgets/produce_image.dart';
 import 'application/marketplace_providers.dart';
 import 'domain/offer.dart';
 
@@ -69,16 +70,17 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(AppRadius.lg),
-              child: Container(
+              child: SizedBox(
                 height: 200,
                 width: double.infinity,
-                color: _tint,
                 child: Stack(
                   children: [
-                    Center(
-                      child: Icon(Icons.eco,
-                          size: 64,
-                          color: AppColors.primary.withValues(alpha: 0.55)),
+                    Positioned.fill(
+                      child: ProduceImage(
+                        imageUrl: offer.imageUrl,
+                        tint: _tint,
+                        iconSize: 64,
+                      ),
                     ),
                     Positioned(
                       top: 12,

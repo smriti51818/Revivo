@@ -53,6 +53,7 @@ class HttpMarketplaceRepository implements MarketplaceRepository {
       band: FreshnessBand.fromValue(j['band']?.toString()),
       timeRange: (j['timeRange'] ?? '').toString(),
       distanceKm: 0, // no buyer geolocation yet — hidden in the UI when 0
+      imageUrl: (j['imageUrl'] ?? '').toString(),
     );
   }
 

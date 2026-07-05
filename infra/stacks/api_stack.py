@@ -50,16 +50,19 @@ class ApiStack(Stack):
             "CreateListingFn", "create_listing", common_env, use_shared=True
         )
         table.grant_read_write_data(create_listing_fn)
+        uploads_bucket.grant_read(create_listing_fn)
 
         list_listings_fn = self._fn(
             "ListListingsFn", "list_listings", common_env, use_shared=True
         )
         table.grant_read_data(list_listings_fn)
+        uploads_bucket.grant_read(list_listings_fn)
 
         my_listings_fn = self._fn(
             "MyListingsFn", "list_my_listings", common_env, use_shared=True
         )
         table.grant_read_data(my_listings_fn)
+        uploads_bucket.grant_read(my_listings_fn)
 
         create_order_fn = self._fn(
             "CreateOrderFn", "create_order", common_env, use_shared=True

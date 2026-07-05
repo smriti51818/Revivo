@@ -30,6 +30,7 @@ class Listing {
     required this.createdAt,
     this.organic = false,
     this.imagePath,
+    this.imageUrl,
     this.purchasedAt,
     this.tempC,
   });
@@ -44,7 +45,12 @@ class Listing {
   final StorageCondition storage;
   final DateTime createdAt;
   final bool organic;
+
+  /// Local file path of a just-picked photo (seller device), pre-upload.
   final String? imagePath;
+
+  /// Remote (presigned) URL of the stored photo, for display.
+  final String? imageUrl;
 
   /// When the produce was purchased/harvested — sent to the server so it can
   /// compute the authoritative freshness band. Null for seeded demo data.

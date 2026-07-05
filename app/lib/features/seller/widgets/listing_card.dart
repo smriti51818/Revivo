@@ -5,6 +5,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/band_chip.dart';
+import '../../../core/widgets/produce_image.dart';
 import '../domain/listing.dart';
 
 String formatMoney(double value) {
@@ -39,17 +40,15 @@ class ListingCard extends StatelessWidget {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(AppRadius.md),
-            child: Container(
+            child: SizedBox(
               height: 128,
               width: double.infinity,
-              color: _tint,
               child: Stack(
                 children: [
-                  Center(
-                    child: Icon(
-                      Icons.eco,
-                      size: 44,
-                      color: AppColors.primary.withValues(alpha: 0.55),
+                  Positioned.fill(
+                    child: ProduceImage(
+                      imageUrl: listing.imageUrl,
+                      tint: _tint,
                     ),
                   ),
                   Positioned(

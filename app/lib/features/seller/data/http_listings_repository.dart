@@ -1,3 +1,7 @@
+import 'dart:io';
+
+import 'package:http/http.dart' as http;
+
 import '../../../core/api/api_client.dart';
 import '../../../core/api/json_utils.dart';
 import '../../../core/models/freshness.dart';
@@ -23,6 +27,7 @@ class HttpListingsRepository implements ListingsRepository {
   @override
   Future<Listing> createListing(Listing draft) async {
     final purchased = draft.purchasedAt ?? draft.createdAt;
+    final imageKey = await _uploadPhoto(draft.imagePath);
     final res = await _api.post('/listings', {
       'vegetable': draft.vegetable,
       'quantityKg': draft.quantityKg,
@@ -30,9 +35,30 @@ class HttpListingsRepository implements ListingsRepository {
       'storage': draft.storage.value,
       'purchasedAt': purchased.millisecondsSinceEpoch ~/ 1000,
       'tempC': draft.tempC ?? 28,
-      'imageKey': '',
+      'imageKey': imageKey,
     });
     return _fromJson((res['listing'] as Map).cast<String, dynamic>());
+  }
+
+  /// Uploads the picked photo to S3 via a presigned PUT and returns its key.
+  /// Best-effort: any failure returns '' so the listing still publishes.
+  Future<String> _uploadPhoto(String? path) async {
+    if (path == null || path.isEmpty) return '';
+    try {
+      final bytes = await File(path).readAsBytes();
+      final res = await _api.post('/uploads', const {});
+      final uploadUrl = (res['uploadUrl'] ?? '').toString();
+      final key = (res['key'] ?? '').toString();
+      if (uploadUrl.isEmpty || key.isEmpty) return '';
+      final put = await http.put(
+        Uri.parse(uploadUrl),
+        headers: {'Content-Type': 'image/jpeg'},
+        body: bytes,
+      );
+      return put.statusCode < 300 ? key : '';
+    } catch (_) {
+      return '';
+    }
   }
 
   Listing _fromJson(Map<String, dynamic> j) {
@@ -46,6 +72,7 @@ class HttpListingsRepository implements ListingsRepository {
       timeRange: (j['timeRange'] ?? '').toString(),
       storage: StorageCondition.fromValue(j['storage']?.toString()),
       createdAt: epochToDate(j['createdAt']),
+      imageUrl: (j['imageUrl'] ?? '').toString(),
     );
   }
 }

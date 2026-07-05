@@ -6,6 +6,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/band_chip.dart';
+import '../../../core/widgets/produce_image.dart';
 import '../domain/offer.dart';
 
 /// Marketplace card for a single surplus offer.
@@ -31,18 +32,13 @@ class OfferCard extends StatelessWidget {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(AppRadius.md),
-            child: Container(
+            child: SizedBox(
               height: 128,
               width: double.infinity,
-              color: _tint,
               child: Stack(
                 children: [
-                  Center(
-                    child: Icon(
-                      Icons.eco,
-                      size: 44,
-                      color: AppColors.primary.withValues(alpha: 0.55),
-                    ),
+                  Positioned.fill(
+                    child: ProduceImage(imageUrl: offer.imageUrl, tint: _tint),
                   ),
                   Positioned(
                     top: 10,

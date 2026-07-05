@@ -8,8 +8,9 @@ import json
 
 from shared.dynamo import get_table
 from shared.freshness import estimate_freshness
-from shared.models import build_listing_item
+from shared.models import build_listing_item, to_public_listing
 from shared.responses import error, ok
+from shared.uploads import attach_image_url
 from shared.validation import ValidationError, validate_listing_input
 
 
@@ -43,4 +44,4 @@ def handler(event, context):
     item = build_listing_item(data, vendor, freshness)
     get_table().put_item(Item=item)
 
-    return ok(201, {"listing": item})
+    return ok(201, {"listing": attach_image_url(to_public_listing(item))})
