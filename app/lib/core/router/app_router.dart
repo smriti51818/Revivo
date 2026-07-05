@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/auth/confirm_code_screen.dart';
 import '../../features/auth/login_screen.dart';
 import '../../features/auth/register_screen.dart';
 import '../../features/auth/role_select_screen.dart';
@@ -39,6 +40,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/register',
         builder: (_, state) => RegisterScreen(role: state.extra as UserRole?),
+      ),
+      GoRoute(
+        path: '/confirm-code',
+        builder: (_, state) =>
+            ConfirmCodeScreen(args: state.extra as ConfirmCodeArgs),
       ),
 
       // Buyer flow screens presented above the shell (full-page, with back).

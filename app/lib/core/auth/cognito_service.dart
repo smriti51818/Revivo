@@ -5,11 +5,24 @@ import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 
 /// Raised on any authentication failure, carrying a user-friendly message.
+/// [code] is the short Cognito exception name (e.g. `UserNotConfirmedException`)
+/// so callers can branch on it without string-matching [message].
 class AuthException implements Exception {
-  const AuthException(this.message);
+  const AuthException(this.message, {this.code});
   final String message;
+  final String? code;
   @override
   String toString() => message;
+}
+
+/// Thrown by [CognitoService.signUp] when the account still needs email
+/// confirmation before it can sign in — i.e. the pre-sign-up auto-confirm
+/// trigger isn't deployed (or wasn't deployed at the time this user signed
+/// up). Callers should navigate to a code-entry screen; a fresh code has
+/// already been sent by the time this is thrown.
+class NeedsConfirmationException implements Exception {
+  const NeedsConfirmationException(this.email);
+  final String email;
 }
 
 /// The outcome of a successful sign-in: tokens + decoded identity claims.
@@ -59,25 +72,61 @@ class CognitoService {
     return _resultFrom(auth);
   }
 
-  /// Creates an account then signs in. The pre-sign-up trigger auto-confirms
-  /// the user, so no emailed code step is needed.
+  /// Creates an account then signs in. If the pre-sign-up trigger is deployed
+  /// the user is auto-confirmed and this returns immediately signed in;
+  /// otherwise it throws [NeedsConfirmationException] so the caller can show
+  /// a code-entry screen. Also recovers an account stuck UNCONFIRMED from a
+  /// previous attempt by resending its code instead of failing outright.
   Future<AuthResult> signUp({
     required String email,
     required String password,
     required String name,
     required String role,
   }) async {
-    await _call('SignUp', {
+    try {
+      final res = await _call('SignUp', {
+        'ClientId': _config.userPoolClientId,
+        'Username': email.trim(),
+        'Password': password,
+        'UserAttributes': [
+          {'Name': 'email', 'Value': email.trim()},
+          {'Name': 'name', 'Value': name},
+          {'Name': 'custom:role', 'Value': role},
+        ],
+      });
+      if (res['UserConfirmed'] != true) {
+        throw NeedsConfirmationException(email.trim());
+      }
+      return signIn(email: email, password: password);
+    } on AuthException catch (e) {
+      if (e.code != 'UsernameExistsException') rethrow;
+      // The account may be stuck UNCONFIRMED from an earlier attempt (e.g.
+      // before the auto-confirm trigger was deployed). Resend succeeds only
+      // for an unconfirmed user; if it's already confirmed, surface the
+      // original "already exists" message instead.
+      await resendConfirmationCode(email: email);
+      throw NeedsConfirmationException(email.trim());
+    }
+  }
+
+  /// Confirms a pending sign-up with the code emailed by Cognito.
+  Future<void> confirmSignUp({
+    required String email,
+    required String code,
+  }) async {
+    await _call('ConfirmSignUp', {
       'ClientId': _config.userPoolClientId,
       'Username': email.trim(),
-      'Password': password,
-      'UserAttributes': [
-        {'Name': 'email', 'Value': email.trim()},
-        {'Name': 'name', 'Value': name},
-        {'Name': 'custom:role', 'Value': role},
-      ],
+      'ConfirmationCode': code.trim(),
     });
-    return signIn(email: email, password: password);
+  }
+
+  /// Requests a fresh confirmation code for an unconfirmed account.
+  Future<void> resendConfirmationCode({required String email}) async {
+    await _call('ResendConfirmationCode', {
+      'ClientId': _config.userPoolClientId,
+      'Username': email.trim(),
+    });
   }
 
   Future<Map<String, dynamic>> _call(
@@ -103,7 +152,13 @@ class CognitoService {
         ? <String, dynamic>{}
         : json.decode(resp.body) as Map<String, dynamic>;
     if (resp.statusCode >= 400) {
-      throw AuthException(_friendly(decoded));
+      final rawType = (decoded['__type'] ?? '').toString();
+      final idx = rawType.lastIndexOf('#');
+      final code = idx == -1 ? rawType : rawType.substring(idx + 1);
+      throw AuthException(
+        _friendly(decoded),
+        code: code.isEmpty ? null : code,
+      );
     }
     return decoded;
   }
@@ -135,6 +190,9 @@ class CognitoService {
     final type = (body['__type'] ?? '').toString();
     final msg = (body['message'] ?? body['Message'] ?? '').toString();
     if (type.contains('NotAuthorized')) return 'Incorrect email or password.';
+    if (type.contains('UserNotConfirmed')) {
+      return 'Please verify your email to continue.';
+    }
     if (type.contains('UserNotFound')) {
       return 'No account found for that email.';
     }
@@ -146,6 +204,16 @@ class CognitoService {
     }
     if (type.contains('TooManyRequests') || type.contains('LimitExceeded')) {
       return 'Too many attempts. Please wait a moment and try again.';
+    }
+    if (type.contains('InvalidParameter') &&
+        msg.toLowerCase().contains('confirm')) {
+      return 'An account with that email already exists. Please log in.';
+    }
+    if (type.contains('CodeMismatch')) {
+      return 'That code is incorrect. Please check and try again.';
+    }
+    if (type.contains('ExpiredCode')) {
+      return 'That code has expired. Tap "Resend" for a new one.';
     }
     if (type.contains('InvalidParameter') && msg.isNotEmpty) return msg;
     return msg.isNotEmpty ? msg : 'Something went wrong. Please try again.';

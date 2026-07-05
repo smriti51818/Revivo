@@ -9,6 +9,7 @@ import '../../core/session/session_controller.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/primary_button.dart';
+import 'confirm_code_screen.dart';
 
 /// Registration — creates an Amazon Cognito user with `custom:role` (or a local
 /// mock when `useLiveApi` is off). The pre-sign-up trigger auto-confirms, so
@@ -73,6 +74,17 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             .signIn(name: name, email: email, role: _role);
       }
       context.go(_role.homeRoute);
+    } on NeedsConfirmationException catch (e) {
+      if (!mounted) return;
+      context.push(
+        '/confirm-code',
+        extra: ConfirmCodeArgs(
+          email: e.email,
+          password: password,
+          name: name,
+          role: _role,
+        ),
+      );
     } on AuthException catch (e) {
       if (mounted) _toast(e.message);
     } finally {

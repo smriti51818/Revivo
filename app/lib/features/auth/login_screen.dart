@@ -9,6 +9,7 @@ import '../../core/session/session_controller.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/primary_button.dart';
+import 'confirm_code_screen.dart';
 
 /// Login screen — authenticates against Amazon Cognito (or a local mock when
 /// `useLiveApi` is off).
@@ -70,7 +71,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         context.go(_role.homeRoute);
       }
     } on AuthException catch (e) {
-      if (mounted) _toast(e.message);
+      if (!mounted) return;
+      if (e.code == 'UserNotConfirmedException') {
+        try {
+          await ref
+              .read(cognitoServiceProvider)
+              .resendConfirmationCode(email: email);
+        } catch (_) {
+          // The confirm screen also has its own "Resend" action.
+        }
+        if (!mounted) return;
+        context.push(
+          '/confirm-code',
+          extra: ConfirmCodeArgs(
+            email: email,
+            password: password,
+            name: _role.label,
+            role: _role,
+          ),
+        );
+      } else {
+        _toast(e.message);
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
