@@ -15,6 +15,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from shared.models import build_rescue_item  # noqa: E402
 
+# A mix of OFFERED rescues (to demo the live accept→pickup→deliver flow) and
+# a few already DELIVERED (so the Impact dashboard shows real numbers at once).
 _SEED = [
     {
         "vendorName": "Kovai Fresh Mart",
@@ -42,6 +44,19 @@ _SEED = [
         "band": "RESCUE",
         "timeRange": "~4-5 h",
         "distanceKm": 2.1,
+        "status": "DELIVERED",
+        "ngoName": "Annapoorna Trust",
+    },
+    {
+        "vendorName": "GreenLeaf Farms",
+        "pickupArea": "Saibaba Colony",
+        "vegetable": "Garden Carrots",
+        "quantityKg": 10,
+        "band": "RESCUE",
+        "timeRange": "delivered",
+        "distanceKm": 3.4,
+        "status": "DELIVERED",
+        "ngoName": "Seva Kitchen",
     },
 ]
 
@@ -53,8 +68,15 @@ def main() -> None:
 
     for data in _SEED:
         item = build_rescue_item(data)
+        if data.get("status"):
+            item["status"] = data["status"]
+        if data.get("ngoName"):
+            item["ngoName"] = data["ngoName"]
         table.put_item(Item=item)
-        print(f"seeded {item['rescueId']}  {data['vegetable']} ({data['quantityKg']}kg)")
+        print(
+            f"seeded {item['rescueId']}  {data['vegetable']} "
+            f"({data['quantityKg']}kg, {item['status']})"
+        )
 
     print(f"\nDone. Seeded {len(_SEED)} rescues into {table_name} ({region}).")
 

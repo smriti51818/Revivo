@@ -86,6 +86,11 @@ class ApiStack(Stack):
         )
         table.grant_read_write_data(transition_rescue_fn)
 
+        impact_fn = self._fn(
+            "ImpactFn", "impact", common_env, use_shared=True
+        )
+        table.grant_read_data(impact_fn)
+
         upload_fn = self._fn(
             "CreateUploadUrlFn", "create_upload_url", common_env, use_shared=True
         )
@@ -136,6 +141,8 @@ class ApiStack(Stack):
         self._protected(
             rescues.add_resource("{rescueId}"), "POST", transition_rescue_fn
         )
+
+        self._protected(api.root.add_resource("impact"), "GET", impact_fn)
 
         self._protected(
             api.root.add_resource("uploads"), "POST", upload_fn

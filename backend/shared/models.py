@@ -206,3 +206,85 @@ def to_public_rescue(item: dict) -> dict:
         "ngoName": item.get("ngoName"),
         "createdAt": item.get("createdAt"),
     }
+
+
+# ─── Impact aggregation ──────────────────────────────────────────────
+# Pure function so it is unit-testable without DynamoDB. Rescues that an NGO
+# has committed to (accepted onward) count as rescued; delivered ones count as
+# meals served. Order savings feed the recovered-value figure.
+_MEALS_PER_KG = 1 / 0.4  # ~0.4 kg of produce per served meal
+_CO2_PER_KG = 2.5  # kg CO2e avoided per kg of food kept out of landfill
+_MEALS_GOAL = 5000
+
+
+def _as_float(value) -> float:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def aggregate_impact(items: list) -> dict:
+    """Aggregate a list of table items into the impact summary + leaderboard."""
+    rescues = [i for i in items if i.get("type") == "RESCUE"]
+    orders = [i for i in items if i.get("type") == "ORDER"]
+    committed = [r for r in rescues if r.get("status") != "OFFERED"]
+    delivered = [r for r in rescues if r.get("status") == "DELIVERED"]
+
+    kg_rescued = sum(_as_float(r.get("quantityKg")) for r in committed)
+    meals_served = round(
+        sum(_as_float(r.get("quantityKg")) for r in delivered) * _MEALS_PER_KG
+    )
+    money_saved = sum(
+        max(
+            0.0,
+            (_as_float(o.get("marketPricePerKg")) - _as_float(o.get("pricePerKg")))
+            * _as_float(o.get("quantityKg")),
+        )
+        for o in orders
+    )
+
+    vendors = {r.get("vendorName") for r in rescues if r.get("vendorName")}
+    vendors |= {o.get("vendorName") for o in orders if o.get("vendorName")}
+    ngos = {r.get("ngoName") for r in committed if r.get("ngoName")}
+
+    board: dict = {}
+
+    def _add(name, role, kg):
+        if not name:
+            return
+        board.setdefault(name, {"role": role, "kg": 0.0})["kg"] += kg
+
+    for r in committed:
+        _add(r.get("vendorName"), "Vendor", _as_float(r.get("quantityKg")))
+    for o in orders:
+        _add(o.get("vendorName"), "Vendor", _as_float(o.get("quantityKg")))
+    for r in delivered:
+        _add(r.get("ngoName"), "NGO", _as_float(r.get("quantityKg")))
+
+    leaderboard = [
+        {
+            "rank": rank,
+            "name": name,
+            "role": data["role"],
+            "kg": round(data["kg"]),
+            "meals": round(data["kg"] * _MEALS_PER_KG),
+        }
+        for rank, (name, data) in enumerate(
+            sorted(board.items(), key=lambda kv: kv[1]["kg"], reverse=True)[:5],
+            start=1,
+        )
+    ]
+
+    return {
+        "summary": {
+            "kgRescued": round(kg_rescued),
+            "mealsServed": meals_served,
+            "co2SavedKg": round(kg_rescued * _CO2_PER_KG),
+            "moneySaved": round(money_saved),
+            "activeVendors": len(vendors),
+            "activeNgos": len(ngos),
+            "mealsGoal": _MEALS_GOAL,
+        },
+        "leaderboard": leaderboard,
+    }

@@ -6,6 +6,7 @@ import pytest
 from shared.freshness import estimate_freshness
 from shared.models import (
     RESCUE_TRANSITIONS,
+    aggregate_impact,
     build_listing_item,
     build_order_item,
     build_rescue_item,
@@ -237,3 +238,57 @@ def test_rescue_transitions_form_a_chain():
     assert RESCUE_TRANSITIONS["CLAIM"][0] == RESCUE_TRANSITIONS["ACCEPT"][1]
     assert RESCUE_TRANSITIONS["PICKUP"][0] == RESCUE_TRANSITIONS["CLAIM"][1]
     assert RESCUE_TRANSITIONS["DELIVER"][0] == RESCUE_TRANSITIONS["PICKUP"][1]
+
+
+# ─── impact aggregation ─────────────────────────────────────────────
+def test_aggregate_impact_counts_rescues_orders_and_leaderboard():
+    items = [
+        # Delivered rescue → counts as rescued + meals; NGO on leaderboard.
+        {
+            "type": "RESCUE",
+            "status": "DELIVERED",
+            "quantityKg": Decimal("8"),
+            "vendorName": "GreenLeaf Farms",
+            "ngoName": "Annapoorna Trust",
+        },
+        # Accepted (committed but not delivered) → rescued, no meals yet.
+        {
+            "type": "RESCUE",
+            "status": "ACCEPTED",
+            "quantityKg": Decimal("2"),
+            "vendorName": "GreenLeaf Farms",
+            "ngoName": "Seva Kitchen",
+        },
+        # Offered → not yet committed, excluded from totals.
+        {"type": "RESCUE", "status": "OFFERED", "quantityKg": Decimal("5"),
+         "vendorName": "Daily Greens"},
+        # Order → savings feed recovered value.
+        {
+            "type": "ORDER",
+            "status": "CONFIRMED",
+            "quantityKg": Decimal("10"),
+            "vendorName": "GreenLeaf Farms",
+            "marketPricePerKg": Decimal("40"),
+            "pricePerKg": Decimal("34"),
+        },
+    ]
+
+    result = aggregate_impact(items)
+    summary = result["summary"]
+
+    assert summary["kgRescued"] == 10  # 8 delivered + 2 accepted
+    assert summary["mealsServed"] == 20  # 8 kg / 0.4
+    assert summary["co2SavedKg"] == 25  # 10 * 2.5
+    assert summary["moneySaved"] == 60  # (40-34) * 10
+    assert summary["activeNgos"] == 2
+    assert summary["activeVendors"] == 2  # GreenLeaf + Daily Greens
+
+    # GreenLeaf supplied the most (8 + 2 rescued + 10 sold = 20 kg) → rank 1.
+    assert result["leaderboard"][0]["name"] == "GreenLeaf Farms"
+    assert result["leaderboard"][0]["rank"] == 1
+
+
+def test_aggregate_impact_handles_empty_table():
+    result = aggregate_impact([])
+    assert result["summary"]["kgRescued"] == 0
+    assert result["leaderboard"] == []
