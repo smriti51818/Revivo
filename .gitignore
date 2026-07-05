@@ -6,6 +6,11 @@
 aws-exports.json
 amplifyconfiguration.dart
 
+# Local-only credential notes (never committed)
+*.local.md
+*.local
+DEMO_CREDENTIALS.md
+
 # ─── macOS ───────────────────────────────────────────────
 .DS_Store
 .AppleDouble
