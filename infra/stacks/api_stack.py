@@ -8,6 +8,7 @@ from aws_cdk import (
     aws_apigateway as apigw,
     aws_cognito as cognito,
     aws_dynamodb as dynamodb,
+    aws_iam as iam,
     aws_lambda as lambda_,
     aws_s3 as s3,
 )
@@ -89,10 +90,42 @@ class ApiStack(Stack):
         )
         table.grant_read_write_data(transition_rescue_fn)
 
+        # M8 — Bedrock (Claude) "why rescue this?" explanations.
+        explain_rescue_fn = self._fn(
+            "ExplainRescueFn",
+            "explain_rescue",
+            {
+                **common_env,
+                "BEDROCK_MODEL_ID": "anthropic.claude-3-haiku-20240307-v1:0",
+            },
+            use_shared=True,
+        )
+        table.grant_read_data(explain_rescue_fn)
+        explain_rescue_fn.add_to_role_policy(
+            iam.PolicyStatement(
+                actions=["bedrock:InvokeModel"],
+                resources=["arn:aws:bedrock:*::foundation-model/*"],
+            )
+        )
+
         impact_fn = self._fn(
             "ImpactFn", "impact", common_env, use_shared=True
         )
         table.grant_read_data(impact_fn)
+
+        # M6 — in-app notification feed (written by the notifier in the
+        # NotificationStack; read + marked-read here).
+        list_notifications_fn = self._fn(
+            "ListNotificationsFn", "list_notifications", common_env,
+            use_shared=True,
+        )
+        table.grant_read_data(list_notifications_fn)
+
+        mark_read_fn = self._fn(
+            "MarkNotificationsReadFn", "mark_notifications_read", common_env,
+            use_shared=True,
+        )
+        table.grant_read_write_data(mark_read_fn)
 
         upload_fn = self._fn(
             "CreateUploadUrlFn", "create_upload_url", common_env, use_shared=True
@@ -141,11 +174,19 @@ class ApiStack(Stack):
         rescues = api.root.add_resource("rescues")
         self._protected(rescues, "POST", create_rescue_fn)
         self._protected(rescues, "GET", list_rescues_fn)
+        rescue_item = rescues.add_resource("{rescueId}")
+        self._protected(rescue_item, "POST", transition_rescue_fn)
         self._protected(
-            rescues.add_resource("{rescueId}"), "POST", transition_rescue_fn
+            rescue_item.add_resource("explain"), "POST", explain_rescue_fn
         )
 
         self._protected(api.root.add_resource("impact"), "GET", impact_fn)
+
+        notifications = api.root.add_resource("notifications")
+        self._protected(notifications, "GET", list_notifications_fn)
+        self._protected(
+            notifications.add_resource("read"), "POST", mark_read_fn
+        )
 
         self._protected(
             api.root.add_resource("uploads"), "POST", upload_fn

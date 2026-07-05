@@ -16,11 +16,15 @@ class RescueCard extends StatelessWidget {
     required this.rescue,
     this.action,
     this.showNgo = false,
+    this.onExplain,
   });
 
   final Rescue rescue;
   final Widget? action;
   final bool showNgo;
+
+  /// When set, shows a "Why rescue this?" button that fetches an AI explanation.
+  final Future<String> Function()? onExplain;
 
   ChipTone get _tone => switch (rescue.status) {
         RescueStatus.offered => ChipTone.warning,
@@ -89,6 +93,10 @@ class RescueCard extends StatelessWidget {
               ],
             ],
           ),
+          if (onExplain != null) ...[
+            const SizedBox(height: AppSpacing.sm),
+            _ExplainSection(onExplain: onExplain!),
+          ],
           if (action != null) ...[
             const SizedBox(height: AppSpacing.md),
             action!,
@@ -112,4 +120,99 @@ class RescueCard extends StatelessWidget {
           ),
         ],
       );
+}
+
+/// "Why rescue this?" — lazily fetches an AI explanation on first tap and
+/// reveals it inline. Kept private to the card so callers only pass a fetcher.
+class _ExplainSection extends StatefulWidget {
+  const _ExplainSection({required this.onExplain});
+
+  final Future<String> Function() onExplain;
+
+  @override
+  State<_ExplainSection> createState() => _ExplainSectionState();
+}
+
+class _ExplainSectionState extends State<_ExplainSection> {
+  String? _text;
+  bool _loading = false;
+
+  Future<void> _load() async {
+    setState(() => _loading = true);
+    try {
+      final text = await widget.onExplain();
+      if (mounted) setState(() => _text = text);
+    } catch (_) {
+      if (mounted) {
+        setState(() => _text = 'Could not load an explanation right now.');
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_text != null) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: AppColors.primarySurface,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.auto_awesome,
+                    size: 14, color: AppColors.primary),
+                const SizedBox(width: 6),
+                Text(
+                  'WHY RESCUE THIS',
+                  style: TextStyle(
+                    fontSize: 10,
+                    letterSpacing: 0.8,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              _text!,
+              style: const TextStyle(
+                fontSize: 12.5,
+                height: 1.4,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: TextButton.icon(
+        onPressed: _loading ? null : _load,
+        icon: _loading
+            ? const SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Icon(Icons.auto_awesome, size: 16),
+        label: Text(_loading ? 'Thinking…' : 'Why rescue this?'),
+        style: TextButton.styleFrom(
+          foregroundColor: AppColors.primary,
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          minimumSize: const Size(0, 32),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+      ),
+    );
+  }
 }

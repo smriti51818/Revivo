@@ -7,6 +7,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/section_header.dart';
 import '../../core/widgets/stat_tile.dart';
+import '../notifications/widgets/notification_bell.dart';
 import 'application/listings_providers.dart';
 import 'widgets/listing_card.dart';
 
@@ -136,11 +137,7 @@ class _Header extends StatelessWidget {
             ],
           ),
         ),
-        IconButton(
-          onPressed: () {},
-          icon: const Icon(Icons.notifications_none_rounded),
-          color: AppColors.textSecondary,
-        ),
+        const NotificationBell(),
         IconButton(
           onPressed: () {},
           icon: const Icon(Icons.settings_outlined),

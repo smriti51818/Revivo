@@ -45,6 +45,10 @@ class RescuesController extends AsyncNotifier<List<Rescue>> {
   /// Volunteer marks produce delivered to the NGO kitchen.
   Future<void> markDelivered(String id) =>
       _apply(id, status: RescueStatus.delivered);
+
+  /// AI "why rescue this?" explanation for a rescue (read-only; no state change).
+  Future<String> explain(String id) =>
+      ref.read(rescueRepositoryProvider).explain(id);
 }
 
 final rescuesProvider =

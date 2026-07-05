@@ -60,4 +60,4 @@ def seed_users():
 if __name__ == "__main__":
     print(f"Seeding {len(DEMO_ACCOUNTS)} demo accounts to {_pool_id}...\n")
     seed_users()
-    print(f"\n🎯 Ready to log in! Open the app and try any of the above.")
+    print("\n🎯 Ready to log in! Open the app and try any of the above.")

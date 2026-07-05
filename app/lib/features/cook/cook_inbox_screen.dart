@@ -6,6 +6,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/section_header.dart';
 import '../../core/widgets/stat_tile.dart';
+import '../notifications/widgets/notification_bell.dart';
 import '../rescue/application/rescue_providers.dart';
 import '../rescue/domain/rescue.dart';
 import '../rescue/widgets/async_action_button.dart';
@@ -89,6 +90,8 @@ class CookInboxScreen extends ConsumerWidget {
           for (final r in incoming) ...[
             RescueCard(
               rescue: r,
+              onExplain: () =>
+                  ref.read(rescuesProvider.notifier).explain(r.id),
               action: AsyncActionButton(
                 label: 'Accept · ~${r.estimatedMeals} meals',
                 icon: Icons.volunteer_activism_outlined,
@@ -171,11 +174,7 @@ class _Header extends StatelessWidget {
             ],
           ),
         ),
-        IconButton(
-          onPressed: () {},
-          icon: const Icon(Icons.notifications_none_rounded),
-          color: AppColors.textSecondary,
-        ),
+        const NotificationBell(),
       ],
     );
   }

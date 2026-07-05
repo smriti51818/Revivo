@@ -32,6 +32,13 @@ class HttpRescueRepository implements RescueRepository {
     return _fromJson((res['rescue'] as Map).cast<String, dynamic>());
   }
 
+  @override
+  Future<String> explain(String id) async {
+    final res = await _api.post('/rescues/$id/explain', const {});
+    return (res is Map ? res['explanation']?.toString() : null) ??
+        'No explanation available right now.';
+  }
+
   /// Maps the target status to the server-side lifecycle action.
   String _actionFor(RescueStatus status) => switch (status) {
         RescueStatus.accepted => 'ACCEPT',

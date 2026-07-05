@@ -8,6 +8,9 @@ abstract class RescueRepository {
   Future<List<Rescue>> fetchRescues();
   Future<Rescue> updateStatus(String id,
       {required RescueStatus status, String? ngoName});
+
+  /// A short AI-generated "why rescue this?" explanation (Bedrock/Claude).
+  Future<String> explain(String id);
 }
 
 class InMemoryRescueRepository implements RescueRepository {
@@ -89,5 +92,14 @@ class InMemoryRescueRepository implements RescueRepository {
     final updated = _items[idx].copyWith(status: status, ngoName: ngoName);
     _items[idx] = updated;
     return updated;
+  }
+
+  @override
+  Future<String> explain(String id) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    final r = _items.firstWhere((r) => r.id == id);
+    return '${r.quantityKg.toStringAsFixed(0)} kg of ${r.vegetable} can become '
+        'roughly ${r.estimatedMeals} meals. It\'s in its final freshness '
+        'window, so rescuing it today keeps good food out of landfill.';
   }
 }
