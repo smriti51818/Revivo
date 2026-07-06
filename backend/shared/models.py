@@ -84,6 +84,9 @@ def to_public_listing(item: dict) -> dict:
         "priceFactor": item.get("priceFactor"),
         "storage": item.get("storage"),
         "imageKey": item.get("imageKey", ""),
+        # Seed data may store a direct image URL; enriched from imageKey
+        # otherwise (see shared.uploads.attach_image_url).
+        "imageUrl": item.get("imageUrl"),
         "createdAt": item.get("createdAt"),
         "expiryEpoch": item.get("expiryEpoch"),
         "status": item.get("status"),

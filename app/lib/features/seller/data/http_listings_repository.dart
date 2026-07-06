@@ -44,6 +44,12 @@ class HttpListingsRepository implements ListingsRepository {
   }
 
   @override
+  Future<Listing> updateStock(String id, double quantityKg) async {
+    final res = await _api.patch('/listings/$id', {'quantityKg': quantityKg});
+    return _fromJson((res['listing'] as Map).cast<String, dynamic>());
+  }
+
+  @override
   Future<String> uploadPhoto(String path) async {
     if (path.isEmpty) return '';
     try {

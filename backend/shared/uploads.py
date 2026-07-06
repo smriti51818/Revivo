@@ -32,6 +32,12 @@ def presigned_get_url(key: str, expires: int = 3600) -> str:
 
 
 def attach_image_url(listing: dict) -> dict:
-    """Add a viewable `imageUrl` to a public listing based on its imageKey."""
+    """Add a viewable `imageUrl` to a public listing based on its imageKey.
+
+    Seed data may carry a direct http(s) image URL — keep it as-is.
+    """
+    existing = listing.get("imageUrl")
+    if existing and str(existing).startswith("http"):
+        return listing
     listing["imageUrl"] = presigned_get_url(listing.get("imageKey") or "")
     return listing

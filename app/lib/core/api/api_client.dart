@@ -31,6 +31,9 @@ class ApiClient {
   Future<dynamic> post(String path, Map<String, dynamic> body) =>
       _send('POST', path, body: body);
 
+  Future<dynamic> patch(String path, Map<String, dynamic> body) =>
+      _send('PATCH', path, body: body);
+
   Future<dynamic> _send(
     String method,
     String path, {
@@ -51,10 +54,13 @@ class ApiClient {
 
     late final http.Response resp;
     try {
-      resp = method == 'POST'
-          ? await _client.post(uri,
-              headers: headers, body: json.encode(body ?? const {}))
-          : await _client.get(uri, headers: headers);
+      resp = switch (method) {
+        'POST' => await _client.post(uri,
+            headers: headers, body: json.encode(body ?? const {})),
+        'PATCH' => await _client.patch(uri,
+            headers: headers, body: json.encode(body ?? const {})),
+        _ => await _client.get(uri, headers: headers),
+      };
     } catch (_) {
       throw const ApiException(0, 'Network error. Check your connection.');
     }

@@ -9,6 +9,9 @@ abstract class ListingsRepository {
   Future<List<Listing>> fetchListings();
   Future<Listing> createListing(Listing draft);
 
+  /// Updates a listing's available stock (quantity). Owner-only server-side.
+  Future<Listing> updateStock(String id, double quantityKg);
+
   /// Uploads a captured photo to S3, returning its object key (or '' on
   /// failure). Done at capture time so Rekognition can read it.
   Future<String> uploadPhoto(String path);
@@ -86,6 +89,16 @@ class InMemoryListingsRepository implements ListingsRepository {
     await Future.delayed(const Duration(milliseconds: 400));
     _items.insert(0, draft);
     return draft;
+  }
+
+  @override
+  Future<Listing> updateStock(String id, double quantityKg) async {
+    await Future.delayed(const Duration(milliseconds: 250));
+    final idx = _items.indexWhere((l) => l.id == id);
+    if (idx == -1) throw StateError('Listing $id not found');
+    final updated = _items[idx].copyWith(quantityKg: quantityKg);
+    _items[idx] = updated;
+    return updated;
   }
 
   @override

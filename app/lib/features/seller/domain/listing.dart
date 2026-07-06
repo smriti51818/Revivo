@@ -63,4 +63,22 @@ class Listing {
   final double? tempC;
 
   bool get isLowStock => quantityKg <= 3;
+
+  Listing copyWith({double? quantityKg}) => Listing(
+        id: id,
+        vegetable: vegetable,
+        quantityKg: quantityKg ?? this.quantityKg,
+        basePrice: basePrice,
+        recommendedPrice: recommendedPrice,
+        band: band,
+        timeRange: timeRange,
+        storage: storage,
+        createdAt: createdAt,
+        organic: organic,
+        imagePath: imagePath,
+        imageKey: imageKey,
+        imageUrl: imageUrl,
+        purchasedAt: purchasedAt,
+        tempC: tempC,
+      );
 }

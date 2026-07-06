@@ -70,6 +70,30 @@ class ApiStack(Stack):
             "AnalyzeListingFn", "analyze_listing", common_env, use_shared=True
         )
 
+        # Update stock (owner-only quantity change).
+        update_listing_fn = self._fn(
+            "UpdateListingFn", "update_listing", common_env, use_shared=True
+        )
+        table.grant_read_write_data(update_listing_fn)
+
+        # Seller insights — real metrics + Bedrock (Claude) recommendations.
+        seller_insights_fn = self._fn(
+            "SellerInsightsFn",
+            "seller_insights",
+            {
+                **common_env,
+                "BEDROCK_MODEL_ID": "anthropic.claude-3-haiku-20240307-v1:0",
+            },
+            use_shared=True,
+        )
+        table.grant_read_data(seller_insights_fn)
+        seller_insights_fn.add_to_role_policy(
+            iam.PolicyStatement(
+                actions=["bedrock:InvokeModel"],
+                resources=["arn:aws:bedrock:*::foundation-model/*"],
+            )
+        )
+
         # Amazon Rekognition — identify the vegetable from the uploaded photo.
         identify_fn = self._fn(
             "IdentifyVegetableFn", "identify_vegetable", common_env,
@@ -195,6 +219,12 @@ class ApiStack(Stack):
         )
         self._protected(
             listings.add_resource("identify"), "POST", identify_fn
+        )
+        self._protected(
+            listings.add_resource("insights"), "GET", seller_insights_fn
+        )
+        self._protected(
+            listings.add_resource("{listingId}"), "PATCH", update_listing_fn
         )
 
         orders = api.root.add_resource("orders")

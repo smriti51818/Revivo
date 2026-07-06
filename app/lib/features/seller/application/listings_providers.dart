@@ -26,6 +26,16 @@ class ListingsController extends AsyncNotifier<List<Listing>> {
     state = AsyncData([created, ...current]);
   }
 
+  /// Updates a listing's stock, reflecting the change in the dashboard live.
+  Future<void> updateStock(String id, double quantityKg) async {
+    final updated =
+        await ref.read(listingsRepositoryProvider).updateStock(id, quantityKg);
+    final current = state.valueOrNull ?? const <Listing>[];
+    state = AsyncData([
+      for (final l in current) l.id == id ? updated : l,
+    ]);
+  }
+
   /// Uploads a captured photo, returning its S3 key (or '' on failure).
   Future<String> uploadPhoto(String path) =>
       ref.read(listingsRepositoryProvider).uploadPhoto(path);

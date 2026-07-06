@@ -221,8 +221,27 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
       return;
     }
     if (!mounted) return;
+    _resetForm(); // so the tab opens fresh next time (shell keeps it alive)
     _toast('Listing published');
     context.go('/seller/dashboard');
+  }
+
+  void _resetForm() {
+    _debounce?.cancel();
+    _quantity.clear();
+    setState(() {
+      _photo = null;
+      _imageKey = '';
+      _photoBusy = false;
+      _photoResult = null;
+      _vegetable = null;
+      _storage = StorageCondition.room;
+      _purchaseIdx = 0;
+      _organic = false;
+      _analysis = null;
+      _analyzing = false;
+      _submitting = false;
+    });
   }
 
   void _toast(String message) {
