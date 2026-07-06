@@ -28,11 +28,13 @@ class HttpListingsRepository implements ListingsRepository {
   @override
   Future<Listing> createListing(Listing draft) async {
     final purchased = draft.purchasedAt ?? draft.createdAt;
-    final imageKey = await _uploadPhoto(draft.imagePath);
+    // Prefer the key uploaded at capture time; only upload here as a fallback.
+    final imageKey = (draft.imageKey != null && draft.imageKey!.isNotEmpty)
+        ? draft.imageKey!
+        : await uploadPhoto(draft.imagePath ?? '');
     final res = await _api.post('/listings', {
       'vegetable': draft.vegetable,
       'quantityKg': draft.quantityKg,
-      'basePrice': draft.basePrice,
       'storage': draft.storage.value,
       'purchasedAt': purchased.millisecondsSinceEpoch ~/ 1000,
       'tempC': draft.tempC ?? 28,
@@ -42,32 +44,8 @@ class HttpListingsRepository implements ListingsRepository {
   }
 
   @override
-  Future<FreshnessAnalysis> analyze({
-    required String vegetable,
-    required double basePrice,
-    required double quantityKg,
-    required StorageCondition storage,
-    required DateTime purchasedAt,
-  }) async {
-    final res = await _api.post('/listings/analyze', {
-      'vegetable': vegetable,
-      'basePrice': basePrice,
-      'quantityKg': quantityKg,
-      'storage': storage.value,
-      'purchasedAt': purchasedAt.millisecondsSinceEpoch ~/ 1000,
-      'tempC': 28,
-    });
-    return FreshnessAnalysis(
-      band: FreshnessBand.fromValue(res['band']?.toString()),
-      timeRange: (res['timeRange'] ?? '').toString(),
-      recommendedPrice: asDouble(res['recommendedPrice']),
-    );
-  }
-
-  /// Uploads the picked photo to S3 via a presigned PUT and returns its key.
-  /// Best-effort: any failure returns '' so the listing still publishes.
-  Future<String> _uploadPhoto(String? path) async {
-    if (path == null || path.isEmpty) return '';
+  Future<String> uploadPhoto(String path) async {
+    if (path.isEmpty) return '';
     try {
       final bytes = await File(path).readAsBytes();
       final res = await _api.post('/uploads', const {});
@@ -83,6 +61,40 @@ class HttpListingsRepository implements ListingsRepository {
     } catch (_) {
       return '';
     }
+  }
+
+  @override
+  Future<String?> identify(String imageKey) async {
+    if (imageKey.isEmpty) return null;
+    try {
+      final res = await _api.post('/listings/identify', {'imageKey': imageKey});
+      final veg = (res is Map ? res['vegetable'] : null)?.toString();
+      return (veg == null || veg.isEmpty) ? null : veg;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  Future<FreshnessAnalysis> analyze({
+    required String vegetable,
+    required double quantityKg,
+    required StorageCondition storage,
+    required DateTime purchasedAt,
+  }) async {
+    final res = await _api.post('/listings/analyze', {
+      'vegetable': vegetable,
+      'quantityKg': quantityKg,
+      'storage': storage.value,
+      'purchasedAt': purchasedAt.millisecondsSinceEpoch ~/ 1000,
+      'tempC': 28,
+    });
+    return FreshnessAnalysis(
+      band: FreshnessBand.fromValue(res['band']?.toString()),
+      timeRange: (res['timeRange'] ?? '').toString(),
+      marketPrice: asDouble(res['marketPrice']),
+      recommendedPrice: asDouble(res['recommendedPrice']),
+    );
   }
 
   Listing _fromJson(Map<String, dynamic> j) {

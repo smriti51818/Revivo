@@ -26,17 +26,23 @@ class ListingsController extends AsyncNotifier<List<Listing>> {
     state = AsyncData([created, ...current]);
   }
 
+  /// Uploads a captured photo, returning its S3 key (or '' on failure).
+  Future<String> uploadPhoto(String path) =>
+      ref.read(listingsRepositoryProvider).uploadPhoto(path);
+
+  /// Rekognition guess of the vegetable in an uploaded photo, or null.
+  Future<String?> identify(String imageKey) =>
+      ref.read(listingsRepositoryProvider).identify(imageKey);
+
   /// Server-side freshness analysis for the draft the seller is filling in.
   Future<FreshnessAnalysis> analyze({
     required String vegetable,
-    required double basePrice,
     required double quantityKg,
     required StorageCondition storage,
     required DateTime purchasedAt,
   }) {
     return ref.read(listingsRepositoryProvider).analyze(
           vegetable: vegetable,
-          basePrice: basePrice,
           quantityKg: quantityKg,
           storage: storage,
           purchasedAt: purchasedAt,

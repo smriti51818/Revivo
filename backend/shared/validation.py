@@ -7,6 +7,8 @@ from __future__ import annotations
 
 import time
 
+from .market_prices import market_price
+
 VALID_STORAGE = {"ROOM", "REFRIGERATED", "COLD_STORAGE"}
 _MAX_AGE_DAYS = 30
 _FUTURE_SKEW_SECONDS = 3600
@@ -34,7 +36,14 @@ def validate_listing_input(body: dict, now: int | None = None) -> dict:
         raise ValidationError("vegetable is required and must be <= 50 chars")
 
     quantity_kg = _num(body.get("quantityKg"), "quantityKg", 0.1, 1000)
-    base_price = _num(body.get("basePrice"), "basePrice", 1, 100000)
+
+    # Price is derived from the vegetable's market rate; the seller never types
+    # it. An explicit basePrice (e.g. from tests) is still honoured if provided.
+    raw_price = body.get("basePrice")
+    if raw_price in (None, ""):
+        base_price = market_price(vegetable)
+    else:
+        base_price = _num(raw_price, "basePrice", 1, 100000)
 
     storage = str(body.get("storage", "ROOM")).upper()
     if storage not in VALID_STORAGE:

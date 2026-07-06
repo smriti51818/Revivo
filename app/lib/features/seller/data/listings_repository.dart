@@ -9,10 +9,17 @@ abstract class ListingsRepository {
   Future<List<Listing>> fetchListings();
   Future<Listing> createListing(Listing draft);
 
-  /// Freshness analysis for a draft (band, time window, fair price).
+  /// Uploads a captured photo to S3, returning its object key (or '' on
+  /// failure). Done at capture time so Rekognition can read it.
+  Future<String> uploadPhoto(String path);
+
+  /// Amazon Rekognition guess of the vegetable in an uploaded photo, or null.
+  Future<String?> identify(String imageKey);
+
+  /// Server-side freshness analysis for a draft. Price is derived from the
+  /// vegetable's market rate — the seller never types a price.
   Future<FreshnessAnalysis> analyze({
     required String vegetable,
-    required double basePrice,
     required double quantityKg,
     required StorageCondition storage,
     required DateTime purchasedAt,
@@ -82,9 +89,20 @@ class InMemoryListingsRepository implements ListingsRepository {
   }
 
   @override
+  Future<String> uploadPhoto(String path) async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    return ''; // offline: no real upload
+  }
+
+  @override
+  Future<String?> identify(String imageKey) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    return null; // offline: no Rekognition — seller picks manually
+  }
+
+  @override
   Future<FreshnessAnalysis> analyze({
     required String vegetable,
-    required double basePrice,
     required double quantityKg,
     required StorageCondition storage,
     required DateTime purchasedAt,
@@ -96,11 +114,13 @@ class InMemoryListingsRepository implements ListingsRepository {
       purchasedAt: purchasedAt,
       storage: storage.value,
     );
+    const market = 40.0; // offline placeholder market rate
     return FreshnessAnalysis(
       band: est.band,
       timeRange: est.timeRange,
+      marketPrice: market,
       recommendedPrice:
-          double.parse((basePrice * est.priceFactor).toStringAsFixed(2)),
+          double.parse((market * est.priceFactor).toStringAsFixed(2)),
     );
   }
 }

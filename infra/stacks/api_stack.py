@@ -70,6 +70,19 @@ class ApiStack(Stack):
             "AnalyzeListingFn", "analyze_listing", common_env, use_shared=True
         )
 
+        # Amazon Rekognition — identify the vegetable from the uploaded photo.
+        identify_fn = self._fn(
+            "IdentifyVegetableFn", "identify_vegetable", common_env,
+            use_shared=True,
+        )
+        uploads_bucket.grant_read(identify_fn)
+        identify_fn.add_to_role_policy(
+            iam.PolicyStatement(
+                actions=["rekognition:DetectLabels"],
+                resources=["*"],
+            )
+        )
+
         create_order_fn = self._fn(
             "CreateOrderFn", "create_order", common_env, use_shared=True
         )
@@ -179,6 +192,9 @@ class ApiStack(Stack):
         self._protected(listings.add_resource("mine"), "GET", my_listings_fn)
         self._protected(
             listings.add_resource("analyze"), "POST", analyze_listing_fn
+        )
+        self._protected(
+            listings.add_resource("identify"), "POST", identify_fn
         )
 
         orders = api.root.add_resource("orders")

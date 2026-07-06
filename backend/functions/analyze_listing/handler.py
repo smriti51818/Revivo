@@ -28,13 +28,16 @@ def handler(event, context):
         storage=data["storage"],
         temp_c=data["tempC"],
     )
-    recommended = round(data["basePrice"] * fr.price_factor, 2)
+    # data["basePrice"] is the vegetable's market rate (derived in validation).
+    market = data["basePrice"]
+    recommended = round(market * fr.price_factor, 2)
 
     return ok(
         200,
         {
             "band": fr.band,
             "timeRange": fr.time_range_label,
+            "marketPrice": market,
             "recommendedPrice": recommended,
             "remainingHours": fr.remaining_hours,
             "totalHours": fr.total_hours,

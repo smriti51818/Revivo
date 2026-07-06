@@ -30,6 +30,7 @@ class Listing {
     required this.createdAt,
     this.organic = false,
     this.imagePath,
+    this.imageKey,
     this.imageUrl,
     this.purchasedAt,
     this.tempC,
@@ -46,8 +47,12 @@ class Listing {
   final DateTime createdAt;
   final bool organic;
 
-  /// Local file path of a just-picked photo (seller device), pre-upload.
+  /// Local file path of a just-captured photo (seller device), for display.
   final String? imagePath;
+
+  /// S3 object key of the uploaded photo (set at capture time so Rekognition
+  /// can read it); reused at publish so the photo isn't uploaded twice.
+  final String? imageKey;
 
   /// Remote (presigned) URL of the stored photo, for display.
   final String? imageUrl;
