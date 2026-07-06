@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/format.dart';
 import '../../core/session/session_controller.dart';
@@ -27,7 +28,13 @@ class VolunteerTasksScreen extends ConsumerWidget {
           child: ListView(
             padding: const EdgeInsets.all(AppSpacing.screen),
             children: [
-              _Header(name: name),
+              _Header(
+                name: name,
+                onSignOut: () {
+                  ref.read(sessionProvider.notifier).signOut();
+                  context.go('/role');
+                },
+              ),
               const SizedBox(height: AppSpacing.xl),
               rescues.when(
                 loading: () => const Padding(
@@ -161,8 +168,9 @@ class VolunteerTasksScreen extends ConsumerWidget {
 }
 
 class _Header extends StatelessWidget {
-  const _Header({required this.name});
+  const _Header({required this.name, required this.onSignOut});
   final String name;
+  final VoidCallback onSignOut;
 
   @override
   Widget build(BuildContext context) {
@@ -200,9 +208,10 @@ class _Header extends StatelessWidget {
           ),
         ),
         IconButton(
-          onPressed: () {},
-          icon: const Icon(Icons.notifications_none_rounded),
+          onPressed: onSignOut,
+          icon: const Icon(Icons.logout, size: 20),
           color: AppColors.textSecondary,
+          tooltip: 'Sign out',
         ),
       ],
     );

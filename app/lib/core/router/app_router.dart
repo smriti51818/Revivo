@@ -152,25 +152,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
 
-      // ─── Volunteer shell ────────────────────────────────────────
-      StatefulShellRoute.indexedStack(
-        builder: (_, _, shell) => ScaffoldWithNavBar(
-          navigationShell: shell,
-          destinations: const [
-            NavigationDestination(
-                icon: Icon(Icons.local_shipping_outlined),
-                selectedIcon: Icon(Icons.local_shipping),
-                label: 'Pickups'),
-            NavigationDestination(
-                icon: Icon(Icons.person_outline),
-                selectedIcon: Icon(Icons.person),
-                label: 'Profile'),
-          ],
-        ),
-        branches: [
-          _branch('/volunteer/tasks', const VolunteerTasksScreen()),
-          _branch('/volunteer/profile', const ProfileScreen()),
-        ],
+      // ─── Volunteer (single screen — no bottom nav) ──────────────
+      GoRoute(
+        path: '/volunteer/tasks',
+        builder: (_, _) => const VolunteerTasksScreen(),
       ),
     ],
   );
