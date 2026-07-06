@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -8,43 +10,68 @@ import '../../core/widgets/app_card.dart';
 import '../../core/widgets/band_chip.dart';
 import '../../core/widgets/section_header.dart';
 import '../../core/widgets/status_chip.dart';
-import 'application/order_requests_providers.dart';
-import 'domain/order_request.dart';
+import '../buyer/domain/order.dart';
+import 'application/vendor_orders_providers.dart';
 
-class SellerOrdersScreen extends ConsumerWidget {
+/// Seller's incoming orders — real orders hotels placed against this seller's
+/// surplus. First-come-first-serve: stock is reserved when the order is placed
+/// (no manual approval), then it auto-advances through fulfilment. Polls so the
+/// status updates show up live.
+class SellerOrdersScreen extends ConsumerStatefulWidget {
   const SellerOrdersScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final requests = ref.watch(orderRequestsProvider);
+  ConsumerState<SellerOrdersScreen> createState() => _SellerOrdersScreenState();
+}
+
+class _SellerOrdersScreenState extends ConsumerState<SellerOrdersScreen> {
+  Timer? _poll;
+
+  @override
+  void initState() {
+    super.initState();
+    _poll = Timer.periodic(const Duration(seconds: 8), (_) {
+      ref.read(vendorOrdersProvider.notifier).reload();
+    });
+  }
+
+  @override
+  void dispose() {
+    _poll?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final orders = ref.watch(vendorOrdersProvider);
 
     return Scaffold(
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: () => ref.refresh(orderRequestsProvider.future),
+          onRefresh: () => ref.refresh(vendorOrdersProvider.future),
           child: ListView(
             padding: const EdgeInsets.all(AppSpacing.screen),
             children: [
               const Text(
-                'Order requests',
+                'Incoming orders',
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 4),
               const Text(
-                'Approve buyers before their freshness window closes',
+                'Live orders from hotels & kitchens — first come, first served',
                 style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
               ),
               const SizedBox(height: AppSpacing.lg),
-              requests.when(
+              orders.when(
                 loading: () => const Padding(
                   padding: EdgeInsets.only(top: 48),
                   child: Center(child: CircularProgressIndicator()),
                 ),
                 error: (e, _) => Padding(
                   padding: const EdgeInsets.only(top: 32),
-                  child: Center(child: Text('Could not load requests: $e')),
+                  child: Center(child: Text('Could not load orders: $e')),
                 ),
-                data: (items) => _content(context, ref, items),
+                data: (items) => _content(items),
               ),
             ],
           ),
@@ -53,45 +80,35 @@ class SellerOrdersScreen extends ConsumerWidget {
     );
   }
 
-  Widget _content(
-      BuildContext context, WidgetRef ref, List<OrderRequest> items) {
-    final pending =
-        items.where((r) => r.status == RequestStatus.pending).toList();
-    final resolved =
-        items.where((r) => r.status != RequestStatus.pending).toList();
+  Widget _content(List<Order> items) {
+    if (items.isEmpty) return _empty();
+    final active =
+        items.where((o) => o.status != OrderStatus.completed).toList();
+    final done =
+        items.where((o) => o.status == OrderStatus.completed).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SectionHeader(title: 'Pending (${pending.length})'),
+        SectionHeader(title: 'To fulfil (${active.length})'),
         const SizedBox(height: AppSpacing.md),
-        if (pending.isEmpty)
+        if (active.isEmpty)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
-            child: Text('No pending requests right now.',
+            child: Text('No orders to fulfil right now.',
                 style: TextStyle(color: AppColors.textSecondary)),
           )
         else
-          for (final r in pending) ...[
-            _RequestCard(
-              request: r,
-              onAccept: () async {
-                await ref.read(orderRequestsProvider.notifier).accept(r.id);
-                if (context.mounted) _toast(context, 'Order accepted');
-              },
-              onDecline: () async {
-                await ref.read(orderRequestsProvider.notifier).decline(r.id);
-                if (context.mounted) _toast(context, 'Request declined');
-              },
-            ),
+          for (final o in active) ...[
+            _OrderCard(order: o),
             const SizedBox(height: AppSpacing.md),
           ],
-        if (resolved.isNotEmpty) ...[
+        if (done.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.sm),
-          const SectionHeader(title: 'History'),
+          const SectionHeader(title: 'Completed'),
           const SizedBox(height: AppSpacing.md),
-          for (final r in resolved) ...[
-            _RequestCard(request: r),
+          for (final o in done) ...[
+            _OrderCard(order: o),
             const SizedBox(height: AppSpacing.md),
           ],
         ],
@@ -99,30 +116,44 @@ class SellerOrdersScreen extends ConsumerWidget {
     );
   }
 
-  void _toast(BuildContext context, String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
-  }
+  Widget _empty() => Padding(
+        padding: const EdgeInsets.only(top: 64),
+        child: Center(
+          child: Column(
+            children: [
+              Icon(Icons.receipt_long_outlined,
+                  size: 40, color: AppColors.textMuted),
+              const SizedBox(height: AppSpacing.md),
+              const Text(
+                'No orders yet',
+                style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 2),
+              const Text(
+                'When a hotel orders your surplus, it shows up here',
+                style: TextStyle(fontSize: 12.5, color: AppColors.textMuted),
+              ),
+            ],
+          ),
+        ),
+      );
 }
 
-class _RequestCard extends StatelessWidget {
-  const _RequestCard({required this.request, this.onAccept, this.onDecline});
+class _OrderCard extends StatelessWidget {
+  const _OrderCard({required this.order});
+  final Order order;
 
-  final OrderRequest request;
-  final Future<void> Function()? onAccept;
-  final Future<void> Function()? onDecline;
-
-  ChipTone get _tone => switch (request.status) {
-        RequestStatus.pending => ChipTone.warning,
-        RequestStatus.accepted => ChipTone.success,
-        RequestStatus.declined => ChipTone.danger,
-        RequestStatus.completed => ChipTone.neutral,
+  ChipTone get _tone => switch (order.status) {
+        OrderStatus.confirmed => ChipTone.info,
+        OrderStatus.preparing => ChipTone.warning,
+        OrderStatus.readyForPickup => ChipTone.success,
+        OrderStatus.completed => ChipTone.neutral,
       };
 
   @override
   Widget build(BuildContext context) {
-    final pending = request.status == RequestStatus.pending;
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -134,49 +165,37 @@ class _RequestCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      request.buyerName,
+                      order.buyerName ?? 'Buyer',
                       style: const TextStyle(
                           fontSize: 15.5, fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      request.buyerType,
+                      order.vegetable,
                       style: const TextStyle(
                           fontSize: 12, color: AppColors.textMuted),
                     ),
                   ],
                 ),
               ),
-              StatusChip(label: request.status.label, tone: _tone),
+              StatusChip(label: order.status.label, tone: _tone),
             ],
           ),
           const Divider(height: AppSpacing.xl),
           Row(
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      request.vegetable,
-                      style: const TextStyle(
-                          fontSize: 14, fontWeight: FontWeight.w700),
-                    ),
-                    const SizedBox(height: 4),
-                    BandChip(band: request.band),
-                  ],
-                ),
-              ),
+              BandChip(band: order.band),
+              const Spacer(),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    formatMoney(request.total),
+                    formatMoney(order.total),
                     style: const TextStyle(
                         fontSize: 16, fontWeight: FontWeight.w800),
                   ),
                   Text(
-                    '${formatKg(request.quantityKg)} · ${formatMoney(request.pricePerKg)}/kg',
+                    '${formatKg(order.quantityKg)} · ${formatMoney(order.pricePerKg)}/kg',
                     style: const TextStyle(
                         fontSize: 11.5, color: AppColors.textMuted),
                   ),
@@ -184,34 +203,6 @@ class _RequestCard extends StatelessWidget {
               ),
             ],
           ),
-          if (pending) ...[
-            const SizedBox(height: AppSpacing.md),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: onDecline,
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(44),
-                      side: const BorderSide(color: AppColors.border),
-                      foregroundColor: AppColors.textSecondary,
-                    ),
-                    child: const Text('Decline'),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: onAccept,
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(44),
-                    ),
-                    child: const Text('Accept'),
-                  ),
-                ),
-              ],
-            ),
-          ],
         ],
       ),
     );

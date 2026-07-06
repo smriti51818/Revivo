@@ -32,10 +32,14 @@ class Order {
     required this.status,
     required this.placedAt,
     this.imagePath,
+    this.buyerName,
   });
 
   final String id;
   final String vendorName;
+
+  /// Who placed the order — shown on the seller's incoming-orders view.
+  final String? buyerName;
   final String vegetable;
   final double quantityKg;
   final double pricePerKg;
@@ -54,6 +58,7 @@ class Order {
   Order copyWith({OrderStatus? status}) => Order(
         id: id,
         vendorName: vendorName,
+        buyerName: buyerName,
         vegetable: vegetable,
         quantityKg: quantityKg,
         pricePerKg: pricePerKg,
