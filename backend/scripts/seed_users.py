@@ -16,7 +16,6 @@ DEMO_ACCOUNTS = [
     ("seller@revivo.demo", "seller", "Seller Demo"),
     ("hotel@revivo.demo", "buyer", "Hotel Demo"),
     ("cook@revivo.demo", "cook", "Cook Demo"),
-    ("volunteer@revivo.demo", "volunteer", "Volunteer Demo"),
 ]
 
 # Read from env vars

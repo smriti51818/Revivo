@@ -37,7 +37,6 @@ If it succeeds, you'll see:
 | `seller@revivo.demo` | Seller | Publish listings, view orders, upload photos |
 | `hotel@revivo.demo` | Buyer (Hotel) | Browse market, place orders, watch status advance |
 | `cook@revivo.demo` | Cook/NGO | Accept rescues, pickup, mark delivered |
-| `volunteer@revivo.demo` | Volunteer | View pickup tasks |
 
 ## Reset if needed
 

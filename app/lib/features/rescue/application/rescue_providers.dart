@@ -11,8 +11,8 @@ final rescueRepositoryProvider = Provider<RescueRepository>((ref) {
   return HttpRescueRepository(ref.read(apiClientProvider));
 });
 
-/// The shared rescue board. Cook/NGO and Volunteer views both watch this and
-/// drive the same item through its lifecycle.
+/// The rescue board. The Cook/NGO inbox watches this and drives each item
+/// through its lifecycle.
 class RescuesController extends AsyncNotifier<List<Rescue>> {
   @override
   Future<List<Rescue>> build() {
@@ -34,15 +34,15 @@ class RescuesController extends AsyncNotifier<List<Rescue>> {
   Future<void> accept(String id, {required String ngoName}) =>
       _apply(id, status: RescueStatus.accepted, ngoName: ngoName);
 
-  /// Volunteer claims an accepted rescue's pickup.
+  /// Cook/NGO starts the pickup for an accepted rescue.
   Future<void> claimPickup(String id) =>
       _apply(id, status: RescueStatus.assigned);
 
-  /// Volunteer marks produce collected from the vendor.
+  /// Cook/NGO marks produce collected from the vendor.
   Future<void> markPickedUp(String id) =>
       _apply(id, status: RescueStatus.pickedUp);
 
-  /// Volunteer marks produce delivered to the NGO kitchen.
+  /// Cook/NGO marks produce delivered to the kitchen.
   Future<void> markDelivered(String id) =>
       _apply(id, status: RescueStatus.delivered);
 

@@ -26,7 +26,7 @@ class ProfileScreen extends ConsumerWidget {
             const SizedBox(height: AppSpacing.sm),
             _identity(name, email, role),
             const SizedBox(height: AppSpacing.lg),
-            _trustCard(role),
+            _trustCard(),
             const SizedBox(height: AppSpacing.lg),
             Row(
               children: [
@@ -119,10 +119,8 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _trustCard(UserRole role) {
-    final verified = role == UserRole.volunteer
-        ? 'Verified volunteer'
-        : 'Verified partner';
+  Widget _trustCard() {
+    const verified = 'Verified partner';
     return AppCard(
       color: AppColors.primarySurface,
       child: Row(
@@ -147,16 +145,14 @@ class ProfileScreen extends ConsumerWidget {
               ],
             ),
           ),
-          if (role != UserRole.volunteer)
-            const Row(
-              children: [
-                Icon(Icons.star_rounded, size: 18, color: AppColors.warning),
-                SizedBox(width: 2),
-                Text('4.8',
-                    style: TextStyle(
-                        fontSize: 15, fontWeight: FontWeight.w800)),
-              ],
-            ),
+          const Row(
+            children: [
+              Icon(Icons.star_rounded, size: 18, color: AppColors.warning),
+              SizedBox(width: 2),
+              Text('4.8',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+            ],
+          ),
         ],
       ),
     );
@@ -166,7 +162,6 @@ class ProfileScreen extends ConsumerWidget {
         UserRole.vendor => [('Listings', '12'), ('Saved from waste', '340 kg')],
         UserRole.buyer => [('Orders', '28'), ('You saved', '₹6,200')],
         UserRole.cook => [('Meals served', '~1,200'), ('Rescues', '48')],
-        UserRole.volunteer => [('Pickups', '36'), ('Service hours', '54 h')],
       };
 
   Widget _statTile(String label, String value) {

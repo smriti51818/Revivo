@@ -20,7 +20,6 @@ import '../../features/seller/seller_dashboard_screen.dart';
 import '../../features/seller/seller_insights_screen.dart';
 import '../../features/seller/seller_orders_screen.dart';
 import '../../features/shared/profile_screen.dart';
-import '../../features/volunteer/volunteer_tasks_screen.dart';
 import '../models/user_role.dart';
 import '../widgets/scaffold_with_nav_bar.dart';
 
@@ -152,11 +151,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
 
-      // ─── Volunteer (single screen — no bottom nav) ──────────────
-      GoRoute(
-        path: '/volunteer/tasks',
-        builder: (_, _) => const VolunteerTasksScreen(),
-      ),
     ],
   );
 });

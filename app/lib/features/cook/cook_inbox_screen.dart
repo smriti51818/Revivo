@@ -100,7 +100,7 @@ class CookInboxScreen extends ConsumerWidget {
                       .read(rescuesProvider.notifier)
                       .accept(r.id, ngoName: ngoName);
                   if (context.mounted) {
-                    _toast(context, 'Rescue accepted — a volunteer is being notified');
+                    _toast(context, 'Rescue accepted — arrange pickup below');
                   }
                 },
               ),
@@ -112,12 +112,45 @@ class CookInboxScreen extends ConsumerWidget {
           const SectionHeader(title: 'In progress'),
           const SizedBox(height: AppSpacing.md),
           for (final r in active) ...[
-            RescueCard(rescue: r, showNgo: true),
+            RescueCard(
+              rescue: r,
+              showNgo: true,
+              action: _nextAction(context, ref, r),
+            ),
             const SizedBox(height: AppSpacing.md),
           ],
         ],
       ],
     );
+  }
+
+  /// The cook now drives the rescue through to delivery (no volunteers).
+  Widget? _nextAction(BuildContext context, WidgetRef ref, Rescue r) {
+    final notifier = ref.read(rescuesProvider.notifier);
+    return switch (r.status) {
+      RescueStatus.accepted => AsyncActionButton(
+          label: 'Start pickup',
+          icon: Icons.directions_run_outlined,
+          onRun: () => notifier.claimPickup(r.id),
+        ),
+      RescueStatus.assigned => AsyncActionButton(
+          label: 'Mark collected',
+          icon: Icons.inventory_2_outlined,
+          onRun: () => notifier.markPickedUp(r.id),
+        ),
+      RescueStatus.pickedUp => AsyncActionButton(
+          label: 'Mark delivered',
+          icon: Icons.check_circle_outline,
+          onRun: () async {
+            await notifier.markDelivered(r.id);
+            if (context.mounted) {
+              _toast(context,
+                  'Delivered — ~${r.estimatedMeals} meals served 🌱');
+            }
+          },
+        ),
+      _ => null,
+    };
   }
 
   Widget _emptyLine(String text) => Padding(

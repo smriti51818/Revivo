@@ -1,5 +1,5 @@
-"""Seed a few OFFERED rescues into the live table so the Cook/NGO inbox and
-Volunteer board have data to demo. Uses your default AWS credentials.
+"""Seed a few OFFERED rescues into the live table so the Cook/NGO inbox has
+data to demo. Uses your default AWS credentials.
 
 Run from the backend/ directory (with backend/.venv active):
 

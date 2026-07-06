@@ -1,9 +1,9 @@
 import '../../../core/models/freshness.dart';
 import '../domain/rescue.dart';
 
-/// Shared data source for rescues. Both the Cook/NGO inbox and the Volunteer
-/// pickup board read and mutate this list, mirroring how a single DynamoDB
-/// item transitions through the rescue lifecycle. Swapped for HTTP after deploy.
+/// Data source for rescues. The Cook/NGO inbox reads and mutates this list,
+/// mirroring how a single DynamoDB item transitions through the rescue
+/// lifecycle (accept → pickup → delivered). Swapped for HTTP after deploy.
 abstract class RescueRepository {
   Future<List<Rescue>> fetchRescues();
   Future<Rescue> updateStatus(String id,

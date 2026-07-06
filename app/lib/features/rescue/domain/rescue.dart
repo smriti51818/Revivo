@@ -23,7 +23,7 @@ enum RescueStatus {
 }
 
 /// Surplus produce routed to an NGO kitchen when it enters the rescue window.
-/// The pickup leg is handled by a volunteer.
+/// The Cook/NGO handles the pickup and delivery legs.
 class Rescue {
   const Rescue({
     required this.id,

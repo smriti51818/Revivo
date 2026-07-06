@@ -1,9 +1,8 @@
-/// The four Revivo personas. Backed by the Cognito `custom:role` attribute.
+/// The Revivo personas. Backed by the Cognito `custom:role` attribute.
 enum UserRole {
   vendor,
   buyer,
-  cook,
-  volunteer;
+  cook;
 
   /// Value stored in Cognito / DynamoDB.
   String get value => name.toUpperCase();
@@ -12,14 +11,12 @@ enum UserRole {
         UserRole.vendor => 'Seller',
         UserRole.buyer => 'Hotel owner',
         UserRole.cook => 'Community cook',
-        UserRole.volunteer => 'Volunteer',
       };
 
   String get tagline => switch (this) {
         UserRole.vendor => 'List surplus produce and reduce waste',
         UserRole.buyer => 'Buy fresh surplus at a discount',
         UserRole.cook => 'Turn rescued produce into meals',
-        UserRole.volunteer => 'Pick up and deliver rescued food',
       };
 
   /// Landing route after login for this role.
@@ -27,7 +24,6 @@ enum UserRole {
         UserRole.vendor => '/seller/dashboard',
         UserRole.buyer => '/buyer/home',
         UserRole.cook => '/cook/inbox',
-        UserRole.volunteer => '/volunteer/tasks',
       };
 
   static UserRole? fromValue(String? value) {

@@ -21,7 +21,6 @@ class _RoleSelectScreenState extends State<RoleSelectScreen> {
     UserRole.vendor: Icons.storefront_outlined,
     UserRole.buyer: Icons.restaurant_outlined,
     UserRole.cook: Icons.soup_kitchen_outlined,
-    UserRole.volunteer: Icons.directions_bike_outlined,
   };
 
   @override
