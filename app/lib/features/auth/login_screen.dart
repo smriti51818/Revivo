@@ -39,7 +39,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _login() async {
     final email = _email.text.trim();
-    final password = _password.text;
+    final password = _password.text.trim();
     if (email.isEmpty || password.isEmpty) {
       _toast('Enter your email and password');
       return;

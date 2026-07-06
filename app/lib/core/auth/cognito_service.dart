@@ -63,7 +63,7 @@ class CognitoService {
     final res = await _call('InitiateAuth', {
       'AuthFlow': 'USER_PASSWORD_AUTH',
       'ClientId': _config.userPoolClientId,
-      'AuthParameters': {'USERNAME': email.trim(), 'PASSWORD': password},
+      'AuthParameters': {'USERNAME': email.trim().toLowerCase(), 'PASSWORD': password},
     });
     final auth = res['AuthenticationResult'] as Map<String, dynamic>?;
     if (auth == null || auth['IdToken'] == null) {
@@ -113,16 +113,16 @@ class CognitoService {
     try {
       final res = await _call('SignUp', {
         'ClientId': _config.userPoolClientId,
-        'Username': email.trim(),
+        'Username': email.trim().toLowerCase(),
         'Password': password,
         'UserAttributes': [
-          {'Name': 'email', 'Value': email.trim()},
+          {'Name': 'email', 'Value': email.trim().toLowerCase()},
           {'Name': 'name', 'Value': name},
           {'Name': 'custom:role', 'Value': role},
         ],
       });
       if (res['UserConfirmed'] != true) {
-        throw NeedsConfirmationException(email.trim());
+        throw NeedsConfirmationException(email.trim().toLowerCase());
       }
       return signInWithRole(
         email: email,
@@ -136,7 +136,7 @@ class CognitoService {
       // for an unconfirmed user; if it's already confirmed, surface the
       // original "already exists" message instead.
       await resendConfirmationCode(email: email);
-      throw NeedsConfirmationException(email.trim());
+      throw NeedsConfirmationException(email.trim().toLowerCase());
     }
   }
 
@@ -147,7 +147,7 @@ class CognitoService {
   }) async {
     await _call('ConfirmSignUp', {
       'ClientId': _config.userPoolClientId,
-      'Username': email.trim(),
+      'Username': email.trim().toLowerCase(),
       'ConfirmationCode': code.trim(),
     });
   }
@@ -156,7 +156,7 @@ class CognitoService {
   Future<void> resendConfirmationCode({required String email}) async {
     await _call('ResendConfirmationCode', {
       'ClientId': _config.userPoolClientId,
-      'Username': email.trim(),
+      'Username': email.trim().toLowerCase(),
     });
   }
 
