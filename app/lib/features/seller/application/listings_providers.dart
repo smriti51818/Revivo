@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/api/providers.dart';
 import '../data/http_listings_repository.dart';
 import '../data/listings_repository.dart';
+import '../domain/freshness_analysis.dart';
 import '../domain/listing.dart';
 
 final listingsRepositoryProvider = Provider<ListingsRepository>((ref) {
@@ -23,6 +24,23 @@ class ListingsController extends AsyncNotifier<List<Listing>> {
         await ref.read(listingsRepositoryProvider).createListing(draft);
     final current = state.valueOrNull ?? const <Listing>[];
     state = AsyncData([created, ...current]);
+  }
+
+  /// Server-side freshness analysis for the draft the seller is filling in.
+  Future<FreshnessAnalysis> analyze({
+    required String vegetable,
+    required double basePrice,
+    required double quantityKg,
+    required StorageCondition storage,
+    required DateTime purchasedAt,
+  }) {
+    return ref.read(listingsRepositoryProvider).analyze(
+          vegetable: vegetable,
+          basePrice: basePrice,
+          quantityKg: quantityKg,
+          storage: storage,
+          purchasedAt: purchasedAt,
+        );
   }
 }
 

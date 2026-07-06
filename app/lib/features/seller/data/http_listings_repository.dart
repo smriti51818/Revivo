@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../../../core/api/api_client.dart';
 import '../../../core/api/json_utils.dart';
 import '../../../core/models/freshness.dart';
+import '../domain/freshness_analysis.dart';
 import '../domain/listing.dart';
 import 'listings_repository.dart';
 
@@ -38,6 +39,29 @@ class HttpListingsRepository implements ListingsRepository {
       'imageKey': imageKey,
     });
     return _fromJson((res['listing'] as Map).cast<String, dynamic>());
+  }
+
+  @override
+  Future<FreshnessAnalysis> analyze({
+    required String vegetable,
+    required double basePrice,
+    required double quantityKg,
+    required StorageCondition storage,
+    required DateTime purchasedAt,
+  }) async {
+    final res = await _api.post('/listings/analyze', {
+      'vegetable': vegetable,
+      'basePrice': basePrice,
+      'quantityKg': quantityKg,
+      'storage': storage.value,
+      'purchasedAt': purchasedAt.millisecondsSinceEpoch ~/ 1000,
+      'tempC': 28,
+    });
+    return FreshnessAnalysis(
+      band: FreshnessBand.fromValue(res['band']?.toString()),
+      timeRange: (res['timeRange'] ?? '').toString(),
+      recommendedPrice: asDouble(res['recommendedPrice']),
+    );
   }
 
   /// Uploads the picked photo to S3 via a presigned PUT and returns its key.

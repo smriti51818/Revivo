@@ -1,4 +1,6 @@
+import '../../../core/freshness/freshness_estimator.dart';
 import '../../../core/models/freshness.dart';
+import '../domain/freshness_analysis.dart';
 import '../domain/listing.dart';
 
 /// Data source for listings. The in-memory implementation seeds the demo and
@@ -6,6 +8,15 @@ import '../domain/listing.dart';
 abstract class ListingsRepository {
   Future<List<Listing>> fetchListings();
   Future<Listing> createListing(Listing draft);
+
+  /// Freshness analysis for a draft (band, time window, fair price).
+  Future<FreshnessAnalysis> analyze({
+    required String vegetable,
+    required double basePrice,
+    required double quantityKg,
+    required StorageCondition storage,
+    required DateTime purchasedAt,
+  });
 }
 
 class InMemoryListingsRepository implements ListingsRepository {
@@ -68,5 +79,28 @@ class InMemoryListingsRepository implements ListingsRepository {
     await Future.delayed(const Duration(milliseconds: 400));
     _items.insert(0, draft);
     return draft;
+  }
+
+  @override
+  Future<FreshnessAnalysis> analyze({
+    required String vegetable,
+    required double basePrice,
+    required double quantityKg,
+    required StorageCondition storage,
+    required DateTime purchasedAt,
+  }) async {
+    // Offline mode only: mirror the server engine locally so the demo works.
+    await Future.delayed(const Duration(milliseconds: 400));
+    final est = estimateFreshness(
+      vegetable: vegetable,
+      purchasedAt: purchasedAt,
+      storage: storage.value,
+    );
+    return FreshnessAnalysis(
+      band: est.band,
+      timeRange: est.timeRange,
+      recommendedPrice:
+          double.parse((basePrice * est.priceFactor).toStringAsFixed(2)),
+    );
   }
 }

@@ -65,6 +65,11 @@ class ApiStack(Stack):
         table.grant_read_data(my_listings_fn)
         uploads_bucket.grant_read(my_listings_fn)
 
+        # Freshness analysis preview — pure compute, no table access.
+        analyze_listing_fn = self._fn(
+            "AnalyzeListingFn", "analyze_listing", common_env, use_shared=True
+        )
+
         create_order_fn = self._fn(
             "CreateOrderFn", "create_order", common_env, use_shared=True
         )
@@ -172,6 +177,9 @@ class ApiStack(Stack):
         self._protected(listings, "POST", create_listing_fn)
         self._protected(listings, "GET", list_listings_fn)
         self._protected(listings.add_resource("mine"), "GET", my_listings_fn)
+        self._protected(
+            listings.add_resource("analyze"), "POST", analyze_listing_fn
+        )
 
         orders = api.root.add_resource("orders")
         self._protected(orders, "POST", create_order_fn)
