@@ -1,8 +1,8 @@
 """Seller insights — pure aggregation + Bedrock prompt/fallback.
 
 Turns a seller's listings + orders into real metrics, then feeds a compact
-summary to Claude (Bedrock) for recommendations. Falls back to deterministic,
-data-grounded advice when Bedrock isn't available.
+summary to a Bedrock model (Amazon Nova) for recommendations. Falls back to
+deterministic, data-grounded advice when Bedrock isn't available.
 """
 from __future__ import annotations
 
@@ -104,35 +104,42 @@ _SYSTEM = (
 )
 
 
-def build_insights_body(agg: dict, max_tokens: int = 400) -> dict:
-    """Bedrock InvokeModel body (Anthropic schema) from the aggregated data."""
+def build_insights_converse_args(agg: dict, max_tokens: int = 400) -> dict:
+    """Bedrock Converse API kwargs from the aggregated data (model-agnostic)."""
     return {
-        "anthropic_version": "bedrock-2023-05-31",
-        "max_tokens": max_tokens,
-        "system": _SYSTEM,
+        "system": [{"text": _SYSTEM}],
         "messages": [
             {
                 "role": "user",
-                "content": "Seller metrics (JSON):\n" + json.dumps(agg),
+                "content": [{"text": "Seller metrics (JSON):\n" + json.dumps(agg)}],
             }
         ],
+        "inferenceConfig": {"maxTokens": max_tokens},
     }
 
 
 def parse_ai_recommendations(text: str) -> list | None:
-    """Parse Claude's JSON array of {title, body}; None if unusable."""
+    """Parse a model's JSON array of {title, body}; None if unusable.
+
+    Tolerates markdown code fences and surrounding prose by slicing from the
+    first '[' to the last ']' (models like Nova often add a preamble).
+    """
     if not text:
         return None
     cleaned = text.strip()
-    if cleaned.startswith("```"):
-        cleaned = cleaned.strip("`")
-        cleaned = cleaned[cleaned.find("[") : cleaned.rfind("]") + 1]
+    if "```" in cleaned:
+        cleaned = cleaned.replace("```json", "").replace("```", "")
+    start, end = cleaned.find("["), cleaned.rfind("]")
+    if start != -1 and end != -1 and end > start:
+        cleaned = cleaned[start : end + 1]
     try:
         data = json.loads(cleaned)
     except (ValueError, TypeError):
         return None
     out = []
     for item in data if isinstance(data, list) else []:
+        if not isinstance(item, dict):
+            continue
         title = str(item.get("title", "")).strip()
         body = str(item.get("body", "")).strip()
         if title and body:

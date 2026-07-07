@@ -76,21 +76,24 @@ class ApiStack(Stack):
         )
         table.grant_read_write_data(update_listing_fn)
 
-        # Seller insights — real metrics + Bedrock (Claude) recommendations.
+        # Seller insights — real metrics + Bedrock (Amazon Nova) recommendations.
         seller_insights_fn = self._fn(
             "SellerInsightsFn",
             "seller_insights",
             {
                 **common_env,
-                "BEDROCK_MODEL_ID": "anthropic.claude-3-haiku-20240307-v1:0",
+                "BEDROCK_MODEL_ID": "apac.amazon.nova-micro-v1:0",
             },
             use_shared=True,
         )
         table.grant_read_data(seller_insights_fn)
         seller_insights_fn.add_to_role_policy(
             iam.PolicyStatement(
-                actions=["bedrock:InvokeModel"],
-                resources=["arn:aws:bedrock:*::foundation-model/*"],
+                actions=["bedrock:InvokeModel", "bedrock:Converse"],
+                resources=[
+                    "arn:aws:bedrock:*::foundation-model/*",
+                    "arn:aws:bedrock:*:*:inference-profile/*",
+                ],
             )
         )
 
@@ -138,21 +141,24 @@ class ApiStack(Stack):
         )
         table.grant_read_write_data(transition_rescue_fn)
 
-        # M8 — Bedrock (Claude) "why rescue this?" explanations.
+        # M8 — Bedrock (Amazon Nova) "why rescue this?" explanations.
         explain_rescue_fn = self._fn(
             "ExplainRescueFn",
             "explain_rescue",
             {
                 **common_env,
-                "BEDROCK_MODEL_ID": "anthropic.claude-3-haiku-20240307-v1:0",
+                "BEDROCK_MODEL_ID": "apac.amazon.nova-micro-v1:0",
             },
             use_shared=True,
         )
         table.grant_read_data(explain_rescue_fn)
         explain_rescue_fn.add_to_role_policy(
             iam.PolicyStatement(
-                actions=["bedrock:InvokeModel"],
-                resources=["arn:aws:bedrock:*::foundation-model/*"],
+                actions=["bedrock:InvokeModel", "bedrock:Converse"],
+                resources=[
+                    "arn:aws:bedrock:*::foundation-model/*",
+                    "arn:aws:bedrock:*:*:inference-profile/*",
+                ],
             )
         )
 

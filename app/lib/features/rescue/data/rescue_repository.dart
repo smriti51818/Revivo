@@ -9,7 +9,7 @@ abstract class RescueRepository {
   Future<Rescue> updateStatus(String id,
       {required RescueStatus status, String? ngoName});
 
-  /// A short AI-generated "why rescue this?" explanation (Bedrock/Claude).
+  /// A short AI-generated "why rescue this?" explanation (Bedrock/Nova).
   Future<String> explain(String id);
 }
 

@@ -1,21 +1,19 @@
-"""POST /rescues/{rescueId}/explain — AI "why rescue this?" via Bedrock (Claude).
+"""POST /rescues/{rescueId}/explain — AI "why rescue this?" via Amazon Bedrock.
 
-Fetches the rescue, asks Claude for a short, warm explanation, and returns it.
-If Bedrock model access isn't enabled (or on any error) it returns a
-deterministic fallback, so the feature always works in a live demo.
+Fetches the rescue, asks a Bedrock model (Amazon Nova, via the Converse API)
+for a short, warm explanation, and returns it. If Bedrock isn't available (or
+on any error) it returns a deterministic fallback, so the feature always works
+in a live demo.
 """
-import json
 import os
 
 import boto3
 
 from shared.dynamo import get_table
-from shared.rescue_ai import build_explain_body, fallback_explanation
+from shared.rescue_ai import build_explain_converse_args, fallback_explanation
 from shared.responses import error, ok
 
-_MODEL_ID = os.environ.get(
-    "BEDROCK_MODEL_ID", "anthropic.claude-3-haiku-20240307-v1:0"
-)
+_MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "apac.amazon.nova-micro-v1:0")
 _bedrock = None
 
 
@@ -40,20 +38,15 @@ def handler(event, context):
         return error(404, "rescue not found")
 
     try:
-        resp = _client().invoke_model(
-            modelId=_MODEL_ID,
-            body=json.dumps(build_explain_body(item)),
+        resp = _client().converse(
+            modelId=_MODEL_ID, **build_explain_converse_args(item)
         )
-        payload = json.loads(resp["body"].read())
-        text = "".join(
-            block.get("text", "")
-            for block in payload.get("content", [])
-            if block.get("type") == "text"
-        ).strip()
+        text = resp["output"]["message"]["content"][0]["text"].strip()
         if not text:
             raise ValueError("empty completion")
         return ok(200, {"explanation": text, "source": "ai"})
-    except Exception:  # noqa: BLE001 - degrade to a deterministic fallback
+    except Exception as _exc:  # noqa: BLE001 - degrade to a deterministic fallback
+        print(f"[bedrock] {type(_exc).__name__}: {_exc}")
         return ok(
             200,
             {"explanation": fallback_explanation(item), "source": "fallback"},

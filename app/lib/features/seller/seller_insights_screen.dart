@@ -10,7 +10,7 @@ import 'application/insights_providers.dart';
 import 'domain/seller_insights.dart';
 
 /// Insights computed on AWS from the seller's real listings + orders, with
-/// recommendations from Amazon Bedrock (Claude) — or a data-grounded fallback.
+/// recommendations from Amazon Bedrock (Nova) — or a data-grounded fallback.
 class SellerInsightsScreen extends ConsumerWidget {
   const SellerInsightsScreen({super.key});
 

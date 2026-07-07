@@ -1,8 +1,8 @@
-"""Bedrock (Claude) prompt building for rescue explanations — pure + testable.
+"""Bedrock (Amazon Nova) prompt building for rescue explanations — pure + testable.
 
-The handler does the I/O (Bedrock invoke); these helpers build the request body
-and a deterministic fallback so the feature degrades gracefully when Bedrock
-model access isn't enabled in the account.
+The handler does the I/O (Bedrock Converse); these helpers build the request
+args and a deterministic fallback so the feature degrades gracefully when
+Bedrock isn't available in the account.
 """
 from __future__ import annotations
 
@@ -28,8 +28,8 @@ _SYSTEM = (
 )
 
 
-def build_explain_body(rescue: dict, max_tokens: int = 160) -> dict:
-    """Build the Bedrock InvokeModel body (Anthropic messages schema)."""
+def build_explain_converse_args(rescue: dict, max_tokens: int = 160) -> dict:
+    """Build Bedrock Converse API kwargs (model-agnostic)."""
     veg = rescue.get("vegetable", "produce")
     qty = _as_float(rescue.get("quantityKg"))
     band = rescue.get("band", "RESCUE")
@@ -47,15 +47,14 @@ def build_explain_body(rescue: dict, max_tokens: int = 160) -> dict:
     )
 
     return {
-        "anthropic_version": "bedrock-2023-05-31",
-        "max_tokens": max_tokens,
-        "system": _SYSTEM,
+        "system": [{"text": _SYSTEM}],
         "messages": [
             {
                 "role": "user",
-                "content": f"Explain why to rescue this:\n{facts}",
+                "content": [{"text": f"Explain why to rescue this:\n{facts}"}],
             }
         ],
+        "inferenceConfig": {"maxTokens": max_tokens},
     }
 
 

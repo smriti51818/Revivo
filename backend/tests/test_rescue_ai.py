@@ -1,5 +1,5 @@
 """Unit tests for Bedrock rescue-explanation prompt building + fallback."""
-from shared.rescue_ai import build_explain_body, fallback_explanation
+from shared.rescue_ai import build_explain_converse_args, fallback_explanation
 
 _RESCUE = {
     "vegetable": "Tomatoes",
@@ -11,16 +11,15 @@ _RESCUE = {
 }
 
 
-def test_build_body_uses_bedrock_anthropic_schema():
-    body = build_explain_body(_RESCUE)
-    assert body["anthropic_version"] == "bedrock-2023-05-31"
-    assert body["max_tokens"] > 0
-    assert body["system"]
-    assert body["messages"][0]["role"] == "user"
+def test_build_args_uses_converse_schema():
+    args = build_explain_converse_args(_RESCUE)
+    assert args["system"][0]["text"]
+    assert args["inferenceConfig"]["maxTokens"] > 0
+    assert args["messages"][0]["role"] == "user"
 
 
-def test_build_body_includes_the_facts():
-    content = build_explain_body(_RESCUE)["messages"][0]["content"]
+def test_build_args_includes_the_facts():
+    content = build_explain_converse_args(_RESCUE)["messages"][0]["content"][0]["text"]
     assert "Tomatoes" in content
     assert "8 kg" in content
     assert "20 meals" in content  # 8 / 0.4 = 20

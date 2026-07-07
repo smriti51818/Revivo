@@ -1,10 +1,10 @@
 """GET /listings/insights — data-driven seller insights + Bedrock AI summary.
 
 Aggregates the seller's real listings + orders into metrics and top movers,
-then asks Claude (Bedrock) for 3 recommendations grounded in those numbers.
-Degrades to deterministic, data-grounded advice if Bedrock isn't available.
+then asks a Bedrock model (Amazon Nova, via the Converse API) for 3
+recommendations grounded in those numbers. Degrades to deterministic,
+data-grounded advice if Bedrock isn't available.
 """
-import json
 import os
 
 import boto3
@@ -13,15 +13,13 @@ from boto3.dynamodb.conditions import Key
 from shared.dynamo import get_table
 from shared.insights import (
     aggregate_seller_insights,
-    build_insights_body,
+    build_insights_converse_args,
     fallback_insights,
     parse_ai_recommendations,
 )
 from shared.responses import error, ok
 
-_MODEL_ID = os.environ.get(
-    "BEDROCK_MODEL_ID", "anthropic.claude-3-haiku-20240307-v1:0"
-)
+_MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "apac.amazon.nova-micro-v1:0")
 _bedrock = None
 
 
@@ -55,19 +53,15 @@ def handler(event, context):
     recommendations = None
     source = "fallback"
     try:
-        resp = _client().invoke_model(
-            modelId=_MODEL_ID, body=json.dumps(build_insights_body(agg))
+        resp = _client().converse(
+            modelId=_MODEL_ID, **build_insights_converse_args(agg)
         )
-        payload = json.loads(resp["body"].read())
-        text = "".join(
-            block.get("text", "")
-            for block in payload.get("content", [])
-            if block.get("type") == "text"
-        )
+        text = resp["output"]["message"]["content"][0]["text"]
         recommendations = parse_ai_recommendations(text)
         if recommendations:
             source = "ai"
-    except Exception:  # noqa: BLE001 - degrade to deterministic advice
+    except Exception as _exc:  # noqa: BLE001 - degrade to deterministic advice
+        print(f"[bedrock] {type(_exc).__name__}: {_exc}")
         recommendations = None
 
     if not recommendations:
