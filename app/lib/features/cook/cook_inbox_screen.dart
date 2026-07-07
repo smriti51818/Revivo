@@ -7,10 +7,12 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/section_header.dart';
 import '../../core/widgets/stat_tile.dart';
 import '../notifications/widgets/notification_bell.dart';
+import '../rescue/application/meal_log_providers.dart';
 import '../rescue/application/rescue_providers.dart';
 import '../rescue/domain/rescue.dart';
 import '../rescue/widgets/async_action_button.dart';
 import '../rescue/widgets/rescue_card.dart';
+import 'meal_log_sheet.dart';
 
 class CookInboxScreen extends ConsumerWidget {
   const CookInboxScreen({super.key});
@@ -18,6 +20,7 @@ class CookInboxScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final rescues = ref.watch(rescuesProvider);
+    ref.watch(mealLogProvider); // rebuild once meals are logged
     final ngoName = ref.watch(sessionProvider)?.name ?? 'Annapoorna Trust';
 
     return Scaffold(
@@ -56,6 +59,8 @@ class CookInboxScreen extends ConsumerWidget {
             r.status != RescueStatus.offered &&
             r.status != RescueStatus.delivered)
         .toList();
+    final delivered =
+        items.where((r) => r.status == RescueStatus.delivered).toList();
     final mealsAvailable =
         incoming.fold<int>(0, (sum, r) => sum + r.estimatedMeals);
 
@@ -120,7 +125,55 @@ class CookInboxScreen extends ConsumerWidget {
             const SizedBox(height: AppSpacing.md),
           ],
         ],
+        if (delivered.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.sm),
+          const SectionHeader(title: 'Delivered · log the meal'),
+          const SizedBox(height: AppSpacing.md),
+          for (final r in delivered) ...[
+            RescueCard(
+              rescue: r,
+              showNgo: true,
+              action: _mealProof(context, ref, r),
+            ),
+            const SizedBox(height: AppSpacing.md),
+          ],
+        ],
       ],
+    );
+  }
+
+  /// After delivery the cook records meals served — the Transform proof.
+  Widget _mealProof(BuildContext context, WidgetRef ref, Rescue r) {
+    final served = ref.read(mealLogProvider)[r.id];
+    if (served != null) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md, vertical: 10),
+        decoration: BoxDecoration(
+          color: AppColors.primarySurface,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.verified_rounded,
+                size: 18, color: AppColors.primary),
+            const SizedBox(width: 6),
+            Text('$served meals served',
+                style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.primaryDark)),
+          ],
+        ),
+      );
+    }
+    return OutlinedButton.icon(
+      onPressed: () => showMealLogSheet(context, ref, r),
+      style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(44)),
+      icon: const Icon(Icons.restaurant_rounded, size: 18),
+      label: const Text('Log meals served'),
     );
   }
 
