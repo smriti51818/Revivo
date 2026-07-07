@@ -14,6 +14,7 @@ import '../../features/buyer/checkout_screen.dart';
 import '../../features/buyer/domain/offer.dart';
 import '../../features/buyer/domain/order.dart';
 import '../../features/buyer/order_confirmed_screen.dart';
+import '../../features/buyer/order_tracking_screen.dart';
 import '../../features/buyer/product_details_screen.dart';
 import '../../features/cook/cook_inbox_screen.dart';
 import '../../features/impact/impact_screen.dart';
@@ -66,6 +67,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/buyer/order-confirmed',
         builder: (_, state) =>
             OrderConfirmedScreen(orders: state.extra as List<Order>),
+      ),
+      GoRoute(
+        path: '/buyer/track',
+        builder: (_, state) =>
+            OrderTrackingScreen(order: state.extra as Order),
       ),
 
       // ─── Seller shell ───────────────────────────────────────────

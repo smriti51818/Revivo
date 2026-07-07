@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/format.dart';
 import '../../core/theme/app_colors.dart';
@@ -125,6 +126,7 @@ class _OrderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppCard(
+      onTap: () => context.push('/buyer/track', extra: order),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -160,6 +162,30 @@ class _OrderCard extends StatelessWidget {
               const Spacer(),
               if (order.saved > 0)
                 _meta('Saved', formatMoney(order.saved), highlight: true),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Row(
+            children: [
+              const Icon(Icons.schedule, size: 13, color: AppColors.textMuted),
+              const SizedBox(width: 4),
+              Text(
+                order.pickupSlot.isEmpty
+                    ? 'Pickup anytime today'
+                    : 'Pickup · ${order.pickupSlot}',
+                style: const TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textMuted),
+              ),
+              const Spacer(),
+              const Text('Track',
+                  style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primary)),
+              const Icon(Icons.chevron_right,
+                  size: 16, color: AppColors.primary),
             ],
           ),
         ],
