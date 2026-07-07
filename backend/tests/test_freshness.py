@@ -1,5 +1,7 @@
 """Unit tests for the time-aware freshness engine."""
-from shared.freshness import estimate_freshness
+from decimal import Decimal
+
+from shared.freshness import apply_live_freshness, estimate_freshness
 from shared import shelf_life
 
 NOW = 1_700_000_000
@@ -83,3 +85,31 @@ def test_result_is_json_serialisable():
 
     r = _at(10)
     assert json.dumps(r.to_dict())  # does not raise
+
+
+# ─── live re-pricing ────────────────────────────────────────────────
+def _listing(hours_ago, base=40):
+    return {
+        "vegetable": "tomato",
+        "purchasedAt": int(NOW - hours_ago * HOUR),
+        "storage": "ROOM",
+        "tempC": Decimal("28"),
+        "basePrice": Decimal(str(base)),
+        "band": "GOOD",
+        "recommendedPrice": Decimal(str(base)),
+    }
+
+
+def test_apply_live_freshness_decays_band_and_price_over_time():
+    fresh = apply_live_freshness(_listing(1), now=NOW)
+    decayed = apply_live_freshness(_listing(60), now=NOW)  # ~use-soon for tomato
+    assert fresh["band"] == "GOOD"
+    assert fresh["recommendedPrice"] == Decimal("40")
+    assert decayed["band"] == "USE_SOON"
+    assert decayed["recommendedPrice"] < fresh["recommendedPrice"]
+    assert isinstance(decayed["recommendedPrice"], Decimal)
+
+
+def test_apply_live_freshness_passes_through_without_inputs():
+    row = {"band": "GOOD", "recommendedPrice": Decimal("40")}  # no purchasedAt
+    assert apply_live_freshness(row, now=NOW) is row

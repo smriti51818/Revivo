@@ -6,6 +6,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/band_chip.dart';
+import '../../../core/widgets/freshness_countdown.dart';
 import '../../../core/widgets/produce_image.dart';
 import '../domain/offer.dart';
 
@@ -16,7 +17,7 @@ class OfferCard extends StatelessWidget {
   final Offer offer;
   final VoidCallback? onTap;
 
-  Color get _tint => switch (offer.band) {
+  Color get _tint => switch (offer.liveBand()) {
         FreshnessBand.good => AppColors.successSurface,
         FreshnessBand.useSoon => AppColors.warningSurface,
         FreshnessBand.rescue => AppColors.dangerSurface,
@@ -61,29 +62,19 @@ class OfferCard extends StatelessWidget {
                   Positioned(
                     top: 10,
                     right: 10,
-                    child: BandChip(band: offer.band, timeRange: offer.timeRange),
+                    child: offer.hasClock
+                        ? FreshnessCountdownPill(
+                            expiresAt: offer.expiresAt!,
+                            totalHours: offer.totalHours!,
+                          )
+                        : BandChip(
+                            band: offer.band, timeRange: offer.timeRange),
                   ),
-                  if (offer.savingsPct > 0)
-                    Positioned(
-                      bottom: 10,
-                      left: 10,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          borderRadius: BorderRadius.circular(AppRadius.sm),
-                        ),
-                        child: Text(
-                          '${offer.savingsPct}% off',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
-                    ),
+                  Positioned(
+                    bottom: 10,
+                    left: 10,
+                    child: _LiveSavingsTag(offer: offer),
+                  ),
                 ],
               ),
             ),
@@ -104,37 +95,45 @@ class OfferCard extends StatelessWidget {
             style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 6),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '${formatMoney(offer.offerPrice)} / kg',
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.primary,
-                ),
-              ),
-              const SizedBox(width: 6),
-              if (offer.savingsPct > 0)
-                Text(
-                  formatMoney(offer.marketPrice),
-                  style: const TextStyle(
-                    fontSize: 12.5,
-                    color: AppColors.textMuted,
-                    decoration: TextDecoration.lineThrough,
+          FreshnessTicker(
+            expiresAt: offer.expiresAt ??
+                DateTime.now().add(const Duration(hours: 12)),
+            totalHours: offer.totalHours ?? 24,
+            builder: (context, _, _) {
+              final price = offer.livePrice();
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    '${formatMoney(price)} / kg',
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.primary,
+                    ),
                   ),
-                ),
-              const Spacer(),
-              Text(
-                '${formatKg(offer.availableKg)} left',
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ],
+                  const SizedBox(width: 6),
+                  if (offer.liveSavingsPct() > 0)
+                    Text(
+                      formatMoney(offer.marketPrice),
+                      style: const TextStyle(
+                        fontSize: 12.5,
+                        color: AppColors.textMuted,
+                        decoration: TextDecoration.lineThrough,
+                      ),
+                    ),
+                  const Spacer(),
+                  Text(
+                    '${formatKg(offer.availableKg)} left',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -180,4 +179,39 @@ class OfferCard extends StatelessWidget {
           ),
         ),
       );
+}
+
+/// "X% off" badge that grows live as the freshness-decayed price drops.
+class _LiveSavingsTag extends StatelessWidget {
+  const _LiveSavingsTag({required this.offer});
+
+  final Offer offer;
+
+  @override
+  Widget build(BuildContext context) {
+    return FreshnessTicker(
+      expiresAt:
+          offer.expiresAt ?? DateTime.now().add(const Duration(hours: 12)),
+      totalHours: offer.totalHours ?? 24,
+      builder: (context, _, _) {
+        final pct = offer.liveSavingsPct();
+        if (pct <= 0) return const SizedBox.shrink();
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: AppColors.primary,
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+          ),
+          child: Text(
+            '$pct% off',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        );
+      },
+    );
+  }
 }

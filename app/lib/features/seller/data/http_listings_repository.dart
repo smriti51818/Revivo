@@ -104,6 +104,7 @@ class HttpListingsRepository implements ListingsRepository {
   }
 
   Listing _fromJson(Map<String, dynamic> j) {
+    final expiry = j['expiryEpoch'];
     return Listing(
       id: (j['id'] ?? '').toString(),
       vegetable: (j['vegetable'] ?? '').toString(),
@@ -115,6 +116,8 @@ class HttpListingsRepository implements ListingsRepository {
       storage: StorageCondition.fromValue(j['storage']?.toString()),
       createdAt: epochToDate(j['createdAt']),
       imageUrl: (j['imageUrl'] ?? '').toString(),
+      expiresAt: expiry is num ? epochToDate(expiry) : null,
+      totalHours: j['totalHours'] == null ? null : asDouble(j['totalHours']),
     );
   }
 }

@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass, asdict
+from decimal import Decimal
 
 from . import shelf_life
 
@@ -99,3 +100,39 @@ def estimate_freshness(
         price_factor=_PRICE_FACTOR[band],
         expiry_epoch=expiry_epoch,
     )
+
+
+def apply_live_freshness(listing: dict, now: int | None = None) -> dict:
+    """Return a copy of a stored LISTING with band + price recomputed for *now*.
+
+    Freshness (and therefore the recommended price) decays continuously as the
+    clock ticks. The stored `band`/`recommendedPrice` are only the snapshot from
+    listing time; this recomputes them from the immutable inputs (vegetable,
+    purchase time, storage, temperature) so the price a buyer is charged matches
+    the live countdown they see. Returns the listing unchanged if it lacks the
+    inputs (e.g. legacy/seed rows without a purchase time).
+    """
+    veg = listing.get("vegetable")
+    purchased = listing.get("purchasedAt")
+    base = listing.get("basePrice")
+    if not veg or not purchased or base is None:
+        return listing
+
+    fr = estimate_freshness(
+        str(veg),
+        int(purchased),
+        str(listing.get("storage", "ROOM")),
+        float(listing.get("tempC", 28) or 28),
+        now_epoch=now,
+    )
+    recommended = Decimal(str(round(float(base) * fr.price_factor, 2)))
+    return {
+        **listing,
+        "band": fr.band,
+        "timeRange": fr.time_range_label,
+        "remainingHours": Decimal(str(fr.remaining_hours)),
+        "totalHours": Decimal(str(fr.total_hours)),
+        "priceFactor": Decimal(str(fr.price_factor)),
+        "recommendedPrice": recommended,
+        "expiryEpoch": fr.expiry_epoch,
+    }

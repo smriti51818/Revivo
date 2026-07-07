@@ -11,77 +11,59 @@ abstract class MarketplaceRepository {
   Future<Order> placeOrder({required Offer offer, required double quantityKg});
 }
 
+/// One row of demo produce, with a live shelf window so the countdown ticks
+/// even in the offline (in-memory) build.
+typedef _Spec = ({
+  String id,
+  String vendor,
+  String veg,
+  double kg,
+  double market,
+  double remainingH,
+  double totalH,
+  double distance,
+  bool organic,
+});
+
 class InMemoryMarketplaceRepository implements MarketplaceRepository {
-  final List<Offer> _offers = [
-    const Offer(
-      id: 'off_tomato',
-      vendorName: 'GreenLeaf Farms',
-      vegetable: 'Roma Tomatoes',
-      availableKg: 12,
-      marketPrice: 40,
-      offerPrice: 34,
-      band: FreshnessBand.good,
-      timeRange: '~14-18 h',
-      distanceKm: 1.2,
-      organic: true,
-    ),
-    const Offer(
-      id: 'off_pepper',
-      vendorName: 'Anna Vegetable Stall',
-      vegetable: 'Bell Pepper Mix',
-      availableKg: 6,
-      marketPrice: 60,
-      offerPrice: 42,
-      band: FreshnessBand.useSoon,
-      timeRange: '~8-10 h',
-      distanceKm: 2.1,
-    ),
-    const Offer(
-      id: 'off_spinach',
-      vendorName: 'Kovai Fresh Mart',
-      vegetable: 'Baby Spinach',
-      availableKg: 4,
-      marketPrice: 30,
-      offerPrice: 12,
-      band: FreshnessBand.rescue,
-      timeRange: '~2-3 h',
-      distanceKm: 0.8,
-    ),
-    const Offer(
-      id: 'off_carrot',
-      vendorName: 'Sunrise Organics',
-      vegetable: 'Garden Carrots',
-      availableKg: 20,
-      marketPrice: 45,
-      offerPrice: 38,
-      band: FreshnessBand.good,
-      timeRange: '~4-5 days',
-      distanceKm: 3.4,
-      organic: true,
-    ),
-    const Offer(
-      id: 'off_cauliflower',
-      vendorName: 'RS Traders',
-      vegetable: 'Cauliflower',
-      availableKg: 9,
-      marketPrice: 35,
-      offerPrice: 24,
-      band: FreshnessBand.useSoon,
-      timeRange: '~10-12 h',
-      distanceKm: 1.7,
-    ),
-    const Offer(
-      id: 'off_beans',
-      vendorName: 'Daily Greens',
-      vegetable: 'French Beans',
-      availableKg: 5,
-      marketPrice: 50,
-      offerPrice: 20,
-      band: FreshnessBand.rescue,
-      timeRange: '~3-4 h',
-      distanceKm: 2.9,
-    ),
+  static const List<_Spec> _specs = [
+    (id: 'off_tomato', vendor: 'GreenLeaf Farms', veg: 'Roma Tomatoes', kg: 12, market: 40, remainingH: 16, totalH: 30, distance: 1.2, organic: true),
+    (id: 'off_pepper', vendor: 'Anna Vegetable Stall', veg: 'Bell Pepper Mix', kg: 6, market: 60, remainingH: 9, totalH: 30, distance: 2.1, organic: false),
+    (id: 'off_spinach', vendor: 'Kovai Fresh Mart', veg: 'Baby Spinach', kg: 4, market: 30, remainingH: 2.5, totalH: 24, distance: 0.8, organic: false),
+    (id: 'off_carrot', vendor: 'Sunrise Organics', veg: 'Garden Carrots', kg: 20, market: 45, remainingH: 108, totalH: 200, distance: 3.4, organic: true),
+    (id: 'off_cauliflower', vendor: 'RS Traders', veg: 'Cauliflower', kg: 9, market: 35, remainingH: 11, totalH: 36, distance: 1.7, organic: false),
+    (id: 'off_beans', vendor: 'Daily Greens', veg: 'French Beans', kg: 5, market: 50, remainingH: 3.5, totalH: 30, distance: 2.9, organic: false),
   ];
+
+  List<Offer> _buildOffers() {
+    final now = DateTime.now();
+    return [
+      for (final s in _specs)
+        () {
+          final expiresAt =
+              now.add(Duration(minutes: (s.remainingH * 60).round()));
+          final band = FreshnessBand.fromRatio(s.remainingH / s.totalH);
+          final offerPrice = double.parse(
+              (s.market * band.priceFactor).toStringAsFixed(2));
+          return Offer(
+            id: s.id,
+            vendorName: s.vendor,
+            vegetable: s.veg,
+            availableKg: s.kg,
+            marketPrice: s.market,
+            offerPrice: offerPrice,
+            band: band,
+            timeRange: s.remainingH >= 48
+                ? '~${(s.remainingH / 24).round()} days'
+                : '~${s.remainingH.round()} h',
+            distanceKm: s.distance,
+            organic: s.organic,
+            expiresAt: expiresAt,
+            totalHours: s.totalH,
+          );
+        }(),
+    ];
+  }
 
   final List<Order> _orders = [
     Order(
@@ -100,7 +82,7 @@ class InMemoryMarketplaceRepository implements MarketplaceRepository {
   @override
   Future<List<Offer>> fetchOffers() async {
     await Future.delayed(const Duration(milliseconds: 300));
-    return List.unmodifiable(_offers);
+    return List.unmodifiable(_buildOffers());
   }
 
   @override
@@ -120,9 +102,9 @@ class InMemoryMarketplaceRepository implements MarketplaceRepository {
       vendorName: offer.vendorName,
       vegetable: offer.vegetable,
       quantityKg: quantityKg,
-      pricePerKg: offer.offerPrice,
+      pricePerKg: offer.livePrice(),
       marketPricePerKg: offer.marketPrice,
-      band: offer.band,
+      band: offer.liveBand(),
       status: OrderStatus.confirmed,
       placedAt: DateTime.now(),
       imagePath: offer.imagePath,

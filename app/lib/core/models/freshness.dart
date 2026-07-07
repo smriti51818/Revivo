@@ -23,4 +23,20 @@ enum FreshnessBand {
         'RESCUE' => FreshnessBand.rescue,
         _ => FreshnessBand.good,
       };
+
+  /// Maps a remaining/total life ratio to a band — mirrors the backend engine
+  /// (GOOD ≥ 0.5, USE_SOON ≥ 0.2, else RESCUE) so the live client countdown and
+  /// the server agree on the band as it decays.
+  static FreshnessBand fromRatio(double ratio) => ratio >= 0.5
+      ? FreshnessBand.good
+      : ratio >= 0.2
+          ? FreshnessBand.useSoon
+          : FreshnessBand.rescue;
+
+  /// Price multiplier applied to the market price for this band.
+  double get priceFactor => switch (this) {
+        FreshnessBand.good => 1.0,
+        FreshnessBand.useSoon => 0.7,
+        FreshnessBand.rescue => 0.4,
+      };
 }

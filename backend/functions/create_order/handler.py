@@ -11,6 +11,7 @@ from decimal import Decimal
 from botocore.exceptions import ClientError
 
 from shared.dynamo import get_table
+from shared.freshness import apply_live_freshness
 from shared.models import build_order_item, to_public_order
 from shared.responses import error, ok
 from shared.validation import ValidationError, validate_order_input
@@ -80,7 +81,10 @@ def handler(event, context):
             ExpressionAttributeValues={":sold": "SOLD"},
         )
 
-    item = build_order_item(data, buyer, listing)
+    # Charge the *live* freshness-decayed price, not the stale listing-time
+    # snapshot, so the price matches the countdown the buyer just saw.
+    priced_listing = apply_live_freshness(listing)
+    item = build_order_item(data, buyer, priced_listing)
     table.put_item(Item=item)
 
     return ok(201, {"order": to_public_order(item)})

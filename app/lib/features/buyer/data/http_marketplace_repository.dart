@@ -43,6 +43,7 @@ class HttpMarketplaceRepository implements MarketplaceRepository {
   }
 
   Offer _offerFromJson(Map<String, dynamic> j) {
+    final expiry = j['expiryEpoch'];
     return Offer(
       id: (j['id'] ?? '').toString(),
       vendorName: (j['vendorName'] ?? 'Vendor').toString(),
@@ -54,6 +55,8 @@ class HttpMarketplaceRepository implements MarketplaceRepository {
       timeRange: (j['timeRange'] ?? '').toString(),
       distanceKm: 0, // no buyer geolocation yet — hidden in the UI when 0
       imageUrl: (j['imageUrl'] ?? '').toString(),
+      expiresAt: expiry is num ? epochToDate(expiry) : null,
+      totalHours: j['totalHours'] == null ? null : asDouble(j['totalHours']),
     );
   }
 

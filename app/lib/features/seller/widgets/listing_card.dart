@@ -5,6 +5,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/band_chip.dart';
+import '../../../core/widgets/freshness_countdown.dart';
 import '../../../core/widgets/produce_image.dart';
 import '../domain/listing.dart';
 
@@ -68,10 +69,15 @@ class ListingCard extends StatelessWidget {
                   Positioned(
                     top: 10,
                     right: 10,
-                    child: BandChip(
-                      band: listing.band,
-                      timeRange: listing.timeRange,
-                    ),
+                    child: listing.hasClock
+                        ? FreshnessCountdownPill(
+                            expiresAt: listing.expiresAt!,
+                            totalHours: listing.totalHours!,
+                          )
+                        : BandChip(
+                            band: listing.band,
+                            timeRange: listing.timeRange,
+                          ),
                   ),
                 ],
               ),

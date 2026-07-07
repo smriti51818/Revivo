@@ -34,6 +34,8 @@ class Listing {
     this.imageUrl,
     this.purchasedAt,
     this.tempC,
+    this.expiresAt,
+    this.totalHours,
   });
 
   final String id;
@@ -62,7 +64,15 @@ class Listing {
   final DateTime? purchasedAt;
   final double? tempC;
 
+  /// Absolute expiry + full shelf window — drive the live countdown on the
+  /// seller's own inventory, mirroring what buyers see in the market.
+  final DateTime? expiresAt;
+  final double? totalHours;
+
   bool get isLowStock => quantityKg <= 3;
+
+  bool get hasClock =>
+      expiresAt != null && totalHours != null && totalHours! > 0;
 
   Listing copyWith({double? quantityKg}) => Listing(
         id: id,
@@ -80,5 +90,7 @@ class Listing {
         imageUrl: imageUrl,
         purchasedAt: purchasedAt,
         tempC: tempC,
+        expiresAt: expiresAt,
+        totalHours: totalHours,
       );
 }

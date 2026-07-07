@@ -88,7 +88,11 @@ def to_public_listing(item: dict) -> dict:
         # otherwise (see shared.uploads.attach_image_url).
         "imageUrl": item.get("imageUrl"),
         "createdAt": item.get("createdAt"),
+        "purchasedAt": item.get("purchasedAt"),
+        # The live-countdown inputs: absolute expiry + the full shelf window, so
+        # the client can recompute band + price decay in real time as it ticks.
         "expiryEpoch": item.get("expiryEpoch"),
+        "totalHours": item.get("totalHours"),
         "status": item.get("status"),
     }
     if item.get("gps"):

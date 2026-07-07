@@ -7,6 +7,7 @@ should see. Optional `?limit=` (default 50, max 100).
 from boto3.dynamodb.conditions import Key
 
 from shared.dynamo import get_table
+from shared.freshness import apply_live_freshness
 from shared.models import to_public_listing
 from shared.responses import error, ok
 from shared.uploads import attach_image_url
@@ -28,7 +29,10 @@ def handler(event, context):
     except Exception as exc:  # pragma: no cover - surfaced to the client
         return error(500, f"query failed: {exc}")
 
+    # Recompute band + price for *now* so the marketplace reflects live decay,
+    # not each listing's creation-time snapshot.
     listings = [
-        attach_image_url(to_public_listing(i)) for i in result.get("Items", [])
+        attach_image_url(to_public_listing(apply_live_freshness(i)))
+        for i in result.get("Items", [])
     ]
     return ok(200, {"listings": listings, "count": len(listings)})
