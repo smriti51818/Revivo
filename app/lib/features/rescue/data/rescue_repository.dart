@@ -21,6 +21,10 @@ abstract class RescueRepository {
     double distanceKm,
   });
 
+  /// Log meals served (and an optional proof-photo S3 key) for a delivered
+  /// rescue — persisted so the count survives restarts. Returns the updated row.
+  Future<Rescue> logMeal(String id, {required int meals, String photoKey});
+
   /// A short AI-generated "why rescue this?" explanation (Bedrock/Nova).
   Future<String> explain(String id);
 }
@@ -130,6 +134,18 @@ class InMemoryRescueRepository implements RescueRepository {
     );
     _items.insert(0, rescue);
     return rescue;
+  }
+
+  @override
+  Future<Rescue> logMeal(String id,
+      {required int meals, String photoKey = ''}) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    final idx = _items.indexWhere((r) => r.id == id);
+    if (idx == -1) throw StateError('Rescue $id not found');
+    final updated = _items[idx]
+        .copyWith(mealsServed: meals, mealPhotoKey: photoKey);
+    _items[idx] = updated;
+    return updated;
   }
 
   @override

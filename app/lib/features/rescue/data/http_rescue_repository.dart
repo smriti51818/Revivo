@@ -55,6 +55,16 @@ class HttpRescueRepository implements RescueRepository {
   }
 
   @override
+  Future<Rescue> logMeal(String id,
+      {required int meals, String photoKey = ''}) async {
+    final res = await _api.post('/rescues/$id/meals', {
+      'meals': meals,
+      'photoKey': photoKey,
+    });
+    return _fromJson((res['rescue'] as Map).cast<String, dynamic>());
+  }
+
+  @override
   Future<String> explain(String id) async {
     final res = await _api.post('/rescues/$id/explain', const {});
     return (res is Map ? res['explanation']?.toString() : null) ??
@@ -82,6 +92,8 @@ class HttpRescueRepository implements RescueRepository {
       distanceKm: asDouble(j['distanceKm']),
       status: RescueStatus.fromValue(j['status']?.toString()),
       ngoName: j['ngoName']?.toString(),
+      mealsServed: j['mealsServed'] == null ? null : asInt(j['mealsServed']),
+      mealPhotoKey: j['mealPhotoKey']?.toString(),
     );
   }
 }

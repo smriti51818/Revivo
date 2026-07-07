@@ -36,6 +36,8 @@ class Rescue {
     required this.distanceKm,
     required this.status,
     this.ngoName,
+    this.mealsServed,
+    this.mealPhotoKey,
   });
 
   final String id;
@@ -49,10 +51,23 @@ class Rescue {
   final RescueStatus status;
   final String? ngoName;
 
+  /// Meals the cook logged as served once delivered (null until logged) and the
+  /// S3 key of the optional proof photo — the persisted Transform-stage record.
+  final int? mealsServed;
+  final String? mealPhotoKey;
+
   /// Rough meal yield — ~0.4 kg of produce per served meal.
   int get estimatedMeals => (quantityKg / 0.4).round();
 
-  Rescue copyWith({RescueStatus? status, String? ngoName}) => Rescue(
+  bool get isLogged => mealsServed != null && mealsServed! > 0;
+
+  Rescue copyWith({
+    RescueStatus? status,
+    String? ngoName,
+    int? mealsServed,
+    String? mealPhotoKey,
+  }) =>
+      Rescue(
         id: id,
         vendorName: vendorName,
         pickupArea: pickupArea,
@@ -63,5 +78,7 @@ class Rescue {
         distanceKm: distanceKm,
         status: status ?? this.status,
         ngoName: ngoName ?? this.ngoName,
+        mealsServed: mealsServed ?? this.mealsServed,
+        mealPhotoKey: mealPhotoKey ?? this.mealPhotoKey,
       );
 }

@@ -46,6 +46,18 @@ class RescuesController extends AsyncNotifier<List<Rescue>> {
   Future<void> markDelivered(String id) =>
       _apply(id, status: RescueStatus.delivered);
 
+  /// Cook logs meals served (+ optional proof photo) for a delivered rescue.
+  Future<void> logMeal(String id,
+      {required int meals, String photoKey = ''}) async {
+    final updated = await ref
+        .read(rescueRepositoryProvider)
+        .logMeal(id, meals: meals, photoKey: photoKey);
+    final current = state.valueOrNull ?? const <Rescue>[];
+    state = AsyncData([
+      for (final r in current) r.id == id ? updated : r,
+    ]);
+  }
+
   /// AI "why rescue this?" explanation for a rescue (read-only; no state change).
   Future<String> explain(String id) =>
       ref.read(rescueRepositoryProvider).explain(id);
