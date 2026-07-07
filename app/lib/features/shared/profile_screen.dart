@@ -8,9 +8,8 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/format.dart';
 import '../../core/widgets/app_card.dart';
-import '../buyer/application/marketplace_providers.dart';
-import '../buyer/application/wallet_providers.dart';
 import 'application/profile_providers.dart';
+import 'application/profile_stats_providers.dart';
 import 'badges.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -23,60 +22,62 @@ class ProfileScreen extends ConsumerWidget {
     final role = session?.role ?? UserRole.vendor;
     final name = session?.name ?? details.name;
     final email = session?.email ?? '';
+    final stats =
+        ref.watch(profileStatsProvider).valueOrNull ?? ProfileStats.empty;
 
     return Scaffold(
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(AppSpacing.screen),
-          children: [
-            const SizedBox(height: AppSpacing.sm),
-            _identity(name, email, role),
-            const SizedBox(height: AppSpacing.lg),
-            _contactCard(context, details),
-            if (role == UserRole.buyer) ...[
+        child: RefreshIndicator(
+          onRefresh: () => ref.refresh(profileStatsProvider.future),
+          child: ListView(
+            padding: const EdgeInsets.all(AppSpacing.screen),
+            children: [
+              const SizedBox(height: AppSpacing.sm),
+              _identity(name, email, role),
               const SizedBox(height: AppSpacing.lg),
-              _walletCard(ref.watch(walletProvider)),
-            ],
-            const SizedBox(height: AppSpacing.lg),
-            _trustCard(),
-            const SizedBox(height: AppSpacing.lg),
-            Row(
-              children: [
-                for (final stat in _statsFor(role)) ...[
-                  Expanded(child: _statTile(stat.$1, stat.$2)),
-                  if (stat != _statsFor(role).last)
-                    const SizedBox(width: AppSpacing.md),
+              _contactCard(context, details),
+              const SizedBox(height: AppSpacing.lg),
+              _ledgerCard(role, stats),
+              const SizedBox(height: AppSpacing.lg),
+              _trustCard(role, stats),
+              const SizedBox(height: AppSpacing.lg),
+              Row(
+                children: [
+                  for (final stat in _statsFor(role, stats)) ...[
+                    Expanded(child: _statTile(stat.$1, stat.$2)),
+                    if (stat != _statsFor(role, stats).last)
+                      const SizedBox(width: AppSpacing.md),
+                  ],
                 ],
-              ],
-            ),
-            if (role == UserRole.buyer) ...[
+              ),
               const SizedBox(height: AppSpacing.xl),
-              _badges(ref),
+              _badges(role, stats),
+              const SizedBox(height: AppSpacing.xl),
+              _menu(context),
+              const SizedBox(height: AppSpacing.xl),
+              OutlinedButton.icon(
+                onPressed: () {
+                  ref.read(sessionProvider.notifier).signOut();
+                  context.go('/role');
+                },
+                icon:
+                    const Icon(Icons.logout, size: 18, color: AppColors.danger),
+                label: const Text('Sign out',
+                    style: TextStyle(color: AppColors.danger)),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(52),
+                  side: const BorderSide(color: AppColors.border),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              const Center(
+                child: Text(
+                  'Revivo · Time-Aware Food Recovery',
+                  style: TextStyle(fontSize: 11.5, color: AppColors.textMuted),
+                ),
+              ),
             ],
-            const SizedBox(height: AppSpacing.xl),
-            _menu(context),
-            const SizedBox(height: AppSpacing.xl),
-            OutlinedButton.icon(
-              onPressed: () {
-                ref.read(sessionProvider.notifier).signOut();
-                context.go('/role');
-              },
-              icon: const Icon(Icons.logout, size: 18, color: AppColors.danger),
-              label: const Text('Sign out',
-                  style: TextStyle(color: AppColors.danger)),
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size.fromHeight(52),
-                side: const BorderSide(color: AppColors.border),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            const Center(
-              child: Text(
-                'Revivo · Time-Aware Food Recovery',
-                style: TextStyle(fontSize: 11.5, color: AppColors.textMuted),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -183,11 +184,25 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _badges(WidgetRef ref) {
-    final orders = ref.watch(ordersProvider).valueOrNull ?? const [];
-    final saved = orders.fold<double>(0, (s, o) => s + o.saved);
-    final kg = orders.fold<double>(0, (s, o) => s + o.quantityKg);
-    final badges = buyerBadges(orders: orders.length, saved: saved, kg: kg);
+  Widget _badges(UserRole role, ProfileStats s) {
+    final badges = switch (role) {
+      UserRole.vendor => sellerBadges(
+          orders: s.vendorOrders,
+          kg: s.vendorSoldKg,
+          revenue: s.vendorRevenue,
+          trusted: s.vendorTrusted,
+        ),
+      UserRole.cook => cookBadges(
+          rescues: s.cookRescues,
+          meals: s.cookMeals,
+          kg: s.cookKg,
+        ),
+      UserRole.buyer => buyerBadges(
+          orders: s.buyerOrders,
+          saved: s.buyerSaved,
+          kg: s.buyerKg,
+        ),
+    };
     final earned = badges.where((b) => b.earned).length;
 
     return Column(
@@ -249,7 +264,29 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _walletCard(int balance) {
+  /// A role-appropriate value ledger — the buyer's redeemable credits, the
+  /// seller's recovered revenue, or the cook's meals served. All real numbers.
+  Widget _ledgerCard(UserRole role, ProfileStats s) {
+    final (icon, label, value, tag) = switch (role) {
+      UserRole.buyer => (
+          Icons.account_balance_wallet_outlined,
+          'Revivo credits',
+          formatMoney(s.walletCredits.toDouble()),
+          '1 credit / ₹10 saved',
+        ),
+      UserRole.vendor => (
+          Icons.payments_outlined,
+          'Recovered from waste',
+          formatMoney(s.vendorRevenue),
+          '${formatKg(s.vendorSoldKg)} sold',
+        ),
+      UserRole.cook => (
+          Icons.restaurant_rounded,
+          'Meals served',
+          '~${formatCount(s.cookMeals)}',
+          '${s.cookRescues} rescues',
+        ),
+    };
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -263,20 +300,19 @@ class ProfileScreen extends ConsumerWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.account_balance_wallet_outlined,
-              color: Colors.white, size: 26),
+          Icon(icon, color: Colors.white, size: 26),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Revivo credits',
+                Text(label,
                     style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.9),
                         fontSize: 12.5,
                         fontWeight: FontWeight.w600)),
                 const SizedBox(height: 2),
-                Text(formatMoney(balance.toDouble()),
+                Text(value,
                     style: const TextStyle(
                         color: Colors.white,
                         fontSize: 24,
@@ -285,14 +321,13 @@ class ProfileScreen extends ConsumerWidget {
             ),
           ),
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.18),
               borderRadius: BorderRadius.circular(AppRadius.pill),
             ),
-            child: const Text('1 credit / ₹10 saved',
-                style: TextStyle(
+            child: Text(tag,
+                style: const TextStyle(
                     color: Colors.white,
                     fontSize: 10.5,
                     fontWeight: FontWeight.w700)),
@@ -302,8 +337,17 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _trustCard() {
-    const verified = 'Verified partner';
+  /// Trust card. Sellers show their real earned rating + Trusted badge; other
+  /// roles show identity-verified partner status.
+  Widget _trustCard(UserRole role, ProfileStats s) {
+    final isSeller = role == UserRole.vendor;
+    final hasRating = isSeller && s.vendorRatingCount > 0;
+    final title = isSeller && s.vendorTrusted
+        ? 'Trusted vendor'
+        : 'Verified partner';
+    final subtitle = hasRating
+        ? '${s.vendorRatingCount} ratings · builds trust across the network'
+        : 'Identity confirmed · builds trust across the network';
     return AppCard(
       color: AppColors.primarySurface,
       child: Row(
@@ -314,37 +358,45 @@ class ProfileScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  verified,
-                  style: const TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.w800),
-                ),
+                Text(title,
+                    style: const TextStyle(
+                        fontSize: 14, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 1),
-                const Text(
-                  'Identity confirmed · builds trust across the network',
-                  style: TextStyle(
-                      fontSize: 12, color: AppColors.textSecondary),
-                ),
+                Text(subtitle,
+                    style: const TextStyle(
+                        fontSize: 12, color: AppColors.textSecondary)),
               ],
             ),
           ),
-          const Row(
-            children: [
-              Icon(Icons.star_rounded, size: 18, color: AppColors.warning),
-              SizedBox(width: 2),
-              Text('4.8',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
-            ],
-          ),
+          if (hasRating)
+            Row(
+              children: [
+                const Icon(Icons.star_rounded, size: 18, color: AppColors.warning),
+                const SizedBox(width: 2),
+                Text(s.vendorRating.toStringAsFixed(1),
+                    style: const TextStyle(
+                        fontSize: 15, fontWeight: FontWeight.w800)),
+              ],
+            ),
         ],
       ),
     );
   }
 
-  List<(String, String)> _statsFor(UserRole role) => switch (role) {
-        UserRole.vendor => [('Listings', '12'), ('Saved from waste', '340 kg')],
-        UserRole.buyer => [('Orders', '28'), ('You saved', '₹6,200')],
-        UserRole.cook => [('Meals served', '~1,200'), ('Rescues', '48')],
+  List<(String, String)> _statsFor(UserRole role, ProfileStats s) =>
+      switch (role) {
+        UserRole.vendor => [
+            ('Orders', '${s.vendorOrders}'),
+            ('Saved from waste', formatKg(s.vendorSoldKg)),
+          ],
+        UserRole.buyer => [
+            ('Orders', '${s.buyerOrders}'),
+            ('You saved', formatMoney(s.buyerSaved)),
+          ],
+        UserRole.cook => [
+            ('Meals served', '~${formatCount(s.cookMeals)}'),
+            ('Rescues', '${s.cookRescues}'),
+          ],
       };
 
   Widget _statTile(String label, String value) {
