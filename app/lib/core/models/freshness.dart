@@ -17,6 +17,13 @@ enum FreshnessBand {
         FreshnessBand.rescue => 'Near end of usable life',
       };
 
+  /// Backend band string (GOOD / USE_SOON / RESCUE) — the inverse of [fromValue].
+  String get value => switch (this) {
+        FreshnessBand.good => 'GOOD',
+        FreshnessBand.useSoon => 'USE_SOON',
+        FreshnessBand.rescue => 'RESCUE',
+      };
+
   static FreshnessBand fromValue(String? value) => switch (value?.toUpperCase()) {
         'GOOD' => FreshnessBand.good,
         'USE_SOON' || 'USESOON' => FreshnessBand.useSoon,

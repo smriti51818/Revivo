@@ -16,6 +16,7 @@ import 'application/listings_providers.dart';
 import 'application/vendor_orders_providers.dart';
 import 'domain/listing.dart';
 import 'widgets/listing_card.dart';
+import 'widgets/revenue_at_risk.dart';
 
 class SellerDashboardScreen extends ConsumerWidget {
   const SellerDashboardScreen({super.key});
@@ -72,6 +73,8 @@ class SellerDashboardScreen extends ConsumerWidget {
                   ),
                 ],
               ),
+              const SizedBox(height: AppSpacing.xl),
+              const RevenueAtRisk(),
               const SizedBox(height: AppSpacing.xl),
               const SectionHeader(title: 'Your inventory'),
               const SizedBox(height: AppSpacing.md),

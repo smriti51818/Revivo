@@ -33,6 +33,28 @@ class HttpRescueRepository implements RescueRepository {
   }
 
   @override
+  Future<Rescue> createRescue({
+    required String vendorName,
+    required String pickupArea,
+    required String vegetable,
+    required double quantityKg,
+    required FreshnessBand band,
+    required String timeRange,
+    double distanceKm = 0,
+  }) async {
+    final res = await _api.post('/rescues', {
+      'vendorName': vendorName,
+      'pickupArea': pickupArea,
+      'vegetable': vegetable,
+      'quantityKg': quantityKg,
+      'band': band.value,
+      'timeRange': timeRange,
+      'distanceKm': distanceKm,
+    });
+    return _fromJson((res['rescue'] as Map).cast<String, dynamic>());
+  }
+
+  @override
   Future<String> explain(String id) async {
     final res = await _api.post('/rescues/$id/explain', const {});
     return (res is Map ? res['explanation']?.toString() : null) ??

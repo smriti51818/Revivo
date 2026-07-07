@@ -9,6 +9,18 @@ abstract class RescueRepository {
   Future<Rescue> updateStatus(String id,
       {required RescueStatus status, String? ngoName});
 
+  /// Offer a lot to the rescue network (POST /rescues) — used by the seller to
+  /// route surplus out of the market before it expires. Starts OFFERED.
+  Future<Rescue> createRescue({
+    required String vendorName,
+    required String pickupArea,
+    required String vegetable,
+    required double quantityKg,
+    required FreshnessBand band,
+    required String timeRange,
+    double distanceKm,
+  });
+
   /// A short AI-generated "why rescue this?" explanation (Bedrock/Nova).
   Future<String> explain(String id);
 }
@@ -92,6 +104,32 @@ class InMemoryRescueRepository implements RescueRepository {
     final updated = _items[idx].copyWith(status: status, ngoName: ngoName);
     _items[idx] = updated;
     return updated;
+  }
+
+  @override
+  Future<Rescue> createRescue({
+    required String vendorName,
+    required String pickupArea,
+    required String vegetable,
+    required double quantityKg,
+    required FreshnessBand band,
+    required String timeRange,
+    double distanceKm = 0,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 350));
+    final rescue = Rescue(
+      id: 'rsc_${DateTime.now().microsecondsSinceEpoch}',
+      vendorName: vendorName,
+      pickupArea: pickupArea,
+      vegetable: vegetable,
+      quantityKg: quantityKg,
+      band: band,
+      timeRange: timeRange,
+      distanceKm: distanceKm,
+      status: RescueStatus.offered,
+    );
+    _items.insert(0, rescue);
+    return rescue;
   }
 
   @override
