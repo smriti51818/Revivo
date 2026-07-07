@@ -8,8 +8,11 @@ import '../../core/format.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/app_card.dart';
+import '../../core/widgets/section_header.dart';
 import '../../core/widgets/status_chip.dart';
+import 'application/failed_payments_providers.dart';
 import 'application/marketplace_providers.dart';
+import 'domain/failed_payment.dart';
 import 'domain/order.dart';
 
 class BuyerOrdersScreen extends ConsumerStatefulWidget {
@@ -40,6 +43,7 @@ class _BuyerOrdersScreenState extends ConsumerState<BuyerOrdersScreen> {
   @override
   Widget build(BuildContext context) {
     final orders = ref.watch(ordersProvider);
+    final failed = ref.watch(failedPaymentsProvider);
 
     return Scaffold(
       body: SafeArea(
@@ -55,10 +59,13 @@ class _BuyerOrdersScreenState extends ConsumerState<BuyerOrdersScreen> {
               const SizedBox(height: 4),
               const Text(
                 'Track your surplus rescues',
-                style:
-                    TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
               ),
               const SizedBox(height: AppSpacing.lg),
+              if (failed.isNotEmpty) ...[
+                _FailedSection(payments: failed),
+                const SizedBox(height: AppSpacing.lg),
+              ],
               orders.when(
                 loading: () => const Padding(
                   padding: EdgeInsets.only(top: 48),
@@ -68,22 +75,43 @@ class _BuyerOrdersScreenState extends ConsumerState<BuyerOrdersScreen> {
                   padding: const EdgeInsets.only(top: 32),
                   child: Center(child: Text('Could not load orders: $e')),
                 ),
-                data: (items) {
-                  if (items.isEmpty) return _empty();
-                  return Column(
-                    children: [
-                      for (final order in items) ...[
-                        _OrderCard(order: order),
-                        const SizedBox(height: AppSpacing.md),
-                      ],
-                    ],
-                  );
-                },
+                data: (items) => _orders(items, hasFailed: failed.isNotEmpty),
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _orders(List<Order> items, {required bool hasFailed}) {
+    if (items.isEmpty) return hasFailed ? const SizedBox.shrink() : _empty();
+    final active =
+        items.where((o) => o.status != OrderStatus.completed).toList();
+    final completed =
+        items.where((o) => o.status == OrderStatus.completed).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (active.isNotEmpty) ...[
+          const SectionHeader(title: 'Active'),
+          const SizedBox(height: AppSpacing.sm),
+          for (final order in active) ...[
+            _OrderCard(order: order),
+            const SizedBox(height: AppSpacing.md),
+          ],
+        ],
+        if (completed.isNotEmpty) ...[
+          if (active.isNotEmpty) const SizedBox(height: AppSpacing.sm),
+          const SectionHeader(title: 'Completed'),
+          const SizedBox(height: AppSpacing.sm),
+          for (final order in completed) ...[
+            _OrderCard(order: order),
+            const SizedBox(height: AppSpacing.md),
+          ],
+        ],
+      ],
     );
   }
 
@@ -112,6 +140,118 @@ class _BuyerOrdersScreenState extends ConsumerState<BuyerOrdersScreen> {
       );
 }
 
+/// The "Payment failed" section — checkout attempts that never completed.
+class _FailedSection extends ConsumerWidget {
+  const _FailedSection({required this.payments});
+  final List<FailedPayment> payments;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.error_outline, size: 18, color: AppColors.danger),
+            const SizedBox(width: 6),
+            Text('Payment failed · ${payments.length}',
+                style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.danger)),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        for (final p in payments) ...[
+          _FailedCard(payment: p),
+          const SizedBox(height: AppSpacing.md),
+        ],
+      ],
+    );
+  }
+}
+
+class _FailedCard extends ConsumerWidget {
+  const _FailedCard({required this.payment});
+  final FailedPayment payment;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final first = payment.lines.isEmpty ? null : payment.lines.first;
+    final extra = payment.itemCount - 1;
+    final summary = first == null
+        ? '${payment.itemCount} items'
+        : '${first.vegetable}${extra > 0 ? ' + $extra more' : ''}';
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.dangerSurface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: AppColors.danger.withValues(alpha: 0.25)),
+      ),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(summary,
+                        style: const TextStyle(
+                            fontSize: 14.5, fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 2),
+                    Text('${payment.reason} · ${formatAgo(payment.attemptedAt)}',
+                        style: const TextStyle(
+                            fontSize: 12, color: AppColors.textSecondary)),
+                  ],
+                ),
+              ),
+              Text(formatMoney(payment.amount),
+                  style: const TextStyle(
+                      fontSize: 15, fontWeight: FontWeight.w800)),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: () {
+                    ref
+                        .read(failedPaymentsProvider.notifier)
+                        .remove(payment.id);
+                    context.push('/buyer/cart');
+                  },
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.danger,
+                    minimumSize: const Size.fromHeight(40),
+                  ),
+                  icon: const Icon(Icons.refresh_rounded, size: 18),
+                  label: const Text('Retry payment'),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              OutlinedButton(
+                onPressed: () =>
+                    ref.read(failedPaymentsProvider.notifier).remove(payment.id),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(0, 40),
+                  side: const BorderSide(color: AppColors.border),
+                ),
+                child: const Text('Dismiss',
+                    style: TextStyle(color: AppColors.textSecondary)),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _OrderCard extends StatelessWidget {
   const _OrderCard({required this.order});
   final Order order;
@@ -126,7 +266,7 @@ class _OrderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppCard(
-      onTap: () => context.push('/buyer/track', extra: order),
+      onTap: () => context.push('/buyer/order', extra: order),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -143,7 +283,7 @@ class _OrderCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      order.vendorName,
+                      '${order.vendorName} · ${formatAgo(order.placedAt)}',
                       style: const TextStyle(
                           fontSize: 12, color: AppColors.textMuted),
                     ),
@@ -179,13 +319,12 @@ class _OrderCard extends StatelessWidget {
                     color: AppColors.textMuted),
               ),
               const Spacer(),
-              const Text('Track',
+              const Text('View details',
                   style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                       color: AppColors.primary)),
-              const Icon(Icons.chevron_right,
-                  size: 16, color: AppColors.primary),
+              const Icon(Icons.chevron_right, size: 16, color: AppColors.primary),
             ],
           ),
         ],

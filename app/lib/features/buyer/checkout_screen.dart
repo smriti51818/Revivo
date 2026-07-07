@@ -9,9 +9,13 @@ import '../../core/widgets/app_card.dart';
 import '../../core/widgets/primary_button.dart';
 import '../../core/widgets/section_header.dart';
 import 'application/cart_providers.dart';
+import 'application/failed_payments_providers.dart';
 import 'application/marketplace_providers.dart';
+import 'domain/cart_item.dart';
+import 'domain/failed_payment.dart';
 import 'domain/order.dart';
 import 'widgets/bill_summary.dart';
+import 'widgets/payment_sheet.dart';
 
 /// Self-pickup payment methods (the pilot is pay-on-pickup by default; the
 /// others are simulated — no real gateway yet, per the spec's future scope).
@@ -65,7 +69,34 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   Future<void> _placeOrder() async {
     final items = ref.read(cartProvider);
     if (items.isEmpty) return;
+    final bill = ref.read(cartBillProvider);
     setState(() => _placing = true);
+
+    // Online methods run through the simulated gateway first.
+    if (_pay != PayMethod.pickup) {
+      final paid = await showPaymentSheet(
+        context,
+        amount: bill.total,
+        methodLabel: _pay.label,
+        methodIcon: _pay.icon,
+      );
+      if (!mounted) return;
+      if (paid == null) {
+        setState(() => _placing = false); // dismissed — stay on checkout
+        return;
+      }
+      if (paid == false) {
+        _recordFailure(items, bill);
+        setState(() => _placing = false); // keep the cart so they can retry
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(const SnackBar(
+              content: Text('Payment failed — saved under your orders')));
+        context.go('/buyer/orders');
+        return;
+      }
+    }
+
     try {
       final orders = <Order>[];
       for (final item in items) {
@@ -88,6 +119,31 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         ..hideCurrentSnackBar()
         ..showSnackBar(SnackBar(content: Text('Could not place order: $e')));
     }
+  }
+
+  /// Snapshots the cart into a [FailedPayment] so it shows under "Payment
+  /// failed" in My Orders with a path back to retry.
+  void _recordFailure(List<CartItem> items, CartBill bill) {
+    ref.read(failedPaymentsProvider.notifier).add(
+          FailedPayment(
+            id: DateTime.now().microsecondsSinceEpoch.toString(),
+            lines: [
+              for (final i in items)
+                FailedPaymentLine(
+                  vegetable: i.offer.vegetable,
+                  vendorName: i.offer.vendorName,
+                  quantityKg: i.quantityKg,
+                  pricePerKg: i.unitPrice,
+                  imageUrl: i.offer.imageUrl,
+                ),
+            ],
+            amount: bill.total,
+            method: _pay.value,
+            pickupSlot: _slot,
+            attemptedAt: DateTime.now(),
+            reason: 'Payment declined by ${_pay.label}',
+          ),
+        );
   }
 
   @override

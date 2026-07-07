@@ -19,6 +19,32 @@ String formatCountdown(Duration d) {
   return '${d.inMinutes}m ${d.inSeconds % 60}s';
 }
 
+const _months = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+];
+
+String _hm(DateTime t) {
+  final h = t.hour % 12 == 0 ? 12 : t.hour % 12;
+  final m = t.minute.toString().padLeft(2, '0');
+  return '$h:$m ${t.hour < 12 ? 'AM' : 'PM'}';
+}
+
+/// A full timestamp, e.g. "7 Jul 2026, 6:42 PM".
+String formatDateTime(DateTime t) =>
+    '${t.day} ${_months[t.month - 1]} ${t.year}, ${_hm(t)}';
+
+/// A coarse "time ago" label, e.g. "just now", "12 min ago", "3 days ago".
+String formatAgo(DateTime time, [DateTime? now]) {
+  final d = (now ?? DateTime.now()).difference(time);
+  if (d.inSeconds < 45) return 'just now';
+  if (d.inMinutes < 60) return '${d.inMinutes} min ago';
+  if (d.inHours < 24) return '${d.inHours} hr ago';
+  if (d.inDays < 7) return '${d.inDays} day${d.inDays == 1 ? '' : 's'} ago';
+  final w = (d.inDays / 7).floor();
+  return '$w week${w == 1 ? '' : 's'} ago';
+}
+
 /// Groups an integer with thousands separators, e.g. 48600 -> "48,600".
 String formatCount(num value) {
   final digits = value.round().abs().toString();

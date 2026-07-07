@@ -19,6 +19,17 @@ enum OrderStatus {
       };
 }
 
+/// Settlement state of an order's payment. A successful order is either already
+/// paid (online) or due on pickup; failed attempts never become orders (see
+/// `FailedPayment`).
+enum PaymentStatus {
+  paid('Paid'),
+  payOnPickup('Pay on pickup');
+
+  const PaymentStatus(this.label);
+  final String label;
+}
+
 /// A buyer's order placed against a surplus [offer].
 class Order {
   const Order({
@@ -64,6 +75,11 @@ class Order {
   final String ratingComment;
 
   bool get isRated => rating != null && rating! > 0;
+
+  /// Online orders are prepaid; pay-on-pickup settles at the vendor.
+  PaymentStatus get paymentStatus => paymentMethod.toUpperCase() == 'PICKUP'
+      ? PaymentStatus.payOnPickup
+      : PaymentStatus.paid;
 
   double get total => quantityKg * pricePerKg;
 

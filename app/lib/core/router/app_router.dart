@@ -14,6 +14,7 @@ import '../../features/buyer/checkout_screen.dart';
 import '../../features/buyer/domain/offer.dart';
 import '../../features/buyer/domain/order.dart';
 import '../../features/buyer/order_confirmed_screen.dart';
+import '../../features/buyer/order_details_screen.dart';
 import '../../features/buyer/order_tracking_screen.dart';
 import '../../features/buyer/product_details_screen.dart';
 import '../../features/cook/cook_inbox_screen.dart';
@@ -22,6 +23,7 @@ import '../../features/seller/add_listing_screen.dart';
 import '../../features/seller/seller_dashboard_screen.dart';
 import '../../features/seller/seller_insights_screen.dart';
 import '../../features/seller/seller_orders_screen.dart';
+import '../../features/shared/account_details_screen.dart';
 import '../../features/shared/profile_screen.dart';
 import '../models/user_role.dart';
 import '../widgets/scaffold_with_nav_bar.dart';
@@ -60,6 +62,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, _) => const CartScreen(),
       ),
       GoRoute(
+        path: '/account',
+        builder: (_, _) => const AccountDetailsScreen(),
+      ),
+      GoRoute(
         path: '/buyer/checkout',
         builder: (_, _) => const CheckoutScreen(),
       ),
@@ -67,6 +73,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/buyer/order-confirmed',
         builder: (_, state) =>
             OrderConfirmedScreen(orders: state.extra as List<Order>),
+      ),
+      GoRoute(
+        path: '/buyer/order',
+        builder: (_, state) =>
+            OrderDetailsScreen(order: state.extra as Order),
       ),
       GoRoute(
         path: '/buyer/track',

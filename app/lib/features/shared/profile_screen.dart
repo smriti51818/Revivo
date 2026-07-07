@@ -7,6 +7,7 @@ import '../../core/session/session_controller.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/app_card.dart';
+import 'application/profile_providers.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -14,8 +15,9 @@ class ProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final session = ref.watch(sessionProvider);
+    final details = ref.watch(profileDetailsProvider);
     final role = session?.role ?? UserRole.vendor;
-    final name = session?.name ?? 'Guest';
+    final name = session?.name ?? details.name;
     final email = session?.email ?? '';
 
     return Scaffold(
@@ -25,6 +27,8 @@ class ProfileScreen extends ConsumerWidget {
           children: [
             const SizedBox(height: AppSpacing.sm),
             _identity(name, email, role),
+            const SizedBox(height: AppSpacing.lg),
+            _contactCard(context, details),
             const SizedBox(height: AppSpacing.lg),
             _trustCard(),
             const SizedBox(height: AppSpacing.lg),
@@ -38,7 +42,7 @@ class ProfileScreen extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: AppSpacing.xl),
-            _menu(),
+            _menu(context),
             const SizedBox(height: AppSpacing.xl),
             OutlinedButton.icon(
               onPressed: () {
@@ -119,6 +123,54 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
+  /// Quick glance at the number + address, tappable through to full editing.
+  Widget _contactCard(BuildContext context, ProfileDetails details) {
+    return AppCard(
+      padding: EdgeInsets.zero,
+      child: InkWell(
+        onTap: () => context.push('/account'),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _contactRow(Icons.call_outlined, details.phone),
+                    const SizedBox(height: 8),
+                    _contactRow(Icons.place_outlined, details.fullAddress),
+                  ],
+                ),
+              ),
+              const Icon(Icons.edit_outlined,
+                  size: 18, color: AppColors.textMuted),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _contactRow(IconData icon, String value) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: AppColors.textSecondary),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+                fontSize: 13, fontWeight: FontWeight.w600),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _trustCard() {
     const verified = 'Verified partner';
     return AppCard(
@@ -189,12 +241,12 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _menu() {
-    const items = [
-      (Icons.person_outline, 'Account details'),
-      (Icons.notifications_none_rounded, 'Notifications'),
-      (Icons.help_outline, 'Help & support'),
-      (Icons.info_outline, 'About Revivo'),
+  Widget _menu(BuildContext context) {
+    final items = <(IconData, String, VoidCallback?)>[
+      (Icons.person_outline, 'Account details', () => context.push('/account')),
+      (Icons.notifications_none_rounded, 'Notifications', null),
+      (Icons.help_outline, 'Help & support', null),
+      (Icons.info_outline, 'About Revivo', null),
     ];
     return AppCard(
       padding: EdgeInsets.zero,
@@ -208,7 +260,7 @@ class ProfileScreen extends ConsumerWidget {
                       fontSize: 14, fontWeight: FontWeight.w600)),
               trailing: const Icon(Icons.chevron_right,
                   color: AppColors.textMuted),
-              onTap: () {},
+              onTap: items[i].$3,
             ),
             if (i != items.length - 1)
               const Divider(height: 1, indent: 56),
