@@ -57,8 +57,51 @@ class VendorProfileScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: AppSpacing.md),
               ],
+            const SizedBox(height: AppSpacing.lg),
+            SectionHeader(title: 'Ratings & reviews · ${info.reviews}'),
+            const SizedBox(height: AppSpacing.md),
+            for (final r in vendorReviews(vendorName)) ...[
+              _review(r),
+              const SizedBox(height: AppSpacing.sm),
+            ],
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _review(VendorReview r) {
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(r.author,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontSize: 13, fontWeight: FontWeight.w700)),
+              ),
+              for (var i = 1; i <= 5; i++)
+                Icon(
+                  i <= r.stars
+                      ? Icons.star_rounded
+                      : Icons.star_outline_rounded,
+                  size: 14,
+                  color: AppColors.warning,
+                ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(r.text,
+              style: const TextStyle(
+                  fontSize: 12.5, height: 1.35, color: AppColors.textSecondary)),
+          const SizedBox(height: 4),
+          Text(r.ago,
+              style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+        ],
       ),
     );
   }

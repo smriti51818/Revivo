@@ -81,3 +81,63 @@ VendorInfo vendorInfo(String name) {
     bearing: ((h >> 5) % 360) * pi / 180,
   );
 }
+
+/// A single buyer review of a vendor.
+class VendorReview {
+  const VendorReview({
+    required this.author,
+    required this.stars,
+    required this.text,
+    required this.ago,
+  });
+
+  final String author;
+  final int stars;
+  final String text;
+  final String ago;
+}
+
+const List<String> _reviewers = [
+  'Hotel Annapoorna',
+  'Sri Krishna Mess',
+  'Green Chef Kitchen',
+  'Vaibhav Restaurant',
+  'Junior Kuppanna',
+  'Adyar Ananda Bhavan',
+  'Shiva Temple Kitchen',
+  'Kovai Caterers',
+];
+
+const List<String> _reviewText = [
+  'Produce matched the photo exactly — firm and fresh. Smooth pickup.',
+  'Great value versus the mandi, and the freshness band was honest.',
+  'Picked up in ten minutes. Good quality, will rescue from here again.',
+  'Slightly ripe but perfect for same-day cooking. Fair price.',
+  'Friendly vendor, quantities were spot on. Recommended.',
+  'Saved a good amount and cut our evening waste. Reliable so far.',
+];
+
+const List<String> _reviewAgo = [
+  '2 days ago',
+  '5 days ago',
+  '1 week ago',
+  '3 days ago',
+  '2 weeks ago',
+];
+
+/// Three deterministic recent reviews for a vendor — social proof for the pilot
+/// until real reviews are aggregated server-side.
+List<VendorReview> vendorReviews(String name) {
+  final key = name.trim().isEmpty ? 'Vendor' : name.trim();
+  final h = _hash(key);
+  final base = vendorInfo(key).rating.round();
+  return [
+    for (var i = 0; i < 3; i++)
+      VendorReview(
+        author: _reviewers[(h >> (i * 4)) % _reviewers.length],
+        stars: (base - (i == 1 ? 1 : 0)).clamp(3, 5),
+        text: _reviewText[(h >> (i * 3)) % _reviewText.length],
+        ago: _reviewAgo[(h >> (i * 5)) % _reviewAgo.length],
+      ),
+  ];
+}
