@@ -162,6 +162,9 @@ def to_public_order(item: dict) -> dict:
         "status": item.get("status"),
         "pickupSlot": item.get("pickupSlot", ""),
         "paymentMethod": item.get("paymentMethod", "PICKUP"),
+        "rating": item.get("rating"),
+        "ratingTags": item.get("ratingTags", []),
+        "ratingComment": item.get("ratingComment", ""),
         "createdAt": item.get("createdAt"),
     }
 

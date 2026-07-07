@@ -18,6 +18,7 @@ from shared.validation import (
     ValidationError,
     validate_listing_input,
     validate_order_input,
+    validate_rating_input,
     validate_rescue_action,
     validate_rescue_input,
 )
@@ -146,6 +147,33 @@ def test_validate_order_requires_listing_and_quantity():
         validate_order_input({"quantityKg": 5})
     with pytest.raises(ValidationError):
         validate_order_input({"listingId": "lst_1", "quantityKg": 0})
+
+
+def test_validate_order_captures_pickup_slot_and_payment():
+    data = validate_order_input({
+        "listingId": "lst_1",
+        "quantityKg": 3,
+        "pickupSlot": "7:00 PM–7:30 PM",
+        "paymentMethod": "upi",
+    })
+    assert data["pickupSlot"] == "7:00 PM–7:30 PM"
+    assert data["paymentMethod"] == "UPI"
+    # Unknown methods fall back to pay-on-pickup.
+    assert validate_order_input(
+        {"listingId": "l", "quantityKg": 1, "paymentMethod": "bitcoin"}
+    )["paymentMethod"] == "PICKUP"
+
+
+def test_validate_rating_bounds_and_normalises():
+    data = validate_rating_input(
+        {"stars": 5, "tags": ["Fresh", "On time", ""], "comment": "  great  "}
+    )
+    assert data["stars"] == 5
+    assert data["tags"] == ["Fresh", "On time"]
+    assert data["comment"] == "great"
+    for bad in ({}, {"stars": 0}, {"stars": 6}, {"stars": "x"}):
+        with pytest.raises(ValidationError):
+            validate_rating_input(bad)
 
 
 def test_build_order_snapshots_listing_price_and_keys():

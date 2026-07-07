@@ -120,6 +120,12 @@ class ApiStack(Stack):
         )
         table.grant_read_data(my_orders_fn)
 
+        # Buyer rates a completed order (quality feedback on the vendor).
+        rate_order_fn = self._fn(
+            "RateOrderFn", "rate_order", common_env, use_shared=True
+        )
+        table.grant_read_write_data(rate_order_fn)
+
         # Seller-side view: orders placed against this vendor's listings.
         vendor_orders_fn = self._fn(
             "VendorOrdersFn", "list_vendor_orders", common_env, use_shared=True
@@ -238,6 +244,11 @@ class ApiStack(Stack):
         self._protected(orders, "GET", my_orders_fn)
         self._protected(
             orders.add_resource("incoming"), "GET", vendor_orders_fn
+        )
+        self._protected(
+            orders.add_resource("{orderId}").add_resource("rate"),
+            "POST",
+            rate_order_fn,
         )
 
         rescues = api.root.add_resource("rescues")

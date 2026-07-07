@@ -46,6 +46,21 @@ class HttpMarketplaceRepository implements MarketplaceRepository {
     return _orderFromJson((res['order'] as Map).cast<String, dynamic>());
   }
 
+  @override
+  Future<Order> rateOrder({
+    required String orderId,
+    required int stars,
+    List<String> tags = const [],
+    String comment = '',
+  }) async {
+    final res = await _api.post('/orders/$orderId/rate', {
+      'stars': stars,
+      'tags': tags,
+      'comment': comment,
+    });
+    return _orderFromJson((res['order'] as Map).cast<String, dynamic>());
+  }
+
   Offer _offerFromJson(Map<String, dynamic> j) {
     final expiry = j['expiryEpoch'];
     return Offer(
@@ -77,6 +92,11 @@ class HttpMarketplaceRepository implements MarketplaceRepository {
       placedAt: epochToDate(j['createdAt']),
       pickupSlot: (j['pickupSlot'] ?? '').toString(),
       paymentMethod: (j['paymentMethod'] ?? 'PICKUP').toString(),
+      rating: (j['rating'] as num?)?.toInt(),
+      ratingTags: [
+        for (final t in (j['ratingTags'] as List?) ?? const []) t.toString(),
+      ],
+      ratingComment: (j['ratingComment'] ?? '').toString(),
     );
   }
 }

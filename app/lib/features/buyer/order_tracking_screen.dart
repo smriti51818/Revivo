@@ -8,9 +8,12 @@ import '../../core/format.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/app_card.dart';
+import '../../core/widgets/primary_button.dart';
 import '../../core/widgets/section_header.dart';
 import 'application/marketplace_providers.dart';
 import 'domain/order.dart';
+import 'widgets/impact_receipt.dart';
+import 'widgets/rate_order_sheet.dart';
 
 /// The four visible stages a self-pickup order moves through.
 const _steps = <({String title, String sub})>[
@@ -91,6 +94,12 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
             _headline(order),
             const SizedBox(height: AppSpacing.xl),
             _timeline(current),
+            if (order.status == OrderStatus.completed) ...[
+              const SizedBox(height: AppSpacing.xl),
+              ImpactReceipt(order: order),
+              const SizedBox(height: AppSpacing.lg),
+              _ratingSection(order),
+            ],
             const SizedBox(height: AppSpacing.xl),
             _pickupCard(order),
             const SizedBox(height: AppSpacing.lg),
@@ -149,6 +158,73 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
                       : _StepState.todo,
               isLast: i == _steps.length - 1,
             ),
+        ],
+      ),
+    );
+  }
+
+  Widget _ratingSection(Order order) {
+    if (order.isRated) {
+      return AppCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Text('Your rating',
+                    style:
+                        TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700)),
+                const Spacer(),
+                for (var i = 1; i <= 5; i++)
+                  Icon(
+                    i <= order.rating! ? Icons.star_rounded : Icons.star_outline_rounded,
+                    size: 18,
+                    color: AppColors.warning,
+                  ),
+              ],
+            ),
+            if (order.ratingTags.isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.sm),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  for (final t in order.ratingTags)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceAlt,
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                      ),
+                      child: Text(t,
+                          style: const TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textSecondary)),
+                    ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      );
+    }
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('How was this rescue?',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 2),
+          const Text('Your feedback builds the vendor\'s trust score',
+              style: TextStyle(fontSize: 12.5, color: AppColors.textSecondary)),
+          const SizedBox(height: AppSpacing.md),
+          PrimaryButton(
+            label: 'Rate this rescue',
+            icon: Icons.star_outline_rounded,
+            onPressed: () => showRateOrderSheet(context, ref, order),
+          ),
         ],
       ),
     );

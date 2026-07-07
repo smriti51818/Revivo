@@ -47,6 +47,26 @@ class OrdersController extends AsyncNotifier<List<Order>> {
     return order;
   }
 
+  /// Rates a completed order and swaps the updated copy into the list.
+  Future<Order> rateOrder({
+    required String orderId,
+    required int stars,
+    List<String> tags = const [],
+    String comment = '',
+  }) async {
+    final updated = await ref.read(marketplaceRepositoryProvider).rateOrder(
+          orderId: orderId,
+          stars: stars,
+          tags: tags,
+          comment: comment,
+        );
+    final current = state.valueOrNull ?? const <Order>[];
+    state = AsyncData([
+      for (final o in current) o.id == updated.id ? updated : o,
+    ]);
+    return updated;
+  }
+
   /// Silently re-fetches (no loading flicker) — used to poll while the Step
   /// Functions lifecycle advances an order's status server-side.
   Future<void> reload() async {

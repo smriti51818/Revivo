@@ -35,6 +35,9 @@ class Order {
     this.buyerName,
     this.pickupSlot = '',
     this.paymentMethod = 'PICKUP',
+    this.rating,
+    this.ratingTags = const [],
+    this.ratingComment = '',
   });
 
   final String id;
@@ -54,6 +57,13 @@ class Order {
   /// Chosen self-pickup window (e.g. "7:00–7:30 PM") and how it's paid.
   final String pickupSlot;
   final String paymentMethod;
+
+  /// Post-pickup quality feedback (null until the buyer rates it).
+  final int? rating;
+  final List<String> ratingTags;
+  final String ratingComment;
+
+  bool get isRated => rating != null && rating! > 0;
 
   double get total => quantityKg * pricePerKg;
 
@@ -75,5 +85,8 @@ class Order {
         imagePath: imagePath,
         pickupSlot: pickupSlot,
         paymentMethod: paymentMethod,
+        rating: rating,
+        ratingTags: ratingTags,
+        ratingComment: ratingComment,
       );
 }

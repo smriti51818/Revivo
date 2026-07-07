@@ -104,6 +104,27 @@ def validate_order_input(body: dict) -> dict:
     }
 
 
+def validate_rating_input(body: dict) -> dict:
+    """Validate a buyer's post-order rating: 1–5 stars + optional tags/comment."""
+    try:
+        stars = int(body.get("stars"))
+    except (TypeError, ValueError):
+        raise ValidationError("stars must be a number 1-5")
+    if not 1 <= stars <= 5:
+        raise ValidationError("stars must be 1-5")
+
+    raw_tags = body.get("tags")
+    tags = []
+    if isinstance(raw_tags, list):
+        tags = [str(t).strip()[:24] for t in raw_tags[:6] if str(t).strip()]
+
+    return {
+        "stars": stars,
+        "tags": tags,
+        "comment": str(body.get("comment", "")).strip()[:280],
+    }
+
+
 VALID_RESCUE_ACTIONS = {"ACCEPT", "CLAIM", "PICKUP", "DELIVER"}
 
 

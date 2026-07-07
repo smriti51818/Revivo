@@ -14,6 +14,12 @@ abstract class MarketplaceRepository {
     String pickupSlot,
     String paymentMethod,
   });
+  Future<Order> rateOrder({
+    required String orderId,
+    required int stars,
+    List<String> tags,
+    String comment,
+  });
 }
 
 /// One row of demo produce, with a live shelf window so the countdown ticks
@@ -120,5 +126,37 @@ class InMemoryMarketplaceRepository implements MarketplaceRepository {
     );
     _orders.insert(0, order);
     return order;
+  }
+
+  @override
+  Future<Order> rateOrder({
+    required String orderId,
+    required int stars,
+    List<String> tags = const [],
+    String comment = '',
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 250));
+    final idx = _orders.indexWhere((o) => o.id == orderId);
+    final base = idx >= 0 ? _orders[idx] : _orders.first;
+    final rated = Order(
+      id: base.id,
+      vendorName: base.vendorName,
+      buyerName: base.buyerName,
+      vegetable: base.vegetable,
+      quantityKg: base.quantityKg,
+      pricePerKg: base.pricePerKg,
+      marketPricePerKg: base.marketPricePerKg,
+      band: base.band,
+      status: base.status,
+      placedAt: base.placedAt,
+      imagePath: base.imagePath,
+      pickupSlot: base.pickupSlot,
+      paymentMethod: base.paymentMethod,
+      rating: stars,
+      ratingTags: tags,
+      ratingComment: comment,
+    );
+    if (idx >= 0) _orders[idx] = rated;
+    return rated;
   }
 }
