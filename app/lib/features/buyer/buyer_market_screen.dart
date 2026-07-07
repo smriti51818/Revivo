@@ -9,6 +9,7 @@ import '../../core/session/session_controller.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/live_clock_chip.dart';
+import '../../core/widgets/motion.dart';
 import '../../core/widgets/section_header.dart';
 import 'application/cart_providers.dart';
 import 'application/favorites_providers.dart';
@@ -167,10 +168,15 @@ class _BuyerMarketScreenState extends ConsumerState<BuyerMarketScreen> {
             padding: _hpad,
             child: Column(
               children: [
-                for (final offer in list) ...[
-                  OfferCard(
-                    offer: offer,
-                    onTap: () => context.push('/buyer/product', extra: offer),
+                for (var i = 0; i < list.length; i++) ...[
+                  FadeSlideIn(
+                    // Stagger the first screenful; later cards appear instantly.
+                    delay: Duration(milliseconds: i < 8 ? i * 45 : 0),
+                    child: OfferCard(
+                      offer: list[i],
+                      onTap: () =>
+                          context.push('/buyer/product', extra: list[i]),
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.md),
                 ],
@@ -420,10 +426,13 @@ class _CartButton extends StatelessWidget {
           icon: const Icon(Icons.shopping_cart_outlined),
           color: AppColors.textSecondary,
         ),
-        if (count > 0)
-          Positioned(
-            right: 4,
-            top: 4,
+        Positioned(
+          right: 4,
+          top: 4,
+          child: AnimatedScale(
+            scale: count > 0 ? 1 : 0,
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOutBack,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
               constraints: const BoxConstraints(minWidth: 18),
@@ -442,6 +451,7 @@ class _CartButton extends StatelessWidget {
               ),
             ),
           ),
+        ),
       ],
     );
   }

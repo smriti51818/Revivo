@@ -64,10 +64,12 @@ class _Bar extends StatelessWidget {
             AppSpacing.md, 0, AppSpacing.md, AppSpacing.sm),
         child: Material(
           color: AppColors.primary,
-          borderRadius: BorderRadius.circular(AppRadius.md),
+          borderRadius: BorderRadius.circular(AppRadius.button),
+          elevation: 8,
+          shadowColor: AppColors.primary.withValues(alpha: 0.45),
           child: InkWell(
             onTap: () => context.push('/buyer/cart'),
-            borderRadius: BorderRadius.circular(AppRadius.md),
+            borderRadius: BorderRadius.circular(AppRadius.button),
             child: Padding(
               padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.lg, vertical: 12),

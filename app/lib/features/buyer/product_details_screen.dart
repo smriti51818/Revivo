@@ -82,10 +82,13 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                 child: Stack(
                   children: [
                     Positioned.fill(
-                      child: ProduceImage(
-                        imageUrl: offer.imageUrl,
-                        tint: _tint,
-                        iconSize: 64,
+                      child: Hero(
+                        tag: 'offer-${offer.id}',
+                        child: ProduceImage(
+                          imageUrl: offer.imageUrl,
+                          tint: _tint,
+                          iconSize: 64,
+                        ),
                       ),
                     ),
                     Positioned(
