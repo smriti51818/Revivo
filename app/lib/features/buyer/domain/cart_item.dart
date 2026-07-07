@@ -1,3 +1,4 @@
+import 'coupon.dart';
 import 'offer.dart';
 
 /// A line in the buyer's cart: an [Offer] plus the quantity they want. Line
@@ -25,23 +26,43 @@ class CartBill {
     required this.itemTotal,
     required this.saved,
     required this.platformFee,
+    required this.couponDiscount,
     required this.total,
+    this.couponCode,
   });
 
   final double itemTotal;
+
+  /// Saving vs the reference market price (before any coupon).
   final double saved;
   final double platformFee;
+
+  /// Discount from an applied Revivo coupon (0 when none / not eligible).
+  final double couponDiscount;
+
+  /// The applied coupon's code, if it produced a discount.
+  final String? couponCode;
+
   final double total;
 
-  factory CartBill.of(List<CartItem> items) {
+  /// The full amount kept off the market price: market savings + coupon.
+  double get totalSaved => saved + couponDiscount;
+
+  factory CartBill.of(List<CartItem> items, {Coupon? coupon}) {
     final itemTotal = items.fold<double>(0, (s, c) => s + c.lineTotal);
     final saved = items.fold<double>(0, (s, c) => s + c.lineSaved);
     final fee = items.isEmpty ? 0.0 : kPlatformFee;
+    final discount = coupon == null
+        ? 0.0
+        : coupon.discountFor(itemTotal: itemTotal, platformFee: fee);
+    final total = (itemTotal + fee - discount).clamp(0, double.infinity);
     return CartBill(
       itemTotal: itemTotal,
       saved: saved,
       platformFee: fee,
-      total: itemTotal + fee,
+      couponDiscount: discount,
+      couponCode: discount > 0 ? coupon?.code : null,
+      total: total.toDouble(),
     );
   }
 }

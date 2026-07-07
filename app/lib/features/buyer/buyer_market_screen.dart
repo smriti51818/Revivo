@@ -2,13 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/format.dart';
 import '../../core/models/freshness.dart';
 import '../../core/session/session_controller.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/widgets/live_clock_chip.dart';
+import '../../core/widgets/section_header.dart';
 import 'application/cart_providers.dart';
 import 'application/marketplace_providers.dart';
 import 'domain/offer.dart';
+import 'widgets/cart_bar.dart';
+import 'widgets/live_rescue_rail.dart';
 import 'widgets/offer_card.dart';
 
 enum _MarketFilter {
@@ -53,49 +58,50 @@ class _BuyerMarketScreenState extends ConsumerState<BuyerMarketScreen> {
     return list;
   }
 
+  /// Ending-soon deals for the live rail: Use Soon + Rescue bands, most urgent
+  /// first. Falls back to nothing when the market is all fresh.
+  List<Offer> _endingSoon(List<Offer> offers) {
+    final list = offers
+        .where((o) => o.liveBand() != FreshnessBand.good && !o.isExpired())
+        .toList()
+      ..sort((a, b) {
+        final ax = a.expiresAt, bx = b.expiresAt;
+        if (ax == null || bx == null) return 0;
+        return ax.compareTo(bx);
+      });
+    return list;
+  }
+
+  static const _hpad = EdgeInsets.symmetric(horizontal: AppSpacing.screen);
+
   @override
   Widget build(BuildContext context) {
     final offers = ref.watch(offersProvider);
     final name = ref.watch(sessionProvider)?.name ?? 'Buyer';
 
     return Scaffold(
+      bottomNavigationBar: const CartBar(),
       body: SafeArea(
+        bottom: false,
         child: RefreshIndicator(
           onRefresh: () => ref.refresh(offersProvider.future),
           child: ListView(
-            padding: const EdgeInsets.all(AppSpacing.screen),
+            padding: const EdgeInsets.only(
+                top: AppSpacing.screen, bottom: AppSpacing.xl),
             children: [
-              _Header(name: name),
-              const SizedBox(height: AppSpacing.lg),
-              _searchField(),
+              Padding(padding: _hpad, child: _Header(name: name)),
               const SizedBox(height: AppSpacing.md),
-              _filterRow(),
-              const SizedBox(height: AppSpacing.lg),
               offers.when(
                 loading: () => const Padding(
                   padding: EdgeInsets.only(top: 48),
                   child: Center(child: CircularProgressIndicator()),
                 ),
                 error: (e, _) => Padding(
-                  padding: const EdgeInsets.only(top: 32),
+                  padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.screen, 32, AppSpacing.screen, 0),
                   child: Center(child: Text('Could not load offers: $e')),
                 ),
-                data: (all) {
-                  final list = _apply(all);
-                  if (list.isEmpty) return _empty();
-                  return Column(
-                    children: [
-                      for (final offer in list) ...[
-                        OfferCard(
-                          offer: offer,
-                          onTap: () =>
-                              context.push('/buyer/product', extra: offer),
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                      ],
-                    ],
-                  );
-                },
+                data: (all) => _loaded(context, all),
               ),
             ],
           ),
@@ -104,12 +110,70 @@ class _BuyerMarketScreenState extends ConsumerState<BuyerMarketScreen> {
     );
   }
 
+  Widget _loaded(BuildContext context, List<Offer> all) {
+    final ending = _endingSoon(all);
+    final list = _apply(all);
+    final vendors = all.map((o) => o.vendorName).toSet().length;
+    final kg = all.fold<double>(0, (s, o) => s + o.availableKg);
+    final searching = _query.trim().isNotEmpty;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: _hpad,
+          child: _LiveStrip(dealCount: ending.length, kg: kg, vendors: vendors),
+        ),
+        if (ending.isNotEmpty && !searching) ...[
+          const SizedBox(height: AppSpacing.lg),
+          Padding(
+            padding: _hpad,
+            child: SectionHeader(title: 'Ending soon · ${ending.length} live'),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          LiveRescueRail(
+            offers: ending,
+            onTap: (o) => context.push('/buyer/product', extra: o),
+          ),
+        ],
+        const SizedBox(height: AppSpacing.lg),
+        Padding(padding: _hpad, child: _searchField()),
+        const SizedBox(height: AppSpacing.md),
+        _filterRow(),
+        const SizedBox(height: AppSpacing.lg),
+        if (list.isEmpty)
+          _empty()
+        else
+          Padding(
+            padding: _hpad,
+            child: Column(
+              children: [
+                for (final offer in list) ...[
+                  OfferCard(
+                    offer: offer,
+                    onTap: () => context.push('/buyer/product', extra: offer),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                ],
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
   Widget _searchField() {
     return TextField(
       onChanged: (v) => setState(() => _query = v),
-      decoration: const InputDecoration(
-        prefixIcon: Icon(Icons.search, size: 20),
+      decoration: InputDecoration(
+        prefixIcon: const Icon(Icons.search, size: 20),
         hintText: 'Search vegetables or vendors',
+        suffixIcon: _query.isEmpty
+            ? null
+            : IconButton(
+                icon: const Icon(Icons.close, size: 18),
+                onPressed: () => setState(() => _query = ''),
+              ),
       ),
     );
   }
@@ -117,6 +181,7 @@ class _BuyerMarketScreenState extends ConsumerState<BuyerMarketScreen> {
   Widget _filterRow() {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
+      padding: _hpad,
       child: Row(
         children: [
           for (final f in _MarketFilter.values) ...[
@@ -135,7 +200,7 @@ class _BuyerMarketScreenState extends ConsumerState<BuyerMarketScreen> {
   }
 
   Widget _empty() => Padding(
-        padding: const EdgeInsets.only(top: 56),
+        padding: const EdgeInsets.only(top: 40),
         child: Center(
           child: Column(
             children: [
@@ -151,6 +216,40 @@ class _BuyerMarketScreenState extends ConsumerState<BuyerMarketScreen> {
           ),
         ),
       );
+}
+
+/// Thin strip under the header: the live clock + a one-line market summary.
+class _LiveStrip extends StatelessWidget {
+  const _LiveStrip(
+      {required this.dealCount, required this.kg, required this.vendors});
+
+  final int dealCount;
+  final double kg;
+  final int vendors;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        const LiveClockChip(),
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(
+          child: Text(
+            vendors == 0
+                ? 'Surplus updates in real time'
+                : '${formatKg(kg)} from $vendors ${vendors == 1 ? 'vendor' : 'vendors'} today',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 class _Header extends ConsumerWidget {

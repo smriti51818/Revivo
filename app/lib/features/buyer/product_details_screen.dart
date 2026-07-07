@@ -13,6 +13,7 @@ import '../../core/widgets/primary_button.dart';
 import '../../core/widgets/produce_image.dart';
 import 'application/cart_providers.dart';
 import 'domain/offer.dart';
+import 'widgets/cart_bar.dart';
 
 class ProductDetailsScreen extends ConsumerStatefulWidget {
   const ProductDetailsScreen({super.key, required this.offer});
@@ -64,6 +65,7 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Product details')),
+      bottomNavigationBar: const CartBar(),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(AppSpacing.screen),

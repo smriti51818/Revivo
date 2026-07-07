@@ -21,16 +21,42 @@ class BillSummary extends StatelessWidget {
           _row('Item total', formatMoney(bill.itemTotal)),
           if (bill.saved > 0) ...[
             const SizedBox(height: 8),
-            _row('You save vs market', '− ${formatMoney(bill.saved)}',
+            _row('Rescue saving vs market', '− ${formatMoney(bill.saved)}',
                 highlight: true),
           ],
           const SizedBox(height: 8),
           _row('Platform fee', formatMoney(bill.platformFee)),
+          if (bill.couponDiscount > 0) ...[
+            const SizedBox(height: 8),
+            _row('Coupon ${bill.couponCode}', '− ${formatMoney(bill.couponDiscount)}',
+                highlight: true),
+          ],
           const Padding(
             padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
             child: Divider(height: 1),
           ),
           _row('To pay', formatMoney(bill.total), bold: true),
+          if (bill.totalSaved > 0) ...[
+            const SizedBox(height: AppSpacing.md),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.primarySurface,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+              ),
+              child: Text(
+                'You save ${formatMoney(bill.totalSaved)} on this order 🌱',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.primaryDark,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
