@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'app_colors.dart';
 import 'app_spacing.dart';
 
-/// The Revivo Material 3 theme, built on the design tokens.
+/// The Revivo Material 3 theme, built on the design tokens. Type is Poppins —
+/// the rounded, friendly grocery-app face — with soft-shadow surfaces and pill
+/// CTAs for a polished, hand-designed feel.
 abstract class AppTheme {
   static ThemeData get light {
     final scheme = ColorScheme.fromSeed(
@@ -21,21 +24,28 @@ abstract class AppTheme {
       useMaterial3: true,
       colorScheme: scheme,
       scaffoldBackgroundColor: AppColors.background,
-      splashFactory: InkRipple.splashFactory,
+      splashFactory: InkSparkle.splashFactory,
+      // Smooth, consistent page transitions on every platform.
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: _SmoothTransitionBuilder(),
+          TargetPlatform.iOS: _SmoothTransitionBuilder(),
+        },
+      ),
     );
 
     return base.copyWith(
       textTheme: _textTheme(base.textTheme),
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         backgroundColor: AppColors.surface,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
         scrolledUnderElevation: 0.5,
         centerTitle: true,
-        titleTextStyle: TextStyle(
+        titleTextStyle: GoogleFonts.poppins(
           color: AppColors.textPrimary,
           fontSize: 17,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -44,10 +54,18 @@ abstract class AppTheme {
           foregroundColor: AppColors.onPrimary,
           elevation: 0,
           minimumSize: const Size.fromHeight(52),
+          shape: const StadiumBorder(),
+          textStyle: GoogleFonts.poppins(
+              fontSize: 16, fontWeight: FontWeight.w700),
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.md),
+            borderRadius: BorderRadius.circular(AppRadius.button),
           ),
-          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          textStyle: GoogleFonts.poppins(
+              fontSize: 15, fontWeight: FontWeight.w700),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -56,9 +74,10 @@ abstract class AppTheme {
           minimumSize: const Size.fromHeight(52),
           side: const BorderSide(color: AppColors.border),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.md),
+            borderRadius: BorderRadius.circular(AppRadius.button),
           ),
-          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          textStyle: GoogleFonts.poppins(
+              fontSize: 15, fontWeight: FontWeight.w600),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -68,7 +87,7 @@ abstract class AppTheme {
           horizontal: AppSpacing.lg,
           vertical: AppSpacing.lg,
         ),
-        hintStyle: const TextStyle(color: AppColors.textMuted),
+        hintStyle: GoogleFonts.poppins(color: AppColors.textMuted),
         border: _inputBorder(AppColors.border),
         enabledBorder: _inputBorder(AppColors.border),
         focusedBorder: _inputBorder(AppColors.primary, width: 1.5),
@@ -80,37 +99,79 @@ abstract class AppTheme {
         thickness: 1,
         space: 1,
       ),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: AppColors.textPrimary,
+        contentTextStyle: GoogleFonts.poppins(
+            color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.button),
+        ),
+      ),
     );
   }
 
   static OutlineInputBorder _inputBorder(Color color, {double width = 1}) {
     return OutlineInputBorder(
-      borderRadius: BorderRadius.circular(AppRadius.md),
+      borderRadius: BorderRadius.circular(AppRadius.button),
       borderSide: BorderSide(color: color, width: width),
     );
   }
 
   static TextTheme _textTheme(TextTheme base) {
-    return base
+    // Poppins everywhere; keep the app's weight + colour hierarchy.
+    final poppins = GoogleFonts.poppinsTextTheme(base);
+    return poppins
         .copyWith(
-          headlineSmall: base.headlineSmall?.copyWith(
+          headlineSmall: poppins.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w800,
+            color: AppColors.textPrimary,
+          ),
+          titleLarge: poppins.titleLarge?.copyWith(
+            fontWeight: FontWeight.w800,
+            color: AppColors.textPrimary,
+          ),
+          titleMedium: poppins.titleMedium?.copyWith(
             fontWeight: FontWeight.w700,
             color: AppColors.textPrimary,
           ),
-          titleLarge: base.titleLarge?.copyWith(
-            fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
-          ),
-          titleMedium: base.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
-          bodyMedium: base.bodyMedium?.copyWith(color: AppColors.textPrimary),
-          bodySmall: base.bodySmall?.copyWith(color: AppColors.textSecondary),
+          bodyMedium: poppins.bodyMedium?.copyWith(color: AppColors.textPrimary),
+          bodySmall: poppins.bodySmall?.copyWith(color: AppColors.textSecondary),
         )
         .apply(
           bodyColor: AppColors.textPrimary,
           displayColor: AppColors.textPrimary,
         );
+  }
+}
+
+/// A gentle fade-through + slight upward slide for page pushes — softer than the
+/// default platform slide, so navigation feels smooth rather than abrupt.
+class _SmoothTransitionBuilder extends PageTransitionsBuilder {
+  const _SmoothTransitionBuilder();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    final curved = CurvedAnimation(
+      parent: animation,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
+    );
+    return FadeTransition(
+      opacity: curved,
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0, 0.03),
+          end: Offset.zero,
+        ).animate(curved),
+        child: child,
+      ),
+    );
   }
 }

@@ -20,21 +20,30 @@ class AppCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tinted = color != null && color != AppColors.surface;
+    final radius = BorderRadius.circular(AppRadius.lg);
     final content = Container(
       padding: padding,
       decoration: BoxDecoration(
         color: color ?? AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: AppColors.border),
+        borderRadius: radius,
+        // Plain white cards float on a soft shadow (the reference look); tinted
+        // cards keep a faint border so they read on the light background.
+        border: tinted ? Border.all(color: AppColors.border) : null,
+        boxShadow: tinted ? null : AppShadows.card,
       ),
       child: child,
     );
 
     if (onTap == null) return content;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppRadius.lg),
-      child: content,
+    return Material(
+      color: Colors.transparent,
+      borderRadius: radius,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: radius,
+        child: content,
+      ),
     );
   }
 }
