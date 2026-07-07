@@ -10,6 +10,7 @@ import '../../../core/widgets/band_chip.dart';
 import '../../../core/widgets/freshness_countdown.dart';
 import '../../../core/widgets/produce_image.dart';
 import '../domain/offer.dart';
+import 'favorite_heart.dart';
 import 'trust_badges.dart';
 
 /// Marketplace card for a single surplus offer.
@@ -64,6 +65,16 @@ class OfferCard extends StatelessWidget {
                   Positioned(
                     top: 10,
                     right: 10,
+                    child: FavoriteHeart(offerId: offer.id),
+                  ),
+                  Positioned(
+                    bottom: 10,
+                    left: 10,
+                    child: _LiveSavingsTag(offer: offer),
+                  ),
+                  Positioned(
+                    bottom: 10,
+                    right: 10,
                     child: offer.hasClock
                         ? FreshnessCountdownPill(
                             expiresAt: offer.expiresAt!,
@@ -71,11 +82,6 @@ class OfferCard extends StatelessWidget {
                           )
                         : BandChip(
                             band: offer.band, timeRange: offer.timeRange),
-                  ),
-                  Positioned(
-                    bottom: 10,
-                    left: 10,
-                    child: _LiveSavingsTag(offer: offer),
                   ),
                 ],
               ),

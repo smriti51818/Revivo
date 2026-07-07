@@ -15,6 +15,7 @@ import '../../core/widgets/produce_image.dart';
 import 'application/cart_providers.dart';
 import 'domain/offer.dart';
 import 'widgets/cart_bar.dart';
+import 'widgets/favorite_heart.dart';
 import 'widgets/quality_card.dart';
 import 'widgets/trust_badges.dart';
 
@@ -86,6 +87,11 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                         tint: _tint,
                         iconSize: 64,
                       ),
+                    ),
+                    Positioned(
+                      top: 12,
+                      left: 12,
+                      child: FavoriteHeart(offerId: offer.id),
                     ),
                     Positioned(
                       top: 12,

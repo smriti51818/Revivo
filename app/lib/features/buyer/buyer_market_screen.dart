@@ -11,6 +11,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/live_clock_chip.dart';
 import '../../core/widgets/section_header.dart';
 import 'application/cart_providers.dart';
+import 'application/favorites_providers.dart';
 import 'application/marketplace_providers.dart';
 import 'domain/offer.dart';
 import 'widgets/cart_bar.dart';
@@ -20,6 +21,7 @@ import 'widgets/offer_card.dart';
 enum _MarketFilter {
   all('All'),
   rescue('Rescue deals'),
+  saved('Saved'),
   organic('Organic'),
   nearby('Nearby');
 
@@ -56,6 +58,10 @@ class _BuyerMarketScreenState extends ConsumerState<BuyerMarketScreen> {
       _MarketFilter.all => list,
       _MarketFilter.rescue =>
         list.where((o) => o.liveBand() == FreshnessBand.rescue).toList(),
+      _MarketFilter.saved => () {
+          final favs = ref.read(favoritesProvider);
+          return list.where((o) => favs.contains(o.id)).toList();
+        }(),
       _MarketFilter.organic => list.where((o) => o.organic).toList(),
       _MarketFilter.nearby => [...list]
         ..sort((a, b) => a.distanceKm.compareTo(b.distanceKm)),
@@ -83,6 +89,7 @@ class _BuyerMarketScreenState extends ConsumerState<BuyerMarketScreen> {
   Widget build(BuildContext context) {
     final offers = ref.watch(offersProvider);
     final name = ref.watch(sessionProvider)?.name ?? 'Buyer';
+    ref.watch(favoritesProvider); // re-filter the Saved tab as hearts toggle
 
     return Scaffold(
       bottomNavigationBar: const CartBar(),

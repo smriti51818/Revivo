@@ -6,7 +6,9 @@ import '../../core/models/user_role.dart';
 import '../../core/session/session_controller.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/format.dart';
 import '../../core/widgets/app_card.dart';
+import '../buyer/application/wallet_providers.dart';
 import 'application/profile_providers.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -29,6 +31,10 @@ class ProfileScreen extends ConsumerWidget {
             _identity(name, email, role),
             const SizedBox(height: AppSpacing.lg),
             _contactCard(context, details),
+            if (role == UserRole.buyer) ...[
+              const SizedBox(height: AppSpacing.lg),
+              _walletCard(ref.watch(walletProvider)),
+            ],
             const SizedBox(height: AppSpacing.lg),
             _trustCard(),
             const SizedBox(height: AppSpacing.lg),
@@ -168,6 +174,59 @@ class ProfileScreen extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _walletCard(int balance) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [AppColors.primary, AppColors.primaryDark],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.account_balance_wallet_outlined,
+              color: Colors.white, size: 26),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Revivo credits',
+                    style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600)),
+                const SizedBox(height: 2),
+                Text(formatMoney(balance.toDouble()),
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800)),
+              ],
+            ),
+          ),
+          Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(AppRadius.pill),
+            ),
+            child: const Text('1 credit / ₹10 saved',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
     );
   }
 

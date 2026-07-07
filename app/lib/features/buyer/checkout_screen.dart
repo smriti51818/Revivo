@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -11,6 +13,7 @@ import '../../core/widgets/section_header.dart';
 import 'application/cart_providers.dart';
 import 'application/failed_payments_providers.dart';
 import 'application/marketplace_providers.dart';
+import 'application/wallet_providers.dart';
 import 'domain/cart_item.dart';
 import 'domain/failed_payment.dart';
 import 'domain/order.dart';
@@ -19,11 +22,11 @@ import 'widgets/payment_sheet.dart';
 
 /// Self-pickup payment methods (the pilot is pay-on-pickup by default; the
 /// others are simulated — no real gateway yet, per the spec's future scope).
+/// Revivo credits are handled separately, as a redeemable balance.
 enum PayMethod {
   pickup('Pay on pickup', 'PICKUP', Icons.payments_outlined),
   upi('UPI', 'UPI', Icons.qr_code_2_rounded),
-  card('Card', 'CARD', Icons.credit_card_rounded),
-  wallet('Revivo Wallet', 'WALLET', Icons.account_balance_wallet_outlined);
+  card('Card', 'CARD', Icons.credit_card_rounded);
 
   const PayMethod(this.label, this.value, this.icon);
   final String label;
@@ -42,7 +45,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   late final List<String> _slots = _pickupSlots();
   late String _slot = _slots.first;
   PayMethod _pay = PayMethod.pickup;
+  bool _useCredits = false;
   bool _placing = false;
+
+  /// Credits redeemable against a bill total, given the current balance.
+  int _creditFor(int balance, double total) =>
+      _useCredits ? min(balance, total.floor()) : 0;
 
   /// Six upcoming half-hour self-pickup windows from the next :00/:30.
   List<String> _pickupSlots() {
@@ -70,13 +78,16 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final items = ref.read(cartProvider);
     if (items.isEmpty) return;
     final bill = ref.read(cartBillProvider);
+    final credit = _creditFor(ref.read(walletProvider), bill.total);
+    final payable = (bill.total - credit).clamp(0, bill.total).toDouble();
     setState(() => _placing = true);
 
-    // Online methods run through the simulated gateway first.
-    if (_pay != PayMethod.pickup) {
+    // Online methods run through the simulated gateway — unless credits cover
+    // the whole bill, in which case there's nothing left to charge.
+    if (_pay != PayMethod.pickup && payable > 0) {
       final paid = await showPaymentSheet(
         context,
-        amount: bill.total,
+        amount: payable,
         methodLabel: _pay.label,
         methodIcon: _pay.icon,
       );
@@ -86,7 +97,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         return;
       }
       if (paid == false) {
-        _recordFailure(items, bill);
+        _recordFailure(items, payable);
         setState(() => _placing = false); // keep the cart so they can retry
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
@@ -109,6 +120,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               ),
         );
       }
+      // Settle the wallet: redeem what was used, then earn from the savings.
+      ref.read(walletProvider.notifier).spend(credit);
+      ref.read(walletProvider.notifier).earnFromSaved(bill.totalSaved);
       ref.read(cartProvider.notifier).clear();
       if (!mounted) return;
       context.go('/buyer/order-confirmed', extra: orders);
@@ -123,7 +137,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   /// Snapshots the cart into a [FailedPayment] so it shows under "Payment
   /// failed" in My Orders with a path back to retry.
-  void _recordFailure(List<CartItem> items, CartBill bill) {
+  void _recordFailure(List<CartItem> items, double amount) {
     ref.read(failedPaymentsProvider.notifier).add(
           FailedPayment(
             id: DateTime.now().microsecondsSinceEpoch.toString(),
@@ -137,7 +151,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   imageUrl: i.offer.imageUrl,
                 ),
             ],
-            amount: bill.total,
+            amount: amount,
             method: _pay.value,
             pickupSlot: _slot,
             attemptedAt: DateTime.now(),
@@ -149,6 +163,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   @override
   Widget build(BuildContext context) {
     final bill = ref.watch(cartBillProvider);
+    final balance = ref.watch(walletProvider);
+    final credit = _creditFor(balance, bill.total);
+    final payable = (bill.total - credit).clamp(0, bill.total).toDouble();
     return Scaffold(
       appBar: AppBar(title: const Text('Checkout')),
       body: SafeArea(
@@ -189,10 +206,35 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       ],
                     ),
                   ),
+                  if (balance > 0) ...[
+                    const SizedBox(height: AppSpacing.xl),
+                    const SectionHeader(title: 'Revivo credits'),
+                    const SizedBox(height: AppSpacing.sm),
+                    _creditsCard(balance, credit),
+                  ],
                   const SizedBox(height: AppSpacing.xl),
                   const SectionHeader(title: 'Bill'),
                   const SizedBox(height: AppSpacing.sm),
                   BillSummary(bill: bill),
+                  if (credit > 0) ...[
+                    const SizedBox(height: AppSpacing.sm),
+                    AppCard(
+                      child: Column(
+                        children: [
+                          _payRowMini('Revivo credits',
+                              '− ${formatMoney(credit.toDouble())}',
+                              highlight: true),
+                          const Padding(
+                            padding:
+                                EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                            child: Divider(height: 1),
+                          ),
+                          _payRowMini('Payable now', formatMoney(payable),
+                              bold: true),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -205,8 +247,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               ),
               child: PrimaryButton(
                 label: _pay == PayMethod.pickup
-                    ? 'Place order · pay on pickup'
-                    : 'Pay ${formatMoney(bill.total)} · place order',
+                    ? (credit > 0
+                        ? 'Place order · ${formatMoney(payable)} on pickup'
+                        : 'Place order · pay on pickup')
+                    : payable <= 0
+                        ? 'Place order · paid with credits'
+                        : 'Pay ${formatMoney(payable)} · place order',
                 icon: Icons.check_circle_outline,
                 loading: _placing,
                 onPressed: _placeOrder,
@@ -215,6 +261,57 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _creditsCard(int balance, int credit) {
+    return AppCard(
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md, vertical: 4),
+      child: SwitchListTile(
+        contentPadding: EdgeInsets.zero,
+        activeTrackColor: AppColors.primary,
+        value: _useCredits,
+        onChanged: (v) => setState(() => _useCredits = v),
+        secondary: Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: AppColors.primarySurface,
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+          ),
+          child: const Icon(Icons.account_balance_wallet_outlined,
+              color: AppColors.primary, size: 20),
+        ),
+        title: Text('Use ${formatMoney(balance.toDouble())} in credits',
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+        subtitle: Text(
+          _useCredits && credit > 0
+              ? '${formatMoney(credit.toDouble())} applied to this order'
+              : 'Redeem your rescued-savings credits',
+          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+        ),
+      ),
+    );
+  }
+
+  Widget _payRowMini(String label, String value,
+      {bool highlight = false, bool bold = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label,
+            style: TextStyle(
+                fontSize: bold ? 15 : 13.5,
+                fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
+                color:
+                    highlight ? AppColors.primary : AppColors.textSecondary)),
+        Text(value,
+            style: TextStyle(
+                fontSize: bold ? 16 : 14,
+                fontWeight: FontWeight.w800,
+                color: highlight ? AppColors.primary : AppColors.textPrimary)),
+      ],
     );
   }
 
