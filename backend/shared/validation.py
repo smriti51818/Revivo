@@ -96,11 +96,18 @@ def validate_order_input(body: dict) -> dict:
     if payment not in _PAYMENT_METHODS:
         payment = "PICKUP"
 
+    try:
+        credits_used = int(body.get("creditsUsed", 0) or 0)
+    except (TypeError, ValueError):
+        credits_used = 0
+    credits_used = max(0, credits_used)
+
     return {
         "listingId": listing_id,
         "quantityKg": quantity_kg,
         "pickupSlot": str(body.get("pickupSlot", "")).strip()[:40],
         "paymentMethod": payment,
+        "creditsUsed": credits_used,
     }
 
 
@@ -122,6 +129,20 @@ def validate_rating_input(body: dict) -> dict:
         "stars": stars,
         "tags": tags,
         "comment": str(body.get("comment", "")).strip()[:280],
+    }
+
+
+def validate_meal_log(body: dict) -> dict:
+    """Validate a cook's meal-served log for a delivered rescue."""
+    try:
+        meals = int(body.get("meals"))
+    except (TypeError, ValueError):
+        raise ValidationError("meals must be a whole number")
+    if meals < 0 or meals > 100000:
+        raise ValidationError("meals must be between 0 and 100000")
+    return {
+        "meals": meals,
+        "photoKey": str(body.get("photoKey", "")).strip()[:200],
     }
 
 

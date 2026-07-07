@@ -8,6 +8,7 @@ import json
 
 from shared.dynamo import get_table
 from shared.models import to_public_order
+from shared.profile import record_vendor_rating
 from shared.responses import error, ok
 from shared.validation import ValidationError, validate_rating_input
 
@@ -52,5 +53,14 @@ def handler(event, context):
         },
         ReturnValues="ALL_NEW",
     )["Attributes"]
+
+    # Roll the stars into the vendor's live reputation (avg + Trusted flag are
+    # derived on read). Best-effort so a stats hiccup never fails the rating.
+    try:
+        record_vendor_rating(
+            table, str(updated.get("vendorId") or ""), data["stars"]
+        )
+    except Exception:  # pragma: no cover - best-effort side effect
+        pass
 
     return ok(200, {"order": to_public_order(updated)})

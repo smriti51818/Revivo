@@ -218,6 +218,8 @@ def to_public_rescue(item: dict) -> dict:
         "distanceKm": item.get("distanceKm"),
         "status": item.get("status"),
         "ngoName": item.get("ngoName"),
+        "mealsServed": item.get("mealsServed"),
+        "mealPhotoKey": item.get("mealPhotoKey", ""),
         "createdAt": item.get("createdAt"),
     }
 

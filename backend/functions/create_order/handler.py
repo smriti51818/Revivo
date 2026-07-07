@@ -13,6 +13,12 @@ from botocore.exceptions import ClientError
 from shared.dynamo import get_table
 from shared.freshness import apply_live_freshness
 from shared.models import build_order_item, to_public_order
+from shared.profile import (
+    credit_wallet,
+    credits_for_saved,
+    record_vendor_sale,
+    spend_wallet,
+)
 from shared.responses import error, ok
 from shared.validation import ValidationError, validate_order_input
 
@@ -84,7 +90,31 @@ def handler(event, context):
     # Charge the *live* freshness-decayed price, not the stale listing-time
     # snapshot, so the price matches the countdown the buyer just saw.
     priced_listing = apply_live_freshness(listing)
+
+    # Redeem any Revivo credits the buyer applied (atomic; ignored if the
+    # balance is short) so the order records what was actually spent.
+    credits_used = spend_wallet(table, buyer["id"], data.get("creditsUsed", 0))
+
     item = build_order_item(data, buyer, priced_listing)
+    if credits_used:
+        item["creditsUsed"] = credits_used
     table.put_item(Item=item)
+
+    # Persist the aggregates that used to be faked client-side. Best-effort:
+    # a stats hiccup must never fail an order that already succeeded.
+    try:
+        saved = max(
+            0.0,
+            _as_float(item.get("marketPricePerKg")) - _as_float(item.get("pricePerKg")),
+        ) * _as_float(item.get("quantityKg"))
+        credit_wallet(table, buyer["id"], credits_for_saved(saved))
+        record_vendor_sale(
+            table,
+            str(listing.get("vendorId") or ""),
+            _as_float(item.get("quantityKg")),
+            _as_float(item.get("total")),
+        )
+    except Exception:  # pragma: no cover - best-effort side effects
+        pass
 
     return ok(201, {"order": to_public_order(item)})

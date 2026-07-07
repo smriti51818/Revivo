@@ -173,6 +173,19 @@ class ApiStack(Stack):
         )
         table.grant_read_data(impact_fn)
 
+        # Persisted profile aggregates (wallet balance, vendor reputation,
+        # buyer/cook stats) — replaces the client-side faked numbers.
+        profile_fn = self._fn(
+            "GetProfileFn", "get_profile", common_env, use_shared=True
+        )
+        table.grant_read_data(profile_fn)
+
+        # Cook logs meals served for a delivered rescue (Transform-stage proof).
+        log_meal_fn = self._fn(
+            "LogMealFn", "log_meal", common_env, use_shared=True
+        )
+        table.grant_read_write_data(log_meal_fn)
+
         # M6 — in-app notification feed (written by the notifier in the
         # NotificationStack; read + marked-read here).
         list_notifications_fn = self._fn(
@@ -259,8 +272,12 @@ class ApiStack(Stack):
         self._protected(
             rescue_item.add_resource("explain"), "POST", explain_rescue_fn
         )
+        self._protected(
+            rescue_item.add_resource("meals"), "POST", log_meal_fn
+        )
 
         self._protected(api.root.add_resource("impact"), "GET", impact_fn)
+        self._protected(api.root.add_resource("profile"), "GET", profile_fn)
 
         notifications = api.root.add_resource("notifications")
         self._protected(notifications, "GET", list_notifications_fn)
