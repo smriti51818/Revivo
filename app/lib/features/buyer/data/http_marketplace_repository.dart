@@ -1,5 +1,6 @@
 import '../../../core/api/api_client.dart';
 import '../../../core/api/json_utils.dart';
+import '../../../core/discovery/vendor_directory.dart';
 import '../../../core/models/freshness.dart';
 import '../domain/offer.dart';
 import '../domain/order.dart';
@@ -63,16 +64,21 @@ class HttpMarketplaceRepository implements MarketplaceRepository {
 
   Offer _offerFromJson(Map<String, dynamic> j) {
     final expiry = j['expiryEpoch'];
+    final vendorName = (j['vendorName'] ?? 'Vendor').toString();
+    // Backend distance isn't wired yet; fall back to the vendor directory so
+    // proximity is consistent across the market, radar, and vendor pages.
+    final apiDistance = asDouble(j['distanceKm']);
     return Offer(
       id: (j['id'] ?? '').toString(),
-      vendorName: (j['vendorName'] ?? 'Vendor').toString(),
+      vendorName: vendorName,
       vegetable: (j['vegetable'] ?? '').toString(),
       availableKg: asDouble(j['quantityKg']),
       marketPrice: asDouble(j['basePrice']),
       offerPrice: asDouble(j['recommendedPrice']),
       band: FreshnessBand.fromValue(j['band']?.toString()),
       timeRange: (j['timeRange'] ?? '').toString(),
-      distanceKm: 0, // no buyer geolocation yet — hidden in the UI when 0
+      distanceKm:
+          apiDistance > 0 ? apiDistance : vendorInfo(vendorName).distanceKm,
       imageUrl: (j['imageUrl'] ?? '').toString(),
       expiresAt: expiry is num ? epochToDate(expiry) : null,
       totalHours: j['totalHours'] == null ? null : asDouble(j['totalHours']),

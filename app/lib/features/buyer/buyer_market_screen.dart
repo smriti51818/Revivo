@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/discovery/produce_category.dart';
 import '../../core/format.dart';
 import '../../core/models/freshness.dart';
 import '../../core/session/session_controller.dart';
@@ -36,6 +37,7 @@ class BuyerMarketScreen extends ConsumerStatefulWidget {
 class _BuyerMarketScreenState extends ConsumerState<BuyerMarketScreen> {
   String _query = '';
   _MarketFilter _filter = _MarketFilter.all;
+  ProduceCategory _category = ProduceCategory.all;
 
   List<Offer> _apply(List<Offer> offers) {
     var list = offers;
@@ -46,6 +48,9 @@ class _BuyerMarketScreenState extends ConsumerState<BuyerMarketScreen> {
               o.vegetable.toLowerCase().contains(q) ||
               o.vendorName.toLowerCase().contains(q))
           .toList();
+    }
+    if (_category != ProduceCategory.all) {
+      list = list.where((o) => matchesCategory(_category, o.vegetable)).toList();
     }
     list = switch (_filter) {
       _MarketFilter.all => list,
@@ -124,6 +129,11 @@ class _BuyerMarketScreenState extends ConsumerState<BuyerMarketScreen> {
           padding: _hpad,
           child: _LiveStrip(dealCount: ending.length, kg: kg, vendors: vendors),
         ),
+        const SizedBox(height: AppSpacing.md),
+        Padding(
+          padding: _hpad,
+          child: _RadarEntry(count: all.where((o) => !o.isExpired()).length),
+        ),
         if (ending.isNotEmpty && !searching) ...[
           const SizedBox(height: AppSpacing.lg),
           Padding(
@@ -139,6 +149,8 @@ class _BuyerMarketScreenState extends ConsumerState<BuyerMarketScreen> {
         const SizedBox(height: AppSpacing.lg),
         Padding(padding: _hpad, child: _searchField()),
         const SizedBox(height: AppSpacing.md),
+        _categoryRow(),
+        const SizedBox(height: AppSpacing.sm),
         _filterRow(),
         const SizedBox(height: AppSpacing.lg),
         if (list.isEmpty)
@@ -174,6 +186,34 @@ class _BuyerMarketScreenState extends ConsumerState<BuyerMarketScreen> {
                 icon: const Icon(Icons.close, size: 18),
                 onPressed: () => setState(() => _query = ''),
               ),
+      ),
+    );
+  }
+
+  Widget _categoryRow() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: _hpad,
+      child: Row(
+        children: [
+          for (final c in ProduceCategory.values) ...[
+            ChoiceChip(
+              label: Text(c.label),
+              selected: _category == c,
+              onSelected: (_) => setState(() => _category = c),
+              selectedColor: AppColors.primary,
+              labelStyle: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                color: _category == c ? Colors.white : AppColors.textSecondary,
+              ),
+              backgroundColor: AppColors.surfaceAlt,
+              side: BorderSide.none,
+              showCheckmark: false,
+            ),
+            const SizedBox(width: AppSpacing.sm),
+          ],
+        ],
       ),
     );
   }
@@ -248,6 +288,60 @@ class _LiveStrip extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Discoverable entry into the rescue radar.
+class _RadarEntry extends StatelessWidget {
+  const _RadarEntry({required this.count});
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.primary,
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: InkWell(
+        onTap: () => context.push('/buyer/map'),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                ),
+                child: const Icon(Icons.radar, color: Colors.white, size: 20),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Rescue radar',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800)),
+                    Text('See $count surplus lots near your hotel',
+                        style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.9),
+                            fontSize: 11.5)),
+                  ],
+                ),
+              ),
+              const Icon(Icons.arrow_forward_rounded,
+                  color: Colors.white, size: 18),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

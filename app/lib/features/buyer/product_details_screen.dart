@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/discovery/vendor_directory.dart';
 import '../../core/format.dart';
 import '../../core/models/freshness.dart';
 import '../../core/theme/app_colors.dart';
@@ -14,6 +15,8 @@ import '../../core/widgets/produce_image.dart';
 import 'application/cart_providers.dart';
 import 'domain/offer.dart';
 import 'widgets/cart_bar.dart';
+import 'widgets/quality_card.dart';
+import 'widgets/trust_badges.dart';
 
 class ProductDetailsScreen extends ConsumerStatefulWidget {
   const ProductDetailsScreen({super.key, required this.offer});
@@ -103,13 +106,36 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
             const SizedBox(height: AppSpacing.lg),
             Row(
               children: [
-                Text(
-                  offer.vendorName,
-                  style: const TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textMuted,
+                Flexible(
+                  child: InkWell(
+                    onTap: () => context
+                        .push('/buyer/vendor', extra: offer.vendorName),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            offer.vendorName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                        const Icon(Icons.chevron_right,
+                            size: 16, color: AppColors.textMuted),
+                      ],
+                    ),
                   ),
+                ),
+                const SizedBox(width: 6),
+                RatingPill(
+                  rating: vendorInfo(offer.vendorName).rating,
+                  reviews: vendorInfo(offer.vendorName).reviews,
+                  dense: true,
                 ),
                 const Spacer(),
                 if (offer.distanceKm > 0) ...[
@@ -117,7 +143,7 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                       size: 14, color: AppColors.textMuted),
                   const SizedBox(width: 2),
                   Text(
-                    '${offer.distanceKm.toStringAsFixed(1)} km away',
+                    '${offer.distanceKm.toStringAsFixed(1)} km',
                     style: const TextStyle(
                       fontSize: 12.5,
                       fontWeight: FontWeight.w600,
@@ -179,6 +205,8 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
             ),
             const SizedBox(height: AppSpacing.lg),
             offer.hasClock ? _clockHero() : _freshnessCard(),
+            const SizedBox(height: AppSpacing.lg),
+            QualityCard(vendorName: offer.vendorName),
             const SizedBox(height: AppSpacing.lg),
             _quantityCard(),
             const SizedBox(height: AppSpacing.lg),

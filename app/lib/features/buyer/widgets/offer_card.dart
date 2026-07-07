@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/discovery/vendor_directory.dart';
 import '../../../core/format.dart';
 import '../../../core/models/freshness.dart';
 import '../../../core/theme/app_colors.dart';
@@ -9,6 +10,7 @@ import '../../../core/widgets/band_chip.dart';
 import '../../../core/widgets/freshness_countdown.dart';
 import '../../../core/widgets/produce_image.dart';
 import '../domain/offer.dart';
+import 'trust_badges.dart';
 
 /// Marketplace card for a single surplus offer.
 class OfferCard extends StatelessWidget {
@@ -80,14 +82,38 @@ class OfferCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.md),
-          Text(
-            offer.vendorName,
-            style: const TextStyle(
-              fontSize: 11.5,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textMuted,
-              letterSpacing: 0.2,
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        offer.vendorName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textMuted,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ),
+                    if (vendorInfo(offer.vendorName).trusted) ...[
+                      const SizedBox(width: 5),
+                      const TrustedVendorBadge(compact: true),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 6),
+              RatingPill(
+                rating: vendorInfo(offer.vendorName).rating,
+                reviews: vendorInfo(offer.vendorName).reviews,
+                dense: true,
+              ),
+            ],
           ),
           const SizedBox(height: 2),
           Text(

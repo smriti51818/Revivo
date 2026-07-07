@@ -160,18 +160,24 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  const Icon(Icons.storefront_outlined,
-                      size: 18, color: AppColors.textSecondary),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(order.vendorName,
-                        style: const TextStyle(
-                            fontSize: 14.5, fontWeight: FontWeight.w800)),
-                  ),
-                  BandChip(band: order.band),
-                ],
+              InkWell(
+                onTap: () =>
+                    context.push('/buyer/vendor', extra: order.vendorName),
+                child: Row(
+                  children: [
+                    const Icon(Icons.storefront_outlined,
+                        size: 18, color: AppColors.textSecondary),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(order.vendorName,
+                          style: const TextStyle(
+                              fontSize: 14.5, fontWeight: FontWeight.w800)),
+                    ),
+                    const Icon(Icons.chevron_right,
+                        size: 18, color: AppColors.textMuted),
+                    BandChip(band: order.band),
+                  ],
+                ),
               ),
               const Divider(height: AppSpacing.xl),
               _detailRow(Icons.event_outlined, 'Ordered',

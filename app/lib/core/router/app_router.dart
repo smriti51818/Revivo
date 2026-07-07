@@ -17,6 +17,8 @@ import '../../features/buyer/order_confirmed_screen.dart';
 import '../../features/buyer/order_details_screen.dart';
 import '../../features/buyer/order_tracking_screen.dart';
 import '../../features/buyer/product_details_screen.dart';
+import '../../features/buyer/rescue_map_screen.dart';
+import '../../features/buyer/vendor_profile_screen.dart';
 import '../../features/cook/cook_inbox_screen.dart';
 import '../../features/impact/impact_screen.dart';
 import '../../features/seller/add_listing_screen.dart';
@@ -56,6 +58,15 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/buyer/product',
         builder: (_, state) =>
             ProductDetailsScreen(offer: state.extra as Offer),
+      ),
+      GoRoute(
+        path: '/buyer/vendor',
+        builder: (_, state) =>
+            VendorProfileScreen(vendorName: state.extra as String),
+      ),
+      GoRoute(
+        path: '/buyer/map',
+        builder: (_, _) => const RescueMapScreen(),
       ),
       GoRoute(
         path: '/buyer/cart',
