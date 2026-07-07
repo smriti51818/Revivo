@@ -8,10 +8,16 @@ import '../../core/widgets/app_card.dart';
 import '../../core/widgets/primary_button.dart';
 import 'domain/order.dart';
 
+/// Post-checkout confirmation for one or more orders placed together.
 class OrderConfirmedScreen extends StatelessWidget {
-  const OrderConfirmedScreen({super.key, required this.order});
+  const OrderConfirmedScreen({super.key, required this.orders});
 
-  final Order order;
+  final List<Order> orders;
+
+  double get _total => orders.fold(0, (s, o) => s + o.total);
+  double get _saved => orders.fold(0, (s, o) => s + o.saved);
+  int get _vendors => orders.map((o) => o.vendorName).toSet().length;
+  String get _slot => orders.isEmpty ? '' : orders.first.pickupSlot;
 
   @override
   Widget build(BuildContext context) {
@@ -33,13 +39,12 @@ class OrderConfirmedScreen extends StatelessWidget {
                     size: 48, color: AppColors.primary),
               ),
               const SizedBox(height: AppSpacing.lg),
-              const Text(
-                'Order confirmed!',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
-              ),
+              const Text('Order placed!',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
               const SizedBox(height: 6),
               Text(
-                '${order.vendorName} is preparing your order',
+                '${orders.length} ${orders.length == 1 ? 'item' : 'items'} from '
+                '$_vendors ${_vendors == 1 ? 'vendor' : 'vendors'} — being prepared',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                     fontSize: 13.5, color: AppColors.textSecondary),
@@ -48,14 +53,16 @@ class OrderConfirmedScreen extends StatelessWidget {
               AppCard(
                 child: Column(
                   children: [
-                    _row('Item', order.vegetable),
-                    const Divider(height: AppSpacing.xl),
-                    _row('Quantity', formatKg(order.quantityKg)),
-                    const Divider(height: AppSpacing.xl),
-                    _row('Price', '${formatMoney(order.pricePerKg)} / kg'),
-                    const Divider(height: AppSpacing.xl),
-                    _row('Total', formatMoney(order.total), bold: true),
-                    if (order.saved > 0) ...[
+                    for (final o in orders) ...[
+                      _line(o),
+                      const Divider(height: AppSpacing.lg),
+                    ],
+                    _row('Total', formatMoney(_total), bold: true),
+                    if (_slot.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      _row('Pickup slot', _slot),
+                    ],
+                    if (_saved > 0) ...[
                       const SizedBox(height: AppSpacing.md),
                       Container(
                         width: double.infinity,
@@ -66,7 +73,7 @@ class OrderConfirmedScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(AppRadius.md),
                         ),
                         child: Text(
-                          'You saved ${formatMoney(order.saved)} vs market price 🌱',
+                          'You saved ${formatMoney(_saved)} vs market price 🌱',
                           textAlign: TextAlign.center,
                           style: const TextStyle(
                             fontSize: 12.5,
@@ -81,7 +88,7 @@ class OrderConfirmedScreen extends StatelessWidget {
               ),
               const Spacer(),
               PrimaryButton(
-                label: 'View my orders',
+                label: 'Track my orders',
                 icon: Icons.receipt_long_outlined,
                 onPressed: () => context.go('/buyer/orders'),
               ),
@@ -97,15 +104,26 @@ class OrderConfirmedScreen extends StatelessWidget {
     );
   }
 
+  Widget _line(Order o) => Row(
+        children: [
+          Expanded(
+            child: Text('${o.vegetable} · ${formatKg(o.quantityKg)}',
+                style: const TextStyle(
+                    fontSize: 13.5, fontWeight: FontWeight.w600)),
+          ),
+          Text(formatMoney(o.total),
+              style: const TextStyle(
+                  fontSize: 13.5, fontWeight: FontWeight.w700)),
+        ],
+      );
+
   Widget _row(String label, String value, {bool bold = false}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: const TextStyle(
-              fontSize: 13.5, color: AppColors.textSecondary),
-        ),
+        Text(label,
+            style: const TextStyle(
+                fontSize: 13.5, color: AppColors.textSecondary)),
         Text(
           value,
           style: TextStyle(

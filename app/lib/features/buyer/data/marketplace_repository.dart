@@ -8,7 +8,12 @@ import '../domain/order.dart';
 abstract class MarketplaceRepository {
   Future<List<Offer>> fetchOffers();
   Future<List<Order>> fetchOrders();
-  Future<Order> placeOrder({required Offer offer, required double quantityKg});
+  Future<Order> placeOrder({
+    required Offer offer,
+    required double quantityKg,
+    String pickupSlot,
+    String paymentMethod,
+  });
 }
 
 /// One row of demo produce, with a live shelf window so the countdown ticks
@@ -95,10 +100,12 @@ class InMemoryMarketplaceRepository implements MarketplaceRepository {
   Future<Order> placeOrder({
     required Offer offer,
     required double quantityKg,
+    String pickupSlot = '',
+    String paymentMethod = 'PICKUP',
   }) async {
     await Future.delayed(const Duration(milliseconds: 450));
     final order = Order(
-      id: 'ord_${DateTime.now().millisecondsSinceEpoch}',
+      id: 'ord_${DateTime.now().millisecondsSinceEpoch}_${offer.id}',
       vendorName: offer.vendorName,
       vegetable: offer.vegetable,
       quantityKg: quantityKg,
@@ -108,6 +115,8 @@ class InMemoryMarketplaceRepository implements MarketplaceRepository {
       status: OrderStatus.confirmed,
       placedAt: DateTime.now(),
       imagePath: offer.imagePath,
+      pickupSlot: pickupSlot,
+      paymentMethod: paymentMethod,
     );
     _orders.insert(0, order);
     return order;

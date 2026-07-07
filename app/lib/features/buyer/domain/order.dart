@@ -33,6 +33,8 @@ class Order {
     required this.placedAt,
     this.imagePath,
     this.buyerName,
+    this.pickupSlot = '',
+    this.paymentMethod = 'PICKUP',
   });
 
   final String id;
@@ -48,6 +50,10 @@ class Order {
   final OrderStatus status;
   final DateTime placedAt;
   final String? imagePath;
+
+  /// Chosen self-pickup window (e.g. "7:00–7:30 PM") and how it's paid.
+  final String pickupSlot;
+  final String paymentMethod;
 
   double get total => quantityKg * pricePerKg;
 
@@ -67,5 +73,7 @@ class Order {
         status: status ?? this.status,
         placedAt: placedAt,
         imagePath: imagePath,
+        pickupSlot: pickupSlot,
+        paymentMethod: paymentMethod,
       );
 }

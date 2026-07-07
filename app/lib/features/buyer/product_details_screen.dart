@@ -11,7 +11,7 @@ import '../../core/widgets/band_chip.dart';
 import '../../core/widgets/freshness_countdown.dart';
 import '../../core/widgets/primary_button.dart';
 import '../../core/widgets/produce_image.dart';
-import 'application/marketplace_providers.dart';
+import 'application/cart_providers.dart';
 import 'domain/offer.dart';
 
 class ProductDetailsScreen extends ConsumerStatefulWidget {
@@ -26,7 +26,6 @@ class ProductDetailsScreen extends ConsumerStatefulWidget {
 
 class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
   late double _qty = widget.offer.availableKg >= 5 ? 5 : 1;
-  bool _placing = false;
 
   Offer get offer => widget.offer;
 
@@ -41,21 +40,19 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
     setState(() => _qty = next);
   }
 
-  Future<void> _placeOrder() async {
-    setState(() => _placing = true);
-    try {
-      final order = await ref
-          .read(ordersProvider.notifier)
-          .placeOrder(offer: offer, quantityKg: _qty);
-      if (!mounted) return;
-      context.go('/buyer/order-confirmed', extra: order);
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _placing = false);
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text('Could not place order: $e')));
-    }
+  void _addToCart() {
+    ref.read(cartProvider.notifier).add(offer, _qty);
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text('${formatKg(_qty)} ${offer.vegetable} added to cart'),
+          action: SnackBarAction(
+            label: 'View cart',
+            onPressed: () => context.push('/buyer/cart'),
+          ),
+        ),
+      );
   }
 
   @override
@@ -190,10 +187,9 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                   highlight: true),
             const SizedBox(height: AppSpacing.xl),
             PrimaryButton(
-              label: 'Place order · ${formatMoney(total)}',
-              icon: Icons.shopping_bag_outlined,
-              loading: _placing,
-              onPressed: _placeOrder,
+              label: 'Add to cart · ${formatMoney(total)}',
+              icon: Icons.add_shopping_cart_outlined,
+              onPressed: _addToCart,
             ),
           ],
         ),

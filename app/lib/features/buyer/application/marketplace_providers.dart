@@ -33,10 +33,15 @@ class OrdersController extends AsyncNotifier<List<Order>> {
   Future<Order> placeOrder({
     required Offer offer,
     required double quantityKg,
+    String pickupSlot = '',
+    String paymentMethod = 'PICKUP',
   }) async {
-    final order = await ref
-        .read(marketplaceRepositoryProvider)
-        .placeOrder(offer: offer, quantityKg: quantityKg);
+    final order = await ref.read(marketplaceRepositoryProvider).placeOrder(
+          offer: offer,
+          quantityKg: quantityKg,
+          pickupSlot: pickupSlot,
+          paymentMethod: paymentMethod,
+        );
     final current = state.valueOrNull ?? const <Order>[];
     state = AsyncData([order, ...current]);
     return order;

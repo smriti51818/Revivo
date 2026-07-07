@@ -34,10 +34,14 @@ class HttpMarketplaceRepository implements MarketplaceRepository {
   Future<Order> placeOrder({
     required Offer offer,
     required double quantityKg,
+    String pickupSlot = '',
+    String paymentMethod = 'PICKUP',
   }) async {
     final res = await _api.post('/orders', {
       'listingId': offer.id,
       'quantityKg': quantityKg,
+      'pickupSlot': pickupSlot,
+      'paymentMethod': paymentMethod,
     });
     return _orderFromJson((res['order'] as Map).cast<String, dynamic>());
   }
@@ -71,6 +75,8 @@ class HttpMarketplaceRepository implements MarketplaceRepository {
       band: FreshnessBand.fromValue(j['band']?.toString()),
       status: OrderStatus.fromValue(j['status']?.toString()),
       placedAt: epochToDate(j['createdAt']),
+      pickupSlot: (j['pickupSlot'] ?? '').toString(),
+      paymentMethod: (j['paymentMethod'] ?? 'PICKUP').toString(),
     );
   }
 }

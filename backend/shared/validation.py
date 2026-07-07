@@ -81,15 +81,27 @@ def validate_listing_input(body: dict, now: int | None = None) -> dict:
     }
 
 
+_PAYMENT_METHODS = {"UPI", "CARD", "WALLET", "PICKUP"}
+
+
 def validate_order_input(body: dict) -> dict:
-    """Validate a buyer's order request: a listing id + a quantity."""
+    """Validate a buyer's order: a listing id, quantity + optional fulfilment."""
     listing_id = str(body.get("listingId", "")).strip()
     if not listing_id or len(listing_id) > 60:
         raise ValidationError("listingId is required")
 
     quantity_kg = _num(body.get("quantityKg"), "quantityKg", 0.1, 1000)
 
-    return {"listingId": listing_id, "quantityKg": quantity_kg}
+    payment = str(body.get("paymentMethod", "PICKUP")).strip().upper()
+    if payment not in _PAYMENT_METHODS:
+        payment = "PICKUP"
+
+    return {
+        "listingId": listing_id,
+        "quantityKg": quantity_kg,
+        "pickupSlot": str(body.get("pickupSlot", "")).strip()[:40],
+        "paymentMethod": payment,
+    }
 
 
 VALID_RESCUE_ACTIONS = {"ACCEPT", "CLAIM", "PICKUP", "DELIVER"}

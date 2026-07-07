@@ -135,6 +135,8 @@ def build_order_item(
         "marketPricePerKg": market_price,
         "total": total,
         "status": "CONFIRMED",
+        "pickupSlot": data.get("pickupSlot", ""),
+        "paymentMethod": data.get("paymentMethod", "PICKUP"),
         "createdAt": now,
         # Access patterns: buyer's orders (GSI1), vendor's incoming (GSI3).
         "GSI1PK": f"BUYER#{buyer['id']}",
@@ -158,6 +160,8 @@ def to_public_order(item: dict) -> dict:
         "marketPricePerKg": item.get("marketPricePerKg"),
         "total": item.get("total"),
         "status": item.get("status"),
+        "pickupSlot": item.get("pickupSlot", ""),
+        "paymentMethod": item.get("paymentMethod", "PICKUP"),
         "createdAt": item.get("createdAt"),
     }
 

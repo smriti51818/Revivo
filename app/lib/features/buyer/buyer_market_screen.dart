@@ -6,6 +6,7 @@ import '../../core/models/freshness.dart';
 import '../../core/session/session_controller.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import 'application/cart_providers.dart';
 import 'application/marketplace_providers.dart';
 import 'domain/offer.dart';
 import 'widgets/offer_card.dart';
@@ -44,7 +45,7 @@ class _BuyerMarketScreenState extends ConsumerState<BuyerMarketScreen> {
     list = switch (_filter) {
       _MarketFilter.all => list,
       _MarketFilter.rescue =>
-        list.where((o) => o.band == FreshnessBand.rescue).toList(),
+        list.where((o) => o.liveBand() == FreshnessBand.rescue).toList(),
       _MarketFilter.organic => list.where((o) => o.organic).toList(),
       _MarketFilter.nearby => [...list]
         ..sort((a, b) => a.distanceKm.compareTo(b.distanceKm)),
@@ -152,12 +153,13 @@ class _BuyerMarketScreenState extends ConsumerState<BuyerMarketScreen> {
       );
 }
 
-class _Header extends StatelessWidget {
+class _Header extends ConsumerWidget {
   const _Header({required this.name});
   final String name;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cartCount = ref.watch(cartCountProvider);
     return Row(
       children: [
         Container(
@@ -197,11 +199,49 @@ class _Header extends StatelessWidget {
             ],
           ),
         ),
+        _CartButton(count: cartCount),
+      ],
+    );
+  }
+}
+
+/// Cart icon with a live item-count badge.
+class _CartButton extends StatelessWidget {
+  const _CartButton({required this.count});
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
         IconButton(
-          onPressed: () {},
-          icon: const Icon(Icons.notifications_none_rounded),
+          onPressed: () => context.push('/buyer/cart'),
+          icon: const Icon(Icons.shopping_cart_outlined),
           color: AppColors.textSecondary,
         ),
+        if (count > 0)
+          Positioned(
+            right: 4,
+            top: 4,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+              constraints: const BoxConstraints(minWidth: 18),
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(AppRadius.pill),
+              ),
+              child: Text(
+                '$count',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }

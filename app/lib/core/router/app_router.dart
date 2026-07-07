@@ -9,6 +9,8 @@ import '../../features/auth/role_select_screen.dart';
 import '../../features/auth/splash_screen.dart';
 import '../../features/buyer/buyer_market_screen.dart';
 import '../../features/buyer/buyer_orders_screen.dart';
+import '../../features/buyer/cart_screen.dart';
+import '../../features/buyer/checkout_screen.dart';
 import '../../features/buyer/domain/offer.dart';
 import '../../features/buyer/domain/order.dart';
 import '../../features/buyer/order_confirmed_screen.dart';
@@ -53,9 +55,17 @@ final routerProvider = Provider<GoRouter>((ref) {
             ProductDetailsScreen(offer: state.extra as Offer),
       ),
       GoRoute(
+        path: '/buyer/cart',
+        builder: (_, _) => const CartScreen(),
+      ),
+      GoRoute(
+        path: '/buyer/checkout',
+        builder: (_, _) => const CheckoutScreen(),
+      ),
+      GoRoute(
         path: '/buyer/order-confirmed',
         builder: (_, state) =>
-            OrderConfirmedScreen(order: state.extra as Order),
+            OrderConfirmedScreen(orders: state.extra as List<Order>),
       ),
 
       // ─── Seller shell ───────────────────────────────────────────
