@@ -8,6 +8,7 @@ import '../../core/widgets/app_card.dart';
 import '../../core/widgets/section_header.dart';
 import 'application/insights_providers.dart';
 import 'domain/seller_insights.dart';
+import 'widgets/insight_charts.dart';
 
 /// Insights computed on AWS from the seller's real listings + orders, with
 /// recommendations from Amazon Bedrock (Nova) — or a data-grounded fallback.
@@ -88,6 +89,10 @@ class SellerInsightsScreen extends ConsumerWidget {
             _metric('Orders', '${d.orders}'),
           ],
         ),
+        if (d.good + d.useSoon + d.rescue > 0) ...[
+          const SizedBox(height: AppSpacing.lg),
+          BandRing(good: d.good, useSoon: d.useSoon, rescue: d.rescue),
+        ],
         const SizedBox(height: AppSpacing.xl),
         if (d.peakHour != null) ...[
           _peakCard(d.peakHour!),
@@ -116,18 +121,7 @@ class SellerInsightsScreen extends ConsumerWidget {
           const SizedBox(height: AppSpacing.sm),
           const SectionHeader(title: 'Your top movers'),
           const SizedBox(height: AppSpacing.md),
-          AppCard(
-            padding: EdgeInsets.zero,
-            child: Column(
-              children: [
-                for (var i = 0; i < d.movers.length; i++) ...[
-                  _moverRow(d.movers[i]),
-                  if (i != d.movers.length - 1)
-                    const Divider(height: 1, indent: 16, endIndent: 16),
-                ],
-              ],
-            ),
-          ),
+          MoverBars(movers: d.movers),
         ],
       ],
     );
@@ -251,41 +245,6 @@ class SellerInsightsScreen extends ConsumerWidget {
                         fontSize: 12.5, color: AppColors.textSecondary)),
               ],
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _moverRow(MoverRow m) {
-    return Padding(
-      padding:
-          const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 14),
-      child: Row(
-        children: [
-          const Icon(Icons.eco, size: 18, color: AppColors.primary),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Text(m.vegetable,
-                style: const TextStyle(
-                    fontSize: 14, fontWeight: FontWeight.w600)),
-          ),
-          Text(formatKg(m.kg),
-              style:
-                  const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700)),
-          const SizedBox(width: AppSpacing.md),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-              color: AppColors.successSurface,
-              borderRadius: BorderRadius.circular(AppRadius.pill),
-            ),
-            child: Text(formatMoney(m.revenue),
-                style: const TextStyle(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.success,
-                )),
           ),
         ],
       ),
