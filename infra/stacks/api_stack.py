@@ -126,6 +126,12 @@ class ApiStack(Stack):
         )
         table.grant_read_write_data(rate_order_fn)
 
+        # Vendor manually advances fulfilment (mark ready / handed over).
+        advance_order_fn = self._fn(
+            "AdvanceOrderFn", "advance_order", common_env, use_shared=True
+        )
+        table.grant_read_write_data(advance_order_fn)
+
         # Seller-side view: orders placed against this vendor's listings.
         vendor_orders_fn = self._fn(
             "VendorOrdersFn", "list_vendor_orders", common_env, use_shared=True
@@ -258,10 +264,10 @@ class ApiStack(Stack):
         self._protected(
             orders.add_resource("incoming"), "GET", vendor_orders_fn
         )
+        order_item = orders.add_resource("{orderId}")
+        self._protected(order_item.add_resource("rate"), "POST", rate_order_fn)
         self._protected(
-            orders.add_resource("{orderId}").add_resource("rate"),
-            "POST",
-            rate_order_fn,
+            order_item.add_resource("status"), "POST", advance_order_fn
         )
 
         rescues = api.root.add_resource("rescues")

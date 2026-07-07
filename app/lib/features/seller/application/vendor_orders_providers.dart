@@ -29,6 +29,17 @@ class VendorOrdersController extends AsyncNotifier<List<Order>> {
       // Keep current data on a transient poll failure.
     }
   }
+
+  /// Vendor marks an order ready for pickup or handed over.
+  Future<void> advance(String orderId, OrderStatus status) async {
+    final updated = await ref
+        .read(vendorOrdersRepositoryProvider)
+        .advance(orderId, status);
+    final current = state.valueOrNull ?? const <Order>[];
+    state = AsyncData([
+      for (final o in current) o.id == orderId ? updated : o,
+    ]);
+  }
 }
 
 final vendorOrdersProvider =

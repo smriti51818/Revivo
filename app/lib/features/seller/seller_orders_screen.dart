@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/format.dart';
 import '../../core/theme/app_colors.dart';
@@ -141,7 +142,7 @@ class _SellerOrdersScreenState extends ConsumerState<SellerOrdersScreen> {
       );
 }
 
-class _OrderCard extends StatelessWidget {
+class _OrderCard extends ConsumerWidget {
   const _OrderCard({required this.order});
   final Order order;
 
@@ -152,8 +153,10 @@ class _OrderCard extends StatelessWidget {
         OrderStatus.completed => ChipTone.neutral,
       };
 
+  bool get _isActive => order.status != OrderStatus.completed;
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -203,8 +206,100 @@ class _OrderCard extends StatelessWidget {
               ),
             ],
           ),
+          if (_isActive) ...[
+            const SizedBox(height: AppSpacing.md),
+            _handoverRow(context),
+            const SizedBox(height: AppSpacing.sm),
+            _actions(context, ref),
+          ],
         ],
       ),
     );
+  }
+
+  /// Pickup verification: the buyer reads out this code at handover.
+  Widget _handoverRow(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceAlt,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.vpn_key_outlined,
+                  size: 14, color: AppColors.textSecondary),
+              const SizedBox(width: 5),
+              Text('Code ${order.handoverCode}',
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1,
+                  )),
+            ],
+          ),
+        ),
+        const Spacer(),
+        OutlinedButton.icon(
+          onPressed: () => _call(context),
+          style: OutlinedButton.styleFrom(
+            visualDensity: VisualDensity.compact,
+            side: const BorderSide(color: AppColors.border),
+          ),
+          icon: const Icon(Icons.call_outlined, size: 16),
+          label: const Text('Call buyer'),
+        ),
+      ],
+    );
+  }
+
+  Widget _actions(BuildContext context, WidgetRef ref) {
+    // Confirmed/Preparing → mark ready; Ready → handed over (completes it).
+    final (label, icon, target) = order.status == OrderStatus.readyForPickup
+        ? ('Mark handed over', Icons.check_circle_outline, OrderStatus.completed)
+        : (
+            'Mark ready for pickup',
+            Icons.inventory_2_outlined,
+            OrderStatus.readyForPickup
+          );
+    return SizedBox(
+      width: double.infinity,
+      child: FilledButton.icon(
+        onPressed: () => _advance(context, ref, target, label),
+        style: FilledButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          minimumSize: const Size.fromHeight(44),
+        ),
+        icon: Icon(icon, size: 18),
+        label: Text(label),
+      ),
+    );
+  }
+
+  Future<void> _advance(BuildContext context, WidgetRef ref,
+      OrderStatus target, String label) async {
+    try {
+      await ref.read(vendorOrdersProvider.notifier).advance(order.id, target);
+      if (context.mounted) _toast(context, '$label ✓');
+    } catch (e) {
+      if (context.mounted) _toast(context, 'Could not update: $e');
+    }
+  }
+
+  Future<void> _call(BuildContext context) async {
+    final uri = Uri.parse('tel:+919000000000');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else if (context.mounted) {
+      _toast(context, 'Could not start the call');
+    }
+  }
+
+  void _toast(BuildContext context, String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 }

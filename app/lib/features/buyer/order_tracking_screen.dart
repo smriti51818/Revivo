@@ -269,6 +269,39 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
                   ),
                 ],
               ),
+              if (order.status != OrderStatus.completed) ...[
+                const SizedBox(height: AppSpacing.md),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: AppColors.primarySurface,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.vpn_key_outlined,
+                          size: 16, color: AppColors.primaryDark),
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: Text('Show this code at pickup',
+                            style: TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.primaryDark)),
+                      ),
+                      Text(order.handoverCode,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 3,
+                            color: AppColors.primaryDark,
+                          )),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: AppSpacing.md),
               Row(
                 children: [

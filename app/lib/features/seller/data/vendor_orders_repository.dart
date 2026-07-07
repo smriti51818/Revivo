@@ -6,13 +6,33 @@ import '../../buyer/domain/order.dart';
 /// from the vendor's side. Swapped for the HTTP implementation once live.
 abstract class VendorOrdersRepository {
   Future<List<Order>> fetchIncoming();
+
+  /// Vendor manually advances an order's fulfilment (mark ready / handed over).
+  Future<Order> advance(String orderId, OrderStatus status);
 }
 
 /// Mock incoming orders for offline/demo mode.
 class InMemoryVendorOrdersRepository implements VendorOrdersRepository {
+  List<Order>? _items;
+
   @override
   Future<List<Order>> fetchIncoming() async {
     await Future.delayed(const Duration(milliseconds: 300));
+    return _items ??= _seed();
+  }
+
+  @override
+  Future<Order> advance(String orderId, OrderStatus status) async {
+    await Future.delayed(const Duration(milliseconds: 250));
+    final list = _items ??= _seed();
+    final idx = list.indexWhere((o) => o.id == orderId);
+    if (idx == -1) throw StateError('Order $orderId not found');
+    final updated = list[idx].copyWith(status: status);
+    list[idx] = updated;
+    return updated;
+  }
+
+  List<Order> _seed() {
     return [
       Order(
         id: 'ord_1',
@@ -53,3 +73,11 @@ class InMemoryVendorOrdersRepository implements VendorOrdersRepository {
     ];
   }
 }
+
+/// Maps an [OrderStatus] to the backend status string the API expects.
+String orderStatusValue(OrderStatus status) => switch (status) {
+      OrderStatus.confirmed => 'CONFIRMED',
+      OrderStatus.preparing => 'PREPARING',
+      OrderStatus.readyForPickup => 'READY_FOR_PICKUP',
+      OrderStatus.completed => 'COMPLETED',
+    };

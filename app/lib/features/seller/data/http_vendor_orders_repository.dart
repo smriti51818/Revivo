@@ -2,7 +2,7 @@ import '../../../core/api/api_client.dart';
 import '../../../core/api/json_utils.dart';
 import '../../../core/models/freshness.dart';
 import '../../buyer/domain/order.dart';
-import 'vendor_orders_repository.dart';
+import 'vendor_orders_repository.dart' show VendorOrdersRepository, orderStatusValue;
 
 /// Live implementation: GET /orders/incoming (orders on this seller's listings).
 class HttpVendorOrdersRepository implements VendorOrdersRepository {
@@ -17,6 +17,13 @@ class HttpVendorOrdersRepository implements VendorOrdersRepository {
     return items
         .map((e) => _fromJson((e as Map).cast<String, dynamic>()))
         .toList();
+  }
+
+  @override
+  Future<Order> advance(String orderId, OrderStatus status) async {
+    final res = await _api.post(
+        '/orders/$orderId/status', {'status': orderStatusValue(status)});
+    return _fromJson((res['order'] as Map).cast<String, dynamic>());
   }
 
   Order _fromJson(Map<String, dynamic> j) {

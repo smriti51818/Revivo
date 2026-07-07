@@ -76,6 +76,17 @@ class Order {
 
   bool get isRated => rating != null && rating! > 0;
 
+  /// A stable 4-digit pickup handover code derived from the order id — the buyer
+  /// shows it and the vendor confirms it at handover. Identical on both sides
+  /// with no round-trip, since it's a pure function of the id.
+  String get handoverCode {
+    var h = 0;
+    for (final c in id.codeUnits) {
+      h = (h * 31 + c) & 0x7fffffff;
+    }
+    return (h % 9000 + 1000).toString();
+  }
+
   /// Online orders are prepaid; pay-on-pickup settles at the vendor.
   PaymentStatus get paymentStatus => paymentMethod.toUpperCase() == 'PICKUP'
       ? PaymentStatus.payOnPickup
