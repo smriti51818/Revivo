@@ -8,8 +8,10 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/format.dart';
 import '../../core/widgets/app_card.dart';
+import '../buyer/application/marketplace_providers.dart';
 import '../buyer/application/wallet_providers.dart';
 import 'application/profile_providers.dart';
+import 'badges.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -47,6 +49,10 @@ class ProfileScreen extends ConsumerWidget {
                 ],
               ],
             ),
+            if (role == UserRole.buyer) ...[
+              const SizedBox(height: AppSpacing.xl),
+              _badges(ref),
+            ],
             const SizedBox(height: AppSpacing.xl),
             _menu(context),
             const SizedBox(height: AppSpacing.xl),
@@ -177,6 +183,72 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
+  Widget _badges(WidgetRef ref) {
+    final orders = ref.watch(ordersProvider).valueOrNull ?? const [];
+    final saved = orders.fold<double>(0, (s, o) => s + o.saved);
+    final kg = orders.fold<double>(0, (s, o) => s + o.quantityKg);
+    final badges = buyerBadges(orders: orders.length, saved: saved, kg: kg);
+    final earned = badges.where((b) => b.earned).length;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Text('Milestones',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+            const Spacer(),
+            Text('$earned / ${badges.length}',
+                style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary)),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.md),
+        Wrap(
+          spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.sm,
+          children: [for (final b in badges) _badgeChip(b)],
+        ),
+      ],
+    );
+  }
+
+  Widget _badgeChip(MilestoneBadge b) {
+    return Container(
+      width: 96,
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
+      decoration: BoxDecoration(
+        color: b.earned ? AppColors.primarySurface : AppColors.surfaceAlt,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(
+            color: b.earned ? AppColors.primary : AppColors.border),
+      ),
+      child: Column(
+        children: [
+          Icon(b.icon,
+              size: 22,
+              color: b.earned ? AppColors.primary : AppColors.textMuted),
+          const SizedBox(height: 6),
+          Text(b.title,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              style: TextStyle(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w700,
+                color: b.earned ? AppColors.textPrimary : AppColors.textMuted,
+              )),
+          const SizedBox(height: 1),
+          Text(b.sub,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                  fontSize: 9, color: AppColors.textMuted)),
+        ],
+      ),
+    );
+  }
+
   Widget _walletCard(int balance) {
     return Container(
       width: double.infinity,
@@ -303,9 +375,17 @@ class ProfileScreen extends ConsumerWidget {
   Widget _menu(BuildContext context) {
     final items = <(IconData, String, VoidCallback?)>[
       (Icons.person_outline, 'Account details', () => context.push('/account')),
-      (Icons.notifications_none_rounded, 'Notifications', null),
-      (Icons.help_outline, 'Help & support', null),
-      (Icons.info_outline, 'About Revivo', null),
+      (
+        Icons.notifications_none_rounded,
+        'Notifications',
+        () => context.push('/notifications')
+      ),
+      (
+        Icons.card_giftcard_outlined,
+        'Refer & earn',
+        () => context.push('/refer')
+      ),
+      (Icons.help_outline, 'Help & safety', () => context.push('/help')),
     ];
     return AppCard(
       padding: EdgeInsets.zero,

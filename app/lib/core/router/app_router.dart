@@ -21,12 +21,15 @@ import '../../features/buyer/rescue_map_screen.dart';
 import '../../features/buyer/vendor_profile_screen.dart';
 import '../../features/cook/cook_inbox_screen.dart';
 import '../../features/impact/impact_screen.dart';
+import '../../features/notifications/notification_center_screen.dart';
 import '../../features/seller/add_listing_screen.dart';
 import '../../features/seller/seller_dashboard_screen.dart';
 import '../../features/seller/seller_insights_screen.dart';
 import '../../features/seller/seller_orders_screen.dart';
 import '../../features/shared/account_details_screen.dart';
+import '../../features/shared/help_screen.dart';
 import '../../features/shared/profile_screen.dart';
+import '../../features/shared/refer_screen.dart';
 import '../models/user_role.dart';
 import '../widgets/scaffold_with_nav_bar.dart';
 
@@ -75,6 +78,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/account',
         builder: (_, _) => const AccountDetailsScreen(),
+      ),
+      GoRoute(
+        path: '/notifications',
+        builder: (_, _) => const NotificationCenterScreen(),
+      ),
+      GoRoute(
+        path: '/help',
+        builder: (_, _) => const HelpScreen(),
+      ),
+      GoRoute(
+        path: '/refer',
+        builder: (_, _) => const ReferScreen(),
       ),
       GoRoute(
         path: '/buyer/checkout',
