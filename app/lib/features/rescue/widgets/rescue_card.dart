@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 import '../../../core/format.dart';
 import '../../../core/theme/app_colors.dart';
@@ -166,7 +167,7 @@ class _ExplainSectionState extends State<_ExplainSection> {
           children: [
             Row(
               children: [
-                const Icon(Icons.auto_awesome,
+                const HugeIcon(icon: HugeIcons.strokeRoundedMagicWand01,
                     size: 14, color: AppColors.primary),
                 const SizedBox(width: 6),
                 Text(
@@ -204,7 +205,7 @@ class _ExplainSectionState extends State<_ExplainSection> {
                 height: 14,
                 child: CircularProgressIndicator(strokeWidth: 2),
               )
-            : const Icon(Icons.auto_awesome, size: 16),
+            : const HugeIcon(icon: HugeIcons.strokeRoundedMagicWand01, size: 16),
         label: Text(_loading ? 'Thinking…' : 'Why rescue this?'),
         style: TextButton.styleFrom(
           foregroundColor: AppColors.primary,

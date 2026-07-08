@@ -1,18 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../../../core/models/freshness.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/app_card.dart';
-import '../../../core/widgets/band_chip.dart';
-import '../../../core/widgets/freshness_countdown.dart';
-import '../../../core/widgets/produce_image.dart';
 import '../domain/listing.dart';
-
-String formatMoney(double value) {
-  final whole = value == value.roundToDouble();
-  return '₹${whole ? value.toStringAsFixed(0) : value.toStringAsFixed(2)}';
-}
 
 class ListingCard extends StatelessWidget {
   const ListingCard({
@@ -26,162 +18,222 @@ class ListingCard extends StatelessWidget {
   final VoidCallback? onUpdateStock;
   final VoidCallback? onEdit;
 
-  Color get _tint => switch (listing.band) {
-        FreshnessBand.good => AppColors.successSurface,
-        FreshnessBand.useSoon => AppColors.warningSurface,
-        FreshnessBand.rescue => AppColors.dangerSurface,
-      };
-
   @override
   Widget build(BuildContext context) {
-    return AppCard(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            child: SizedBox(
-              height: 128,
-              width: double.infinity,
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: ProduceImage(
-                      imageUrl: listing.imageUrl,
-                      tint: _tint,
+    // Determine band styling
+    final band = listing.liveBand();
+    final Color bandColor;
+    final Color bandBg;
+    final String bandLabel;
+    
+    switch (band) {
+      case FreshnessBand.rescue:
+        bandColor = const Color(0xFFD32F2F);
+        bandBg = const Color(0xFFFFEBEE);
+        bandLabel = 'Rescue';
+        break;
+      case FreshnessBand.useSoon:
+        bandColor = const Color(0xFFE65100);
+        bandBg = const Color(0xFFFFF3E0);
+        bandLabel = 'Use soon';
+        break;
+      case FreshnessBand.good:
+        bandColor = const Color(0xFF2E7D32);
+        bandBg = const Color(0xFFE8F5E9);
+        bandLabel = 'Fresh';
+        break;
+    }
+
+    final diff = listing.expiresAt != null ? listing.expiresAt!.difference(DateTime.now()) : null;
+    final timerText = diff != null && diff.inSeconds > 0
+        ? '${diff.inHours.toString().padLeft(2, '0')}h ${(diff.inMinutes % 60).toString().padLeft(2, '0')}m left'
+        : '0h 18m left'; // Fallback mockup time
+
+    return GestureDetector(
+      onTap: onUpdateStock,
+      child: AppCard(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+          // Left: Image with Stack
+          SizedBox(
+            width: 88,
+            height: 88,
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: listing.imagePath != null && listing.imagePath!.isNotEmpty
+                        ? Image.file(File(listing.imagePath!), fit: BoxFit.cover, errorBuilder: (_, __, ___) => _fallbackImage())
+                        : listing.imageUrl != null && listing.imageUrl!.isNotEmpty
+                            ? Image.network(listing.imageUrl!, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _fallbackImage())
+                            : _fallbackImage(),
+                  ),
+                ),
+                // ACTIVE Tag
+                Positioned(
+                  top: 6,
+                  left: 6,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2.5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF27AE60),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Text(
+                      'ACTIVE',
+                      style: TextStyle(color: Colors.white, fontSize: 7.5, fontWeight: FontWeight.w900, letterSpacing: 0.2),
                     ),
                   ),
-                  Positioned(
-                    top: 10,
-                    left: 10,
-                    child: Row(
-                      children: [
-                        if (listing.organic)
-                          _tag('ORGANIC', AppColors.textPrimary, Colors.white),
-                        if (listing.isLowStock) ...[
-                          if (listing.organic) const SizedBox(width: 6),
-                          _tag('LOW STOCK', AppColors.danger, Colors.white),
-                        ],
+                ),
+                // Heart Overlay
+                Positioned(
+                  bottom: 4,
+                  right: 4,
+                  child: Container(
+                    width: 22,
+                    height: 22,
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
                       ],
                     ),
+                    child: const Icon(Icons.favorite_border, size: 12, color: AppColors.textSecondary),
                   ),
-                  Positioned(
-                    top: 10,
-                    right: 10,
-                    child: listing.hasClock
-                        ? FreshnessCountdownPill(
-                            expiresAt: listing.expiresAt!,
-                            totalHours: listing.totalHours!,
-                          )
-                        : BandChip(
-                            band: listing.band,
-                            timeRange: listing.timeRange,
-                          ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: AppSpacing.md),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          const SizedBox(width: 10),
+          // Middle: Details
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 2),
+                Row(
                   children: [
                     Text(
                       listing.vegetable,
-                      style: const TextStyle(
-                        fontSize: 15.5,
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: AppColors.textPrimary),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.check_circle, size: 12, color: Color(0xFF27AE60)),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                const Text(
+                  'Fresh • Grade A',
+                  style: TextStyle(fontSize: 10, color: AppColors.textSecondary, fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    const Icon(Icons.inventory_2_outlined, size: 11, color: AppColors.textMuted),
+                    const SizedBox(width: 4),
                     Text(
-                      '${formatMoney(listing.recommendedPrice)} / kg',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primary,
+                      '${listing.quantityKg.toInt()} kg available',
+                      style: const TextStyle(fontSize: 10, color: AppColors.textSecondary, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 3),
+                const Row(
+                  children: [
+                    Icon(Icons.location_on_outlined, size: 11, color: AppColors.textMuted),
+                    SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        'K.R. Market, Bengaluru',
+                        style: TextStyle(fontSize: 10, color: AppColors.textSecondary, fontWeight: FontWeight.w500, overflow: TextOverflow.ellipsis),
                       ),
                     ),
                   ],
                 ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  const Text(
-                    'REMAINING',
-                    style: TextStyle(
-                      fontSize: 10,
-                      letterSpacing: 0.4,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textMuted,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '${listing.quantityKg.toStringAsFixed(listing.quantityKg == listing.quantityKg.roundToDouble() ? 0 : 1)} kg',
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-            ],
+              ],
+            ),
           ),
-          const SizedBox(height: AppSpacing.md),
-          Row(
+          const SizedBox(width: 8),
+          // Right: Pricing / Timer
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: onUpdateStock,
-                  style: ElevatedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(44),
-                  ),
-                  child: const Text('Update stock'),
+              // Freshness container
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                decoration: BoxDecoration(
+                  color: bandBg,
+                  borderRadius: BorderRadius.circular(8),
                 ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              InkWell(
-                onTap: onEdit,
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                child: Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    border: Border.all(color: AppColors.border),
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                  ),
-                  child: const Icon(Icons.edit_outlined,
-                      size: 19, color: AppColors.textSecondary),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      bandLabel,
+                      style: TextStyle(color: bandColor, fontSize: 9.5, fontWeight: FontWeight.w800),
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.access_time, size: 10, color: bandColor),
+                        const SizedBox(width: 2),
+                        Text(
+                          timerText,
+                          style: TextStyle(color: bandColor, fontSize: 9, fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '₹${listing.basePrice.toInt()}/kg',
+                          style: const TextStyle(
+                            fontSize: 9,
+                            color: AppColors.textMuted,
+                            decoration: TextDecoration.lineThrough,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '₹${listing.recommendedPrice.toInt()}',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w900,
+                            color: bandColor,
+                          ),
+                        ),
+                        Text(
+                          '/kg',
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w600,
+                            color: bandColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
         ],
       ),
-    );
+    ));
   }
 
-  Widget _tag(String text, Color bg, Color fg) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-        ),
-        child: Text(
-          text,
-          style: TextStyle(
-            color: fg,
-            fontSize: 9.5,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.4,
-          ),
-        ),
-      );
+  Widget _fallbackImage() {
+    return Image.asset(
+      'assets/images/tomato.png',
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => Container(color: AppColors.primarySurface),
+    );
+  }
 }

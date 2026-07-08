@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 import '../theme/app_colors.dart';
 
@@ -42,8 +43,7 @@ class ProduceImage extends StatelessWidget {
               height: 22,
               child: CircularProgressIndicator(strokeWidth: 2.2),
             )
-          : Icon(
-              Icons.eco,
+          : HugeIcon(icon: HugeIcons.strokeRoundedLeaf02,
               size: iconSize,
               color: AppColors.primary.withValues(alpha: 0.55),
             ),

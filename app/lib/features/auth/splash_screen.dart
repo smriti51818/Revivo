@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
@@ -35,7 +36,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 color: AppColors.primary,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.eco, color: Colors.white, size: 46),
+              child: const HugeIcon(icon: HugeIcons.strokeRoundedLeaf02, color: Colors.white, size: 46),
             ),
             const SizedBox(height: 24),
             const Text(

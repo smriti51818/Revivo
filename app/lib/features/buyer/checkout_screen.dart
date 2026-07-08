@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -280,7 +281,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             color: AppColors.primarySurface,
             borderRadius: BorderRadius.circular(AppRadius.sm),
           ),
-          child: const Icon(Icons.account_balance_wallet_outlined,
+          child: const HugeIcon(icon: HugeIcons.strokeRoundedWallet01,
               color: AppColors.primary, size: 20),
         ),
         title: Text('Use ${formatMoney(balance.toDouble())} in credits',

@@ -40,11 +40,11 @@ abstract class AppTheme {
         backgroundColor: AppColors.surface,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
-        scrolledUnderElevation: 0.5,
+        scrolledUnderElevation: 0,
         centerTitle: true,
         titleTextStyle: GoogleFonts.poppins(
           color: AppColors.textPrimary,
-          fontSize: 17,
+          fontSize: 18,
           fontWeight: FontWeight.w700,
         ),
       ),
@@ -53,8 +53,10 @@ abstract class AppTheme {
           backgroundColor: AppColors.primary,
           foregroundColor: AppColors.onPrimary,
           elevation: 0,
-          minimumSize: const Size.fromHeight(52),
-          shape: const StadiumBorder(),
+          minimumSize: const Size.fromHeight(56),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+          ),
           textStyle: GoogleFonts.poppins(
               fontSize: 16, fontWeight: FontWeight.w700),
         ),
@@ -62,7 +64,7 @@ abstract class AppTheme {
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.button),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
           ),
           textStyle: GoogleFonts.poppins(
               fontSize: 15, fontWeight: FontWeight.w700),
@@ -71,28 +73,28 @@ abstract class AppTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.textPrimary,
-          minimumSize: const Size.fromHeight(52),
-          side: const BorderSide(color: AppColors.border),
+          minimumSize: const Size.fromHeight(56),
+          side: const BorderSide(color: AppColors.border, width: 1.5),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.button),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
           ),
           textStyle: GoogleFonts.poppins(
-              fontSize: 15, fontWeight: FontWeight.w600),
+              fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.surface,
+        fillColor: AppColors.surfaceAlt,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.lg,
           vertical: AppSpacing.lg,
         ),
         hintStyle: GoogleFonts.poppins(color: AppColors.textMuted),
-        border: _inputBorder(AppColors.border),
-        enabledBorder: _inputBorder(AppColors.border),
-        focusedBorder: _inputBorder(AppColors.primary, width: 1.5),
+        border: _inputBorder(Colors.transparent),
+        enabledBorder: _inputBorder(Colors.transparent),
+        focusedBorder: _inputBorder(AppColors.primary, width: 2),
         errorBorder: _inputBorder(AppColors.danger),
-        focusedErrorBorder: _inputBorder(AppColors.danger, width: 1.5),
+        focusedErrorBorder: _inputBorder(AppColors.danger, width: 2),
       ),
       dividerTheme: const DividerThemeData(
         color: AppColors.border,

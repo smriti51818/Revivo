@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -11,11 +12,8 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/primary_button.dart';
 import 'confirm_code_screen.dart';
 
-/// Login screen — authenticates against Amazon Cognito (or a local mock when
-/// `useLiveApi` is off).
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key, this.role});
-
   final UserRole? role;
 
   @override
@@ -44,7 +42,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       _toast('Enter your email and password');
       return;
     }
-
     final config = ref.read(appConfigProvider);
     setState(() => _loading = true);
     try {
@@ -77,9 +74,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           await ref
               .read(cognitoServiceProvider)
               .resendConfirmationCode(email: email);
-        } catch (_) {
-          // The confirm screen also has its own "Resend" action.
-        }
+        } catch (_) {}
         if (!mounted) return;
         context.push(
           '/confirm-code',
@@ -98,38 +93,66 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
-  void _toast(String message) {
+  void _toast(String msg) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
+      ..showSnackBar(SnackBar(content: Text(msg)));
   }
+
+  // Role-specific icon and color
+  ({dynamic icon, String verb}) get _roleStyle => switch (_role) {
+        UserRole.vendor => (
+            icon: HugeIcons.strokeRoundedStore02,
+            verb: 'Seller',
+          ),
+        UserRole.buyer => (
+            icon: HugeIcons.strokeRoundedRestaurant02,
+            verb: 'Hotel Kitchen',
+          ),
+        UserRole.cook => (
+            icon: HugeIcons.strokeRoundedChefHat,
+            verb: 'Community Cook',
+          ),
+      };
 
   @override
   Widget build(BuildContext context) {
+    final rs = _roleStyle;
     return Scaffold(
-      appBar: AppBar(title: const Text('Login')),
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(AppSpacing.xxl),
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.xxl, vertical: AppSpacing.lg),
           children: [
-            const SizedBox(height: 8),
+            const SizedBox(height: 16),
+            // ── Brand mark ──
             Center(
               child: Column(
                 children: [
                   Container(
-                    width: 64,
-                    height: 64,
+                    width: 72,
+                    height: 72,
                     decoration: const BoxDecoration(
                       color: AppColors.primary,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.eco, color: Colors.white, size: 32),
+                    child: const HugeIcon(
+                      icon: HugeIcons.strokeRoundedLeaf02,
+                      color: Colors.white,
+                      size: 34,
+                    ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 14),
                   const Text(
                     'Revivo',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+                    style: TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
+                  const SizedBox(height: 4),
                   const Text(
                     'Reduce waste, grow business',
                     style: TextStyle(
@@ -140,66 +163,106 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 28),
+
+            const SizedBox(height: 32),
+
+            // ── Role badge ──
+            Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.primarySurface,
+                  borderRadius: BorderRadius.circular(100),
+                  border: Border.all(
+                      color: AppColors.primary.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    HugeIcon(
+                      icon: rs.icon,
+                      color: AppColors.primaryDark,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Logging in as ${rs.verb}',
+                      style: const TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primaryDark,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 32),
+
+            // ── Email ──
             _label('Email address'),
             TextField(
               controller: _email,
               keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 hintText: 'name@example.com',
-                prefixIcon: Icon(Icons.mail_outline, size: 20),
+                prefixIcon: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: HugeIcon(
+                    icon: HugeIcons.strokeRoundedMail01,
+                    size: 20,
+                    color: AppColors.textMuted,
+                  ),
+                ),
               ),
             ),
+
             const SizedBox(height: AppSpacing.lg),
+
+            // ── Password ──
             _label('Password'),
             TextField(
               controller: _password,
               obscureText: _obscure,
               decoration: InputDecoration(
                 hintText: '••••••••',
-                prefixIcon: const Icon(Icons.lock_outline, size: 20),
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                prefixIcon: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: HugeIcon(
+                    icon: HugeIcons.strokeRoundedLockKey,
                     size: 20,
+                    color: AppColors.textMuted,
                   ),
-                  onPressed: () => setState(() => _obscure = !_obscure),
                 ),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xxl),
-            PrimaryButton(
-              label: 'Login as ${_role.label}',
-              loading: _loading,
-              onPressed: _login,
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            Row(
-              children: [
-                const Expanded(child: Divider()),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: Text(
-                    'OR CONTINUE WITH',
-                    style: TextStyle(
-                      fontSize: 10.5,
-                      letterSpacing: 1,
+                suffixIcon: GestureDetector(
+                  onTap: () => setState(() => _obscure = !_obscure),
+                  child: Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: HugeIcon(
+                      icon: _obscure
+                          ? HugeIcons.strokeRoundedEye
+                          : HugeIcons.strokeRoundedViewOff,
+                      size: 20,
                       color: AppColors.textMuted,
                     ),
                   ),
                 ),
-                const Expanded(child: Divider()),
-              ],
+              ),
             ),
-            const SizedBox(height: AppSpacing.lg),
-            Row(
-              children: [
-                Expanded(child: _socialButton(Icons.g_mobiledata, 'Google')),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(child: _socialButton(Icons.apple, 'Apple')),
-              ],
+
+            const SizedBox(height: AppSpacing.xxl),
+
+            // ── CTA ──
+            PrimaryButton(
+              label: 'Login as ${rs.verb}',
+              loading: _loading,
+              onPressed: _login,
             ),
+
             const SizedBox(height: AppSpacing.xl),
+
+            // ── Register link ──
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -219,6 +282,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
               ],
             ),
+
+            const SizedBox(height: AppSpacing.lg),
           ],
         ),
       ),
@@ -226,7 +291,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Widget _label(String text) => Padding(
-        padding: const EdgeInsets.only(bottom: 6),
+        padding: const EdgeInsets.only(bottom: 8),
         child: Text(
           text,
           style: const TextStyle(
@@ -235,11 +300,5 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             color: AppColors.textPrimary,
           ),
         ),
-      );
-
-  Widget _socialButton(IconData icon, String label) => OutlinedButton.icon(
-        onPressed: () => _toast('$label sign-in coming soon'),
-        icon: Icon(icon, size: 22, color: AppColors.textPrimary),
-        label: Text(label),
       );
 }

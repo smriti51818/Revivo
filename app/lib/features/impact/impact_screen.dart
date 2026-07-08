@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/format.dart';
@@ -101,7 +102,7 @@ class ImpactScreen extends ConsumerWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.eco, color: Colors.white, size: 20),
+              const HugeIcon(icon: HugeIcons.strokeRoundedLeaf02, color: Colors.white, size: 20),
               const SizedBox(width: 6),
               Text(
                 'Surplus rescued from waste',
@@ -160,7 +161,7 @@ class ImpactScreen extends ConsumerWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.delete_outline,
+                const HugeIcon(icon: HugeIcons.strokeRoundedDelete01,
                     color: Colors.white, size: 15),
                 const SizedBox(width: 6),
                 Text(
@@ -283,7 +284,7 @@ class ImpactScreen extends ConsumerWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.trending_down_rounded,
+          const HugeIcon(icon: HugeIcons.strokeRoundedArrowDown01,
               size: 22, color: AppColors.warning),
           const SizedBox(width: AppSpacing.md),
           Expanded(

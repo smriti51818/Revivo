@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
@@ -92,7 +93,7 @@ class HelpScreen extends StatelessWidget {
               color: AppColors.surfaceAlt,
               child: Row(
                 children: const [
-                  Icon(Icons.support_agent, color: AppColors.textSecondary),
+                  HugeIcon(icon: HugeIcons.strokeRoundedCustomerSupport, color: AppColors.textSecondary),
                   SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: Text(
@@ -117,7 +118,7 @@ class HelpScreen extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: const [
-          Icon(Icons.verified_user_outlined, color: AppColors.primary),
+          HugeIcon(icon: HugeIcons.strokeRoundedCheckmarkBadge01, color: AppColors.primary),
           SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(

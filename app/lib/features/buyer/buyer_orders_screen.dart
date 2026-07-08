@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -120,7 +121,7 @@ class _BuyerOrdersScreenState extends ConsumerState<BuyerOrdersScreen> {
         child: Center(
           child: Column(
             children: [
-              Icon(Icons.receipt_long_outlined,
+              HugeIcon(icon: HugeIcons.strokeRoundedInvoice01,
                   size: 40, color: AppColors.textMuted),
               const SizedBox(height: AppSpacing.md),
               const Text(
@@ -152,7 +153,7 @@ class _FailedSection extends ConsumerWidget {
       children: [
         Row(
           children: [
-            const Icon(Icons.error_outline, size: 18, color: AppColors.danger),
+            const HugeIcon(icon: HugeIcons.strokeRoundedAlert01, size: 18, color: AppColors.danger),
             const SizedBox(width: 6),
             Text('Payment failed · ${payments.length}',
                 style: const TextStyle(
@@ -229,7 +230,7 @@ class _FailedCard extends ConsumerWidget {
                     backgroundColor: AppColors.danger,
                     minimumSize: const Size.fromHeight(40),
                   ),
-                  icon: const Icon(Icons.refresh_rounded, size: 18),
+                  icon: const HugeIcon(icon: HugeIcons.strokeRoundedRefresh01, size: 18),
                   label: const Text('Retry payment'),
                 ),
               ),
@@ -307,7 +308,7 @@ class _OrderCard extends StatelessWidget {
           const SizedBox(height: AppSpacing.md),
           Row(
             children: [
-              const Icon(Icons.schedule, size: 13, color: AppColors.textMuted),
+              const HugeIcon(icon: HugeIcons.strokeRoundedClock01, size: 13, color: AppColors.textMuted),
               const SizedBox(width: 4),
               Text(
                 order.pickupSlot.isEmpty
@@ -319,12 +320,24 @@ class _OrderCard extends StatelessWidget {
                     color: AppColors.textMuted),
               ),
               const Spacer(),
-              const Text('View details',
-                  style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.primary)),
-              const Icon(Icons.chevron_right, size: 16, color: AppColors.primary),
+              if (order.status != OrderStatus.completed)
+                TextButton.icon(
+                  onPressed: () => context.push('/buyer/track', extra: order),
+                  icon: const HugeIcon(icon: HugeIcons.strokeRoundedLocation01, size: 16, color: AppColors.primary),
+                  label: const Text('Track Order',
+                      style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primary)),
+                )
+              else ...[
+                const Text('View details',
+                    style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary)),
+                const HugeIcon(icon: HugeIcons.strokeRoundedArrowRight01, size: 16, color: AppColors.primary),
+              ],
             ],
           ),
         ],

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 import '../../../core/discovery/vendor_directory.dart';
 import '../../../core/theme/app_colors.dart';
@@ -56,7 +57,7 @@ class QualityCard extends StatelessWidget {
             color: AppColors.primarySurface,
             shape: BoxShape.circle,
           ),
-          child: const Icon(Icons.check_rounded,
+          child: const HugeIcon(icon: HugeIcons.strokeRoundedCheckmarkCircle01,
               size: 13, color: AppColors.primary),
         ),
         const SizedBox(width: AppSpacing.sm),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -21,7 +22,7 @@ class NotificationBell extends ConsumerWidget {
       children: [
         IconButton(
           onPressed: () => _open(context, ref),
-          icon: const Icon(Icons.notifications_none_rounded),
+          icon: const HugeIcon(icon: HugeIcons.strokeRoundedNotification01),
           color: color ?? AppColors.textSecondary,
         ),
         if (unread > 0)

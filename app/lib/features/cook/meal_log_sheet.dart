@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -162,7 +163,7 @@ class _MealLogSheetState extends ConsumerState<_MealLogSheet> {
                 shape: const CircleBorder(),
                 child: IconButton(
                   iconSize: 18,
-                  icon: const Icon(Icons.close, color: Colors.white),
+                  icon: const HugeIcon(icon: HugeIcons.strokeRoundedCancel01, color: Colors.white),
                   onPressed: () => setState(() => _photo = null),
                 ),
               ),
@@ -177,7 +178,7 @@ class _MealLogSheetState extends ConsumerState<_MealLogSheet> {
         minimumSize: const Size.fromHeight(48),
         side: const BorderSide(color: AppColors.border),
       ),
-      icon: const Icon(Icons.photo_camera_outlined, size: 18),
+      icon: const HugeIcon(icon: HugeIcons.strokeRoundedCamera01, size: 18),
       label: const Text('Add a meal photo (optional)'),
     );
   }

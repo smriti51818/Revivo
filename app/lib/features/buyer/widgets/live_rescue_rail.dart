@@ -104,6 +104,13 @@ class _RailCard extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(AppRadius.lg),
               border: Border.all(color: AppColors.border),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -112,7 +119,7 @@ class _RailCard extends StatelessWidget {
                   borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(AppRadius.lg)),
                   child: SizedBox(
-                    height: 84,
+                    height: 94,
                     width: double.infinity,
                     child: Stack(
                       children: [
@@ -120,22 +127,21 @@ class _RailCard extends StatelessWidget {
                           child: ProduceImage(
                               imageUrl: offer.imageUrl, tint: _tint),
                         ),
-                        Positioned(
-                          top: 8,
-                          left: 8,
-                          child: offer.hasClock
-                              ? FreshnessCountdownPill(
-                                  expiresAt: offer.expiresAt!,
-                                  totalHours: offer.totalHours!,
-                                )
-                              : const SizedBox.shrink(),
-                        ),
+                        if (offer.hasClock)
+                          Positioned(
+                            bottom: 8,
+                            left: 8,
+                            child: FreshnessCountdownPill(
+                              expiresAt: offer.expiresAt!,
+                              totalHours: offer.totalHours!,
+                            ),
+                          ),
                       ],
                     ),
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -144,17 +150,17 @@ class _RailCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                            fontSize: 13.5, fontWeight: FontWeight.w700),
+                            fontSize: 14, fontWeight: FontWeight.w700),
                       ),
-                      const SizedBox(height: 1),
+                      const SizedBox(height: 2),
                       Text(
                         offer.vendorName,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                            fontSize: 10.5, color: AppColors.textMuted),
+                            fontSize: 11, color: AppColors.textMuted),
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 8),
                       FreshnessTicker(
                         expiresAt: offer.expiresAt ??
                             DateTime.now().add(const Duration(hours: 12)),
@@ -165,7 +171,7 @@ class _RailCard extends StatelessWidget {
                             Text(
                               '${formatMoney(offer.livePrice())}/kg',
                               style: const TextStyle(
-                                fontSize: 13.5,
+                                fontSize: 14,
                                 fontWeight: FontWeight.w800,
                                 color: AppColors.primary,
                               ),
@@ -175,7 +181,7 @@ class _RailCard extends StatelessWidget {
                               Text(
                                 formatMoney(offer.marketPrice),
                                 style: const TextStyle(
-                                  fontSize: 10.5,
+                                  fontSize: 11,
                                   color: AppColors.textMuted,
                                   decoration: TextDecoration.lineThrough,
                                 ),

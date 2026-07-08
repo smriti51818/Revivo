@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -112,7 +113,7 @@ class _ConfirmCodeScreenState extends ConsumerState<ConfirmCodeScreen> {
           padding: const EdgeInsets.all(AppSpacing.xxl),
           children: [
             const SizedBox(height: 8),
-            const Icon(Icons.mark_email_read_outlined,
+            const HugeIcon(icon: HugeIcons.strokeRoundedMail01,
                 size: 48, color: AppColors.primary),
             const SizedBox(height: AppSpacing.lg),
             const Text(

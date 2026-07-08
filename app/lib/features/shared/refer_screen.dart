@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -69,7 +70,7 @@ class ReferScreen extends ConsumerWidget {
               ),
               child: Column(
                 children: [
-                  const Icon(Icons.card_giftcard_rounded,
+                  const HugeIcon(icon: HugeIcons.strokeRoundedGift,
                       color: Colors.white, size: 34),
                   const SizedBox(height: AppSpacing.sm),
                   Text('Give ₹50, get ₹50',
@@ -96,7 +97,7 @@ class ReferScreen extends ConsumerWidget {
                               const SnackBar(content: Text('Code copied')));
                       }
                     },
-                    icon: const Icon(Icons.copy_rounded, size: 18),
+                    icon: const HugeIcon(icon: HugeIcons.strokeRoundedCopy01, size: 18),
                     label: const Text('Copy code'),
                   ),
                 ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -105,7 +106,7 @@ class CartScreen extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.shopping_cart_outlined,
+            const HugeIcon(icon: HugeIcons.strokeRoundedShoppingCart01,
                 size: 44, color: AppColors.textMuted),
             const SizedBox(height: AppSpacing.md),
             const Text('Your cart is empty',
@@ -165,7 +166,7 @@ class _CartTile extends ConsumerWidget {
                     ),
                     InkWell(
                       onTap: () => cart.remove(offer.id),
-                      child: const Icon(Icons.close,
+                      child: const HugeIcon(icon: HugeIcons.strokeRoundedCancel01,
                           size: 18, color: AppColors.textMuted),
                     ),
                   ],
@@ -389,7 +390,7 @@ class _CouponCard extends ConsumerWidget {
             color: AppColors.primarySurface,
             borderRadius: BorderRadius.circular(AppRadius.sm),
           ),
-          child: const Icon(Icons.local_offer_outlined,
+          child: const HugeIcon(icon: HugeIcons.strokeRoundedTag01,
               color: AppColors.primary, size: 20),
         ),
         title: Text(
@@ -403,7 +404,7 @@ class _CouponCard extends ConsumerWidget {
           style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
         ),
         trailing: applied == null
-            ? const Icon(Icons.chevron_right, color: AppColors.textMuted)
+            ? const HugeIcon(icon: HugeIcons.strokeRoundedArrowRight01, color: AppColors.textMuted)
             : TextButton(
                 onPressed: () =>
                     ref.read(appliedCouponProvider.notifier).clear(),
@@ -436,7 +437,7 @@ class _PickupEstimate extends StatelessWidget {
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(AppRadius.sm),
             ),
-            child: const Icon(Icons.directions_walk_rounded,
+            child: const HugeIcon(icon: HugeIcons.strokeRoundedWalking,
                 color: AppColors.textSecondary, size: 20),
           ),
           const SizedBox(width: AppSpacing.md),

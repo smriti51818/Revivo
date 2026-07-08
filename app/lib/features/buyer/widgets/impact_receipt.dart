@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/format.dart';
@@ -43,7 +44,7 @@ class ImpactReceipt extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.eco_rounded, color: Colors.white, size: 20),
+              const HugeIcon(icon: HugeIcons.strokeRoundedLeaf02, color: Colors.white, size: 20),
               const SizedBox(width: 6),
               Text('Your rescue impact',
                   style: TextStyle(
@@ -80,7 +81,7 @@ class ImpactReceipt extends StatelessWidget {
                 foregroundColor: Colors.white,
                 side: BorderSide(color: Colors.white.withValues(alpha: 0.6)),
               ),
-              icon: const Icon(Icons.ios_share_rounded, size: 18),
+              icon: const HugeIcon(icon: HugeIcons.strokeRoundedShare01, size: 18),
               label: const Text('Share impact'),
             ),
           ),

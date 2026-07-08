@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -165,7 +166,7 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
                     context.push('/buyer/vendor', extra: order.vendorName),
                 child: Row(
                   children: [
-                    const Icon(Icons.storefront_outlined,
+                    const HugeIcon(icon: HugeIcons.strokeRoundedStore01,
                         size: 18, color: AppColors.textSecondary),
                     const SizedBox(width: 8),
                     Expanded(
@@ -173,7 +174,7 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
                           style: const TextStyle(
                               fontSize: 14.5, fontWeight: FontWeight.w800)),
                     ),
-                    const Icon(Icons.chevron_right,
+                    const HugeIcon(icon: HugeIcons.strokeRoundedArrowRight01,
                         size: 18, color: AppColors.textMuted),
                     BandChip(band: order.band),
                   ],
@@ -267,7 +268,7 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () => _open(mapsUri),
-                      icon: const Icon(Icons.directions_outlined, size: 18),
+                      icon: const HugeIcon(icon: HugeIcons.strokeRoundedDirections01, size: 18),
                       label: const Text('Directions'),
                     ),
                   ),
@@ -275,7 +276,7 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () => _open(Uri.parse('tel:+919000000000')),
-                      icon: const Icon(Icons.call_outlined, size: 18),
+                      icon: const HugeIcon(icon: HugeIcons.strokeRoundedCall, size: 18),
                       label: const Text('Call vendor'),
                     ),
                   ),
@@ -305,7 +306,7 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () => setState(() => _arrivedOk = true),
-                    icon: const Icon(Icons.check_circle_outline, size: 18),
+                    icon: const HugeIcon(icon: HugeIcons.strokeRoundedCheckmarkCircle01, size: 18),
                     label: const Text('Yes, all good'),
                   ),
                 ),
@@ -316,7 +317,7 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
                     style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.danger,
                         side: const BorderSide(color: AppColors.border)),
-                    icon: const Icon(Icons.error_outline, size: 18),
+                    icon: const HugeIcon(icon: HugeIcons.strokeRoundedAlert01, size: 18),
                     label: const Text('Report issue'),
                   ),
                 ),

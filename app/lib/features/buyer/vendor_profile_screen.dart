@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -146,7 +147,7 @@ class VendorProfileScreen extends ConsumerWidget {
                 const SizedBox(height: 3),
                 Row(
                   children: [
-                    const Icon(Icons.place_outlined,
+                    const HugeIcon(icon: HugeIcons.strokeRoundedLocation01,
                         size: 13, color: AppColors.textMuted),
                     const SizedBox(width: 2),
                     Text(
@@ -203,7 +204,7 @@ class VendorProfileScreen extends ConsumerWidget {
         color: AppColors.surfaceAlt,
         child: const Row(
           children: [
-            Icon(Icons.inventory_2_outlined,
+            HugeIcon(icon: HugeIcons.strokeRoundedPackage,
                 size: 20, color: AppColors.textSecondary),
             SizedBox(width: AppSpacing.md),
             Expanded(

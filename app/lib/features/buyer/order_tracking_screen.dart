@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -112,32 +113,97 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
 
   Widget _headline(Order order) {
     final done = order.status == OrderStatus.completed;
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Zomato style small map
         Container(
-          width: 48,
-          height: 48,
+          height: 160,
+          width: double.infinity,
           decoration: BoxDecoration(
-            color: done ? AppColors.primarySurface : AppColors.infoSurface,
-            borderRadius: BorderRadius.circular(AppRadius.md),
+            color: AppColors.surfaceAlt,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            image: const DecorationImage(
+              image: NetworkImage('https://maps.googleapis.com/maps/api/staticmap?center=Coimbatore&zoom=14&size=600x300&maptype=roadmap&markers=color:green%7Clabel:V%7C11.0168,76.9558&key=YOUR_API_KEY'),
+              fit: BoxFit.cover,
+            ),
+            border: Border.all(color: AppColors.border),
           ),
-          child: Icon(done ? Icons.check_rounded : Icons.local_shipping_outlined,
-              color: done ? AppColors.primary : AppColors.info),
-        ),
-        const SizedBox(width: AppSpacing.md),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Stack(
             children: [
-              Text('${order.vegetable} · ${formatKg(order.quantityKg)}',
-                  style: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.w800)),
-              const SizedBox(height: 2),
-              Text(order.vendorName,
-                  style: const TextStyle(
-                      fontSize: 12.5, color: AppColors.textSecondary)),
+              // Fallback placeholder map (grid) if image fails or no key
+              Positioned.fill(
+                child: CustomPaint(
+                  painter: _MapGridPainter(),
+                ),
+              ),
+              Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.4),
+                            blurRadius: 12,
+                            spreadRadius: 4,
+                          ),
+                        ],
+                      ),
+                      child: const HugeIcon(icon: HugeIcons.strokeRoundedDeliveryTruck01, color: Colors.white, size: 28),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
+                      ),
+                      child: Text(
+                        done ? 'Delivered' : 'On the way',
+                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: done ? AppColors.primarySurface : AppColors.infoSurface,
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+              ),
+              child: Icon(done ? Icons.check_circle_rounded : Icons.local_shipping_rounded,
+                  color: done ? AppColors.primary : AppColors.info, size: 24),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('${order.vegetable} · ${formatKg(order.quantityKg)}',
+                      style: const TextStyle(
+                          fontSize: 17, fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 2),
+                  Text(order.vendorName,
+                      style: const TextStyle(
+                          fontSize: 13, color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
+                ],
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -244,7 +310,7 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.schedule,
+                  const HugeIcon(icon: HugeIcons.strokeRoundedClock01,
                       size: 18, color: AppColors.textSecondary),
                   const SizedBox(width: 8),
                   Text(
@@ -259,7 +325,7 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
               const SizedBox(height: 10),
               Row(
                 children: [
-                  const Icon(Icons.place_outlined,
+                  const HugeIcon(icon: HugeIcons.strokeRoundedLocation01,
                       size: 18, color: AppColors.textSecondary),
                   const SizedBox(width: 8),
                   Expanded(
@@ -281,7 +347,7 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.vpn_key_outlined,
+                      const HugeIcon(icon: HugeIcons.strokeRoundedKey01,
                           size: 16, color: AppColors.primaryDark),
                       const SizedBox(width: 8),
                       const Expanded(
@@ -308,7 +374,7 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () => _open(mapsUri),
-                      icon: const Icon(Icons.directions_outlined, size: 18),
+                      icon: const HugeIcon(icon: HugeIcons.strokeRoundedDirections01, size: 18),
                       label: const Text('Directions'),
                     ),
                   ),
@@ -316,7 +382,7 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () => _open(Uri.parse('tel:+919000000000')),
-                      icon: const Icon(Icons.call_outlined, size: 18),
+                      icon: const HugeIcon(icon: HugeIcons.strokeRoundedCall, size: 18),
                       label: const Text('Call vendor'),
                     ),
                   ),
@@ -415,7 +481,7 @@ class _TimelineRow extends StatelessWidget {
                   border: Border.all(color: color, width: 2),
                 ),
                 child: state == _StepState.done
-                    ? const Icon(Icons.check, size: 14, color: Colors.white)
+                    ? const HugeIcon(icon: HugeIcons.strokeRoundedTick01, size: 14, color: Colors.white)
                     : state == _StepState.active
                         ? Center(
                             child: Container(
@@ -471,4 +537,22 @@ class _TimelineRow extends StatelessWidget {
       ),
     );
   }
+}
+
+class _MapGridPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = AppColors.border.withValues(alpha: 0.4)
+      ..strokeWidth = 1;
+    for (double i = 0; i < size.width; i += 20) {
+      canvas.drawLine(Offset(i, 0), Offset(i, size.height), paint);
+    }
+    for (double i = 0; i < size.height; i += 20) {
+      canvas.drawLine(Offset(0, i), Offset(size.width, i), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

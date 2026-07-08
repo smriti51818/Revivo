@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -21,7 +22,7 @@ class TrustedVendorBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.verified_rounded,
+          HugeIcon(icon: HugeIcons.strokeRoundedCheckmarkBadge01,
               size: compact ? 11 : 13, color: AppColors.primary),
           const SizedBox(width: 3),
           Text('Trusted',
@@ -54,7 +55,7 @@ class RatingPill extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(Icons.star_rounded, size: dense ? 13 : 15, color: AppColors.warning),
+        HugeIcon(icon: HugeIcons.strokeRoundedStar, size: dense ? 13 : 15, color: AppColors.warning),
         const SizedBox(width: 2),
         Text(
           rating.toStringAsFixed(1),

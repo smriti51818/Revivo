@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -55,6 +56,7 @@ class _RescueMapScreenState extends ConsumerState<RescueMapScreen>
     final nearby = offers.where((o) => !o.isExpired()).toList()
       ..sort((a, b) => a.distanceKm.compareTo(b.distanceKm));
     final plotted = nearby.take(14).toList();
+    final actualMaxKm = plotted.isEmpty ? 3.5 : (plotted.last.distanceKm > 3.5 ? plotted.last.distanceKm : 3.5);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Rescue radar')),
@@ -71,7 +73,7 @@ class _RescueMapScreenState extends ConsumerState<RescueMapScreen>
                 style:
                     TextStyle(fontSize: 12.5, color: AppColors.textSecondary)),
             const SizedBox(height: AppSpacing.lg),
-            _radar(plotted),
+            _radar(plotted, actualMaxKm),
             const SizedBox(height: AppSpacing.lg),
             _legend(),
             const SizedBox(height: AppSpacing.lg),
@@ -85,7 +87,7 @@ class _RescueMapScreenState extends ConsumerState<RescueMapScreen>
     );
   }
 
-  Widget _radar(List<Offer> offers) {
+  Widget _radar(List<Offer> offers, double actualMaxKm) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final size = min(constraints.maxWidth, 340.0);
@@ -116,11 +118,11 @@ class _RescueMapScreenState extends ConsumerState<RescueMapScreen>
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white, width: 2),
                     ),
-                    child: const Icon(Icons.restaurant,
+                    child: const HugeIcon(icon: HugeIcons.strokeRoundedRestaurant01,
                         size: 15, color: Colors.white),
                   ),
                 ),
-                for (final o in offers) _dot(o, center, usable),
+                for (final o in offers) _dot(o, center, usable, actualMaxKm),
               ],
             ),
           ),
@@ -129,9 +131,9 @@ class _RescueMapScreenState extends ConsumerState<RescueMapScreen>
     );
   }
 
-  Widget _dot(Offer o, double center, double usable) {
+  Widget _dot(Offer o, double center, double usable, double actualMaxKm) {
     final info = vendorInfo(o.vendorName);
-    final r = (o.distanceKm / _maxKm).clamp(0.12, 1.0) * usable;
+    final r = (o.distanceKm / actualMaxKm).clamp(0.12, 1.0) * usable;
     final dx = center + r * cos(info.bearing);
     final dy = center + r * sin(info.bearing);
     final color = _bandColor(o.liveBand());
@@ -154,7 +156,7 @@ class _RescueMapScreenState extends ConsumerState<RescueMapScreen>
                   spreadRadius: 1),
             ],
           ),
-          child: const Icon(Icons.eco, size: 13, color: Colors.white),
+          child: const HugeIcon(icon: HugeIcons.strokeRoundedLeaf02, size: 13, color: Colors.white),
         ),
       ),
     );

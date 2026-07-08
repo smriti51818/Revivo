@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/format.dart';
@@ -35,7 +36,7 @@ class OrderConfirmedScreen extends StatelessWidget {
                   color: AppColors.primarySurface,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.check_rounded,
+                child: const HugeIcon(icon: HugeIcons.strokeRoundedCheckmarkCircle01,
                     size: 48, color: AppColors.primary),
               ),
               const SizedBox(height: AppSpacing.lg),

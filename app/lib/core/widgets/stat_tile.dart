@@ -25,40 +25,44 @@ class StatTile extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label.toUpperCase(),
-            style: const TextStyle(
-              fontSize: 10.5,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.4,
-              color: AppColors.textMuted,
-            ),
-          ),
-          const SizedBox(height: 6),
           Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                value,
+                label.toUpperCase(),
                 style: const TextStyle(
-                  fontSize: 22,
+                  fontSize: 10.5,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
+                  letterSpacing: 0.5,
+                  color: AppColors.textMuted,
                 ),
               ),
-              if (badge != null) ...[
-                const SizedBox(width: 6),
-                Text(
-                  badge!,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: badgeColor,
+              if (badge != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: badgeColor.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    badge!,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: badgeColor,
+                    ),
                   ),
                 ),
-              ],
             ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 26,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary,
+            ),
           ),
         ],
       ),

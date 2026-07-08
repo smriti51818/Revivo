@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -133,7 +134,7 @@ class _NotificationCenterScreenState
             child: Center(
               child: Column(
                 children: [
-                  Icon(Icons.notifications_off_outlined,
+                  HugeIcon(icon: HugeIcons.strokeRoundedNotificationOff01,
                       size: 40, color: AppColors.textMuted),
                   SizedBox(height: AppSpacing.md),
                   Text('Nothing here yet',

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -134,7 +135,7 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                             ),
                           ),
                         ),
-                        const Icon(Icons.chevron_right,
+                        const HugeIcon(icon: HugeIcons.strokeRoundedArrowRight01,
                             size: 16, color: AppColors.textMuted),
                       ],
                     ),
@@ -148,7 +149,7 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                 ),
                 const Spacer(),
                 if (offer.distanceKm > 0) ...[
-                  const Icon(Icons.place_outlined,
+                  const HugeIcon(icon: HugeIcons.strokeRoundedLocation01,
                       size: 14, color: AppColors.textMuted),
                   const SizedBox(width: 2),
                   Text(
@@ -324,7 +325,7 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
               const SizedBox(height: 6),
               Row(
                 children: [
-                  Icon(Icons.trending_down,
+                  HugeIcon(icon: HugeIcons.strokeRoundedArrowDown01,
                       size: 15, color: AppColors.textSecondary),
                   const SizedBox(width: 4),
                   Expanded(
@@ -352,7 +353,7 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.schedule, size: 20, color: AppColors.textSecondary),
+          const HugeIcon(icon: HugeIcons.strokeRoundedClock01, size: 20, color: AppColors.textSecondary),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/models/user_role.dart';
@@ -193,7 +194,7 @@ class _AccountDetailsScreenState extends ConsumerState<AccountDetailsScreen> {
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Row(
         children: [
-          const Icon(Icons.add_location_alt_outlined,
+          const HugeIcon(icon: HugeIcons.strokeRoundedLocation01,
               size: 20, color: AppColors.info),
           const SizedBox(width: AppSpacing.md),
           const Expanded(

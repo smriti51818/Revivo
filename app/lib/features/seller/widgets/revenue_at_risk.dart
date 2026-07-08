@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 import '../../../core/discovery/vendor_directory.dart';
 import '../../../core/format.dart';
@@ -126,7 +127,7 @@ class _RevenueAtRiskState extends ConsumerState<RevenueAtRisk> {
         children: [
           Row(
             children: [
-              const Icon(Icons.trending_down_rounded,
+              const HugeIcon(icon: HugeIcons.strokeRoundedArrowDown01,
                   color: Colors.white, size: 20),
               const SizedBox(width: 6),
               Text('Revenue at risk',
@@ -212,7 +213,7 @@ class _RevenueAtRiskState extends ConsumerState<RevenueAtRisk> {
                     foregroundColor: Colors.white,
                     minimumSize: const Size.fromHeight(42),
                   ),
-                  icon: const Icon(Icons.volunteer_activism_outlined, size: 18),
+                  icon: const HugeIcon(icon: HugeIcons.strokeRoundedFavourite, size: 18),
                   label: const Text('Route to rescue'),
                 ),
               ),
@@ -299,7 +300,7 @@ class _RevenueAtRiskState extends ConsumerState<RevenueAtRisk> {
       ),
       child: Row(
         children: [
-          const Icon(Icons.verified_rounded, color: AppColors.primary, size: 22),
+          const HugeIcon(icon: HugeIcons.strokeRoundedCheckmarkBadge01, color: AppColors.primary, size: 22),
           const SizedBox(width: AppSpacing.md),
           const Expanded(
             child: Text(
@@ -354,7 +355,7 @@ class _DropCountdownState extends State<_DropCountdown> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.schedule, size: 13, color: Colors.white),
+          const HugeIcon(icon: HugeIcons.strokeRoundedClock01, size: 13, color: Colors.white),
           const SizedBox(width: 5),
           Text(
             'Next price drop in ${formatCountdown(remaining)}',

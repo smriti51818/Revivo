@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -75,7 +76,7 @@ class _Bar extends StatelessWidget {
                   horizontal: AppSpacing.lg, vertical: 12),
               child: Row(
                 children: [
-                  const Icon(Icons.shopping_bag_outlined,
+                  const HugeIcon(icon: HugeIcons.strokeRoundedShoppingBag01,
                       color: Colors.white, size: 22),
                   const SizedBox(width: AppSpacing.md),
                   Column(
@@ -109,7 +110,7 @@ class _Bar extends StatelessWidget {
                       fontWeight: FontWeight.w800,
                     ),
                   ),
-                  const Icon(Icons.arrow_forward_rounded,
+                  const HugeIcon(icon: HugeIcons.strokeRoundedArrowRight01,
                       color: Colors.white, size: 18),
                 ],
               ),

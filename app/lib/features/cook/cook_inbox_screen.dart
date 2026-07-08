@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -250,7 +251,7 @@ class _CookInboxScreenState extends ConsumerState<CookInboxScreen> {
         Expanded(
           child: OutlinedButton.icon(
             onPressed: () => _open(context, maps),
-            icon: const Icon(Icons.directions_outlined, size: 18),
+            icon: const HugeIcon(icon: HugeIcons.strokeRoundedDirections01, size: 18),
             label: Text('Directions · ${r.distanceKm.toStringAsFixed(1)} km'),
           ),
         ),
@@ -258,7 +259,7 @@ class _CookInboxScreenState extends ConsumerState<CookInboxScreen> {
         OutlinedButton(
           onPressed: () => _open(context, Uri.parse('tel:+919000000000')),
           style: OutlinedButton.styleFrom(minimumSize: const Size(0, 44)),
-          child: const Icon(Icons.call_outlined, size: 18),
+          child: const HugeIcon(icon: HugeIcons.strokeRoundedCall, size: 18),
         ),
       ],
     );
@@ -298,7 +299,7 @@ class _CookInboxScreenState extends ConsumerState<CookInboxScreen> {
     return OutlinedButton.icon(
       onPressed: () => showMealLogSheet(context, ref, r),
       style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(44)),
-      icon: const Icon(Icons.restaurant_rounded, size: 18),
+      icon: const HugeIcon(icon: HugeIcons.strokeRoundedRestaurant01, size: 18),
       label: const Text('Log meals served'),
     );
   }
@@ -371,7 +372,7 @@ class _Header extends StatelessWidget {
             color: AppColors.primary,
             shape: BoxShape.circle,
           ),
-          child: const Icon(Icons.soup_kitchen, color: Colors.white, size: 22),
+          child: const HugeIcon(icon: HugeIcons.strokeRoundedPot01, color: Colors.white, size: 22),
         ),
         const SizedBox(width: AppSpacing.md),
         Expanded(
@@ -393,7 +394,7 @@ class _Header extends StatelessWidget {
         ),
         IconButton(
           onPressed: () => context.push('/buyer/map'),
-          icon: const Icon(Icons.radar, color: AppColors.primary),
+          icon: const HugeIcon(icon: HugeIcons.strokeRoundedSatellite01, color: AppColors.primary),
           tooltip: 'Rescue radar',
         ),
         const NotificationBell(),

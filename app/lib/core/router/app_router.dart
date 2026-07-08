@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -23,9 +24,17 @@ import '../../features/cook/cook_inbox_screen.dart';
 import '../../features/impact/impact_screen.dart';
 import '../../features/notifications/notification_center_screen.dart';
 import '../../features/seller/add_listing_screen.dart';
+import '../../features/seller/domain/listing.dart';
 import '../../features/seller/seller_dashboard_screen.dart';
+import '../../features/seller/seller_documents_screen.dart';
+import '../../features/seller/seller_edit_profile_screen.dart';
 import '../../features/seller/seller_insights_screen.dart';
+import '../../features/seller/seller_listings_screen.dart';
+import '../../features/seller/seller_order_details_screen.dart';
+import '../../features/seller/seller_reviews_screen.dart';
+
 import '../../features/seller/seller_orders_screen.dart';
+import '../../features/seller/update_stock_screen.dart';
 import '../../features/shared/account_details_screen.dart';
 import '../../features/shared/help_screen.dart';
 import '../../features/shared/profile_screen.dart';
@@ -92,6 +101,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, _) => const ReferScreen(),
       ),
       GoRoute(
+        path: '/seller/order',
+        builder: (_, state) =>
+            SellerOrderDetailsScreen(order: state.extra as Order),
+      ),
+      GoRoute(
         path: '/buyer/checkout',
         builder: (_, _) => const CheckoutScreen(),
       ),
@@ -121,7 +135,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                 selectedIcon: Icon(Icons.dashboard),
                 label: 'Dashboard'),
             NavigationDestination(
-                icon: Icon(Icons.receipt_long_outlined),
+                icon: HugeIcon(icon: HugeIcons.strokeRoundedInvoice01),
                 selectedIcon: Icon(Icons.receipt_long),
                 label: 'Orders'),
             NavigationDestination(
@@ -129,21 +143,63 @@ final routerProvider = Provider<GoRouter>((ref) {
                 selectedIcon: Icon(Icons.add_circle),
                 label: 'List'),
             NavigationDestination(
-                icon: Icon(Icons.insights_outlined),
+                icon: HugeIcon(icon: HugeIcons.strokeRoundedChartLineData01),
                 selectedIcon: Icon(Icons.insights),
                 label: 'Insights'),
             NavigationDestination(
-                icon: Icon(Icons.person_outline),
-                selectedIcon: Icon(Icons.person),
+                icon: HugeIcon(icon: HugeIcons.strokeRoundedUser),
+                selectedIcon: HugeIcon(icon: HugeIcons.strokeRoundedUser),
                 label: 'Profile'),
           ],
         ),
         branches: [
-          _branch('/seller/dashboard', const SellerDashboardScreen()),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/seller/dashboard',
+                builder: (_, _) => const SellerDashboardScreen(),
+              ),
+              GoRoute(
+                path: '/seller/listings',
+                builder: (_, _) => const SellerListingsScreen(),
+              ),
+            ],
+          ),
           _branch('/seller/orders', const SellerOrdersScreen()),
           _branch('/seller/add', const AddListingScreen()),
-          _branch('/seller/insights', const SellerInsightsScreen()),
-          _branch('/seller/profile', const ProfileScreen()),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/seller/insights',
+                builder: (_, _) => const SellerInsightsScreen(),
+              ),
+              GoRoute(
+                path: '/seller/update-stock',
+                builder: (_, state) => UpdateStockScreen(listing: state.extra as Listing),
+              ),
+            ],
+          ),
+
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/seller/profile',
+                builder: (_, _) => const ProfileScreen(),
+              ),
+              GoRoute(
+                path: '/seller/profile/edit',
+                builder: (_, _) => const SellerEditProfileScreen(),
+              ),
+              GoRoute(
+                path: '/seller/profile/documents',
+                builder: (_, _) => const SellerDocumentsScreen(),
+              ),
+              GoRoute(
+                path: '/seller/profile/reviews',
+                builder: (_, _) => const SellerReviewsScreen(),
+              ),
+            ],
+          ),
         ],
       ),
 
@@ -153,20 +209,20 @@ final routerProvider = Provider<GoRouter>((ref) {
           navigationShell: shell,
           destinations: const [
             NavigationDestination(
-                icon: Icon(Icons.storefront_outlined),
+                icon: HugeIcon(icon: HugeIcons.strokeRoundedStore01),
                 selectedIcon: Icon(Icons.storefront),
                 label: 'Market'),
             NavigationDestination(
-                icon: Icon(Icons.receipt_long_outlined),
+                icon: HugeIcon(icon: HugeIcons.strokeRoundedInvoice01),
                 selectedIcon: Icon(Icons.receipt_long),
                 label: 'Orders'),
             NavigationDestination(
-                icon: Icon(Icons.eco_outlined),
-                selectedIcon: Icon(Icons.eco),
+                icon: HugeIcon(icon: HugeIcons.strokeRoundedLeaf02),
+                selectedIcon: HugeIcon(icon: HugeIcons.strokeRoundedLeaf02),
                 label: 'Impact'),
             NavigationDestination(
-                icon: Icon(Icons.person_outline),
-                selectedIcon: Icon(Icons.person),
+                icon: HugeIcon(icon: HugeIcons.strokeRoundedUser),
+                selectedIcon: HugeIcon(icon: HugeIcons.strokeRoundedUser),
                 label: 'Profile'),
           ],
         ),
@@ -185,15 +241,15 @@ final routerProvider = Provider<GoRouter>((ref) {
           destinations: const [
             NavigationDestination(
                 icon: Icon(Icons.inbox_outlined),
-                selectedIcon: Icon(Icons.inbox),
+                selectedIcon: HugeIcon(icon: HugeIcons.strokeRoundedInbox),
                 label: 'Rescues'),
             NavigationDestination(
-                icon: Icon(Icons.eco_outlined),
-                selectedIcon: Icon(Icons.eco),
+                icon: HugeIcon(icon: HugeIcons.strokeRoundedLeaf02),
+                selectedIcon: HugeIcon(icon: HugeIcons.strokeRoundedLeaf02),
                 label: 'Impact'),
             NavigationDestination(
-                icon: Icon(Icons.person_outline),
-                selectedIcon: Icon(Icons.person),
+                icon: HugeIcon(icon: HugeIcons.strokeRoundedUser),
+                selectedIcon: HugeIcon(icon: HugeIcons.strokeRoundedUser),
                 label: 'Profile'),
           ],
         ),
