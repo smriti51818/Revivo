@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -108,11 +109,10 @@ class _RateSheetState extends State<_RateSheet> {
                   iconSize: 38,
                   padding: const EdgeInsets.symmetric(horizontal: 4),
                   constraints: const BoxConstraints(),
-                  icon: Icon(
-                    i <= _stars ? Icons.star_rounded : Icons.star_outline_rounded,
-                    color: i <= _stars
-                        ? AppColors.warning
-                        : AppColors.borderStrong,
+                  icon: HugeIcon(
+                    icon: HugeIcons.strokeRoundedStar,
+                    size: 30,
+                    color: i <= _stars ? AppColors.warning : AppColors.borderStrong,
                   ),
                 ),
             ],

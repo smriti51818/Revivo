@@ -16,19 +16,19 @@ import '../../core/widgets/section_header.dart';
 class ReferScreen extends ConsumerWidget {
   const ReferScreen({super.key});
 
-  static const _steps = <({IconData icon, String title, String sub})>[
+  static const _steps = <({dynamic icon, String title, String sub})>[
     (
-      icon: Icons.ios_share_rounded,
+      icon: HugeIcons.strokeRoundedSent,
       title: 'Share your code',
       sub: 'Send it to a hotel or vendor you know'
     ),
     (
-      icon: Icons.person_add_alt_1_outlined,
+      icon: HugeIcons.strokeRoundedUserCircle,
       title: 'They join Revivo',
       sub: 'and enter your code when signing up'
     ),
     (
-      icon: Icons.savings_outlined,
+      icon: HugeIcons.strokeRoundedWallet01,
       title: 'You both earn ₹50 credits',
       sub: 'when they complete their first rescue'
     ),
@@ -105,7 +105,7 @@ class ReferScreen extends ConsumerWidget {
                 Expanded(
                   child: PrimaryButton(
                     label: 'Share',
-                    icon: Icons.ios_share_rounded,
+                    icon: HugeIcons.strokeRoundedSent,
                     onPressed: () async {
                       await Clipboard.setData(ClipboardData(text: shareText));
                       if (context.mounted) {
@@ -134,7 +134,7 @@ class ReferScreen extends ConsumerWidget {
                         color: AppColors.primarySurface,
                         borderRadius: BorderRadius.circular(AppRadius.md),
                       ),
-                      child: Icon(s.icon,
+                      child: HugeIcon(icon: s.icon,
                           size: 20, color: AppColors.primaryDark),
                     ),
                     const SizedBox(width: AppSpacing.md),

@@ -25,14 +25,14 @@ import 'widgets/payment_sheet.dart';
 /// others are simulated — no real gateway yet, per the spec's future scope).
 /// Revivo credits are handled separately, as a redeemable balance.
 enum PayMethod {
-  pickup('Pay on pickup', 'PICKUP', Icons.payments_outlined),
-  upi('UPI', 'UPI', Icons.qr_code_2_rounded),
-  card('Card', 'CARD', Icons.credit_card_rounded);
+  pickup('Pay on pickup', 'PICKUP', HugeIcons.strokeRoundedMoney01),
+  upi('UPI', 'UPI', HugeIcons.strokeRoundedQrCode),
+  card('Card', 'CARD', HugeIcons.strokeRoundedCreditCard);
 
   const PayMethod(this.label, this.value, this.icon);
   final String label;
   final String value;
-  final IconData icon;
+  final dynamic icon;
 }
 
 class CheckoutScreen extends ConsumerStatefulWidget {
@@ -254,7 +254,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     : payable <= 0
                         ? 'Place order · paid with credits'
                         : 'Pay ${formatMoney(payable)} · place order',
-                icon: Icons.check_circle_outline,
                 loading: _placing,
                 onPressed: _placeOrder,
               ),
@@ -325,19 +324,25 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             horizontal: AppSpacing.md, vertical: 14),
         child: Row(
           children: [
-            Icon(m.icon, size: 22, color: AppColors.textSecondary),
+            HugeIcon(icon: m.icon, size: 22, color: AppColors.textSecondary),
             const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Text(m.label,
                   style: const TextStyle(
                       fontSize: 14, fontWeight: FontWeight.w600)),
             ),
-            Icon(
-              selected
-                  ? Icons.radio_button_checked
-                  : Icons.radio_button_unchecked,
-              size: 20,
-              color: selected ? AppColors.primary : AppColors.borderStrong,
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 160),
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: selected ? AppColors.primary : AppColors.borderStrong,
+                  width: selected ? 6 : 2,
+                ),
+                color: selected ? AppColors.primary : Colors.transparent,
+              ),
             ),
           ],
         ),

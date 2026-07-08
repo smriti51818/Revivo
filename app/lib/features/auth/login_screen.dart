@@ -99,7 +99,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       ..showSnackBar(SnackBar(content: Text(msg)));
   }
 
-  // Role-specific icon and color
   ({dynamic icon, String verb}) get _roleStyle => switch (_role) {
         UserRole.vendor => (
             icon: HugeIcons.strokeRoundedStore02,
@@ -108,10 +107,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         UserRole.buyer => (
             icon: HugeIcons.strokeRoundedRestaurant02,
             verb: 'Hotel Kitchen',
-          ),
-        UserRole.cook => (
-            icon: HugeIcons.strokeRoundedChefHat,
-            verb: 'Community Cook',
           ),
       };
 

@@ -185,8 +185,11 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
                 color: done ? AppColors.primarySurface : AppColors.infoSurface,
                 borderRadius: BorderRadius.circular(AppRadius.lg),
               ),
-              child: Icon(done ? Icons.check_circle_rounded : Icons.local_shipping_rounded,
-                  color: done ? AppColors.primary : AppColors.info, size: 24),
+              child: HugeIcon(
+                icon: done ? HugeIcons.strokeRoundedCheckmarkCircle02 : HugeIcons.strokeRoundedDeliveryTruck02,
+                color: done ? AppColors.primary : AppColors.info,
+                size: 24,
+              ),
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
@@ -242,10 +245,10 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
                         TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700)),
                 const Spacer(),
                 for (var i = 1; i <= 5; i++)
-                  Icon(
-                    i <= order.rating! ? Icons.star_rounded : Icons.star_outline_rounded,
+                  HugeIcon(
+                    icon: i <= order.rating! ? HugeIcons.strokeRoundedStar : HugeIcons.strokeRoundedStar,
                     size: 18,
-                    color: AppColors.warning,
+                    color: i <= order.rating! ? AppColors.warning : AppColors.border,
                   ),
               ],
             ),
@@ -288,7 +291,6 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
           const SizedBox(height: AppSpacing.md),
           PrimaryButton(
             label: 'Rate this rescue',
-            icon: Icons.star_outline_rounded,
             onPressed: () => showRateOrderSheet(context, ref, order),
           ),
         ],

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 /// An in-app notification (e.g. "New order received"). Written server-side by
 /// the Streams notifier; read via GET /notifications.
@@ -19,9 +19,9 @@ class AppNotification {
   final bool read;
   final DateTime createdAt;
 
-  IconData get icon => switch (kind) {
-        'ORDER' => Icons.receipt_long_outlined,
-        'RESCUE' => Icons.volunteer_activism_outlined,
-        _ => Icons.notifications_none_rounded,
+  dynamic get icon => switch (kind) {
+        'ORDER' => HugeIcons.strokeRoundedReceiptText,
+        'RESCUE' => HugeIcons.strokeRoundedHandHelping,
+        _ => HugeIcons.strokeRoundedNotification01,
       };
 }

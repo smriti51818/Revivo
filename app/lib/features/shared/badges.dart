@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 /// A gamification milestone shown on the profile. [earned] is computed from the
 /// buyer's real order history.
@@ -12,7 +12,7 @@ class MilestoneBadge {
 
   final String title;
   final String sub;
-  final IconData icon;
+  final dynamic icon;
   final bool earned;
 }
 
@@ -28,27 +28,27 @@ List<MilestoneBadge> buyerBadges({
     MilestoneBadge(
         title: 'First rescue',
         sub: '1 order',
-        icon: Icons.eco_rounded,
+        icon: HugeIcons.strokeRoundedLeaf02,
         earned: orders >= 1),
     MilestoneBadge(
         title: 'Regular rescuer',
         sub: '5 orders',
-        icon: Icons.repeat_rounded,
+        icon: HugeIcons.strokeRoundedRefresh,
         earned: orders >= 5),
     MilestoneBadge(
         title: 'Waste warrior',
         sub: '10 orders',
-        icon: Icons.shield_outlined,
+        icon: HugeIcons.strokeRoundedCheckmarkBadge01,
         earned: orders >= 10),
     MilestoneBadge(
         title: '₹500 saved',
         sub: 'saved ₹500+',
-        icon: Icons.savings_outlined,
+        icon: HugeIcons.strokeRoundedMoney01,
         earned: saved >= 500),
     MilestoneBadge(
         title: 'Meal maker',
         sub: '~50 meals',
-        icon: Icons.restaurant_rounded,
+        icon: HugeIcons.strokeRoundedRestaurant02,
         earned: meals >= 50),
   ];
 }
@@ -65,62 +65,27 @@ List<MilestoneBadge> sellerBadges({
     MilestoneBadge(
         title: 'First sale',
         sub: '1 order',
-        icon: Icons.storefront_rounded,
+        icon: HugeIcons.strokeRoundedStore02,
         earned: orders >= 1),
     MilestoneBadge(
         title: 'Busy vendor',
         sub: '10 orders',
-        icon: Icons.local_shipping_outlined,
+        icon: HugeIcons.strokeRoundedDeliveryTruck02,
         earned: orders >= 10),
     MilestoneBadge(
         title: '100 kg saved',
         sub: 'from waste',
-        icon: Icons.eco_rounded,
+        icon: HugeIcons.strokeRoundedLeaf02,
         earned: kg >= 100),
     MilestoneBadge(
         title: '₹5k recovered',
         sub: 'in surplus',
-        icon: Icons.payments_outlined,
+        icon: HugeIcons.strokeRoundedMoneyBag01,
         earned: revenue >= 5000),
     MilestoneBadge(
         title: 'Trusted vendor',
         sub: '4.3★ · 10+',
-        icon: Icons.verified_rounded,
+        icon: HugeIcons.strokeRoundedCheckmarkBadge01,
         earned: trusted),
-  ];
-}
-
-/// Cook/NGO milestones from rescues handled and meals served.
-List<MilestoneBadge> cookBadges({
-  required int rescues,
-  required int meals,
-  required double kg,
-}) {
-  return [
-    MilestoneBadge(
-        title: 'First rescue',
-        sub: '1 handled',
-        icon: Icons.volunteer_activism_outlined,
-        earned: rescues >= 1),
-    MilestoneBadge(
-        title: 'Meal hero',
-        sub: '~100 meals',
-        icon: Icons.restaurant_rounded,
-        earned: meals >= 100),
-    MilestoneBadge(
-        title: 'Kitchen force',
-        sub: '10 rescues',
-        icon: Icons.soup_kitchen_outlined,
-        earned: rescues >= 10),
-    MilestoneBadge(
-        title: '500 meals',
-        sub: 'served',
-        icon: Icons.diversity_3_outlined,
-        earned: meals >= 500),
-    MilestoneBadge(
-        title: '250 kg rescued',
-        sub: 'kept from waste',
-        icon: Icons.shield_outlined,
-        earned: kg >= 250),
   ];
 }

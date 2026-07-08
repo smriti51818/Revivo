@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -117,12 +118,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               style: TextStyle(color: AppColors.textSecondary),
             ),
             const SizedBox(height: 24),
-            _field(_name, 'Full name', Icons.person_outline),
+            _field(_name, 'Full name', HugeIcons.strokeRoundedUserCircle),
             const SizedBox(height: AppSpacing.lg),
-            _field(_email, 'Email address', Icons.mail_outline,
+            _field(_email, 'Email address', HugeIcons.strokeRoundedMail01,
                 keyboard: TextInputType.emailAddress),
             const SizedBox(height: AppSpacing.lg),
-            _field(_password, 'Password', Icons.lock_outline, obscure: true),
+            _field(_password, 'Password', HugeIcons.strokeRoundedLockKey, obscure: true),
             const SizedBox(height: AppSpacing.xxl),
             PrimaryButton(
               label: 'Create account',
@@ -159,7 +160,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   Widget _field(
     TextEditingController c,
     String label,
-    IconData icon, {
+    dynamic icon, {
     bool obscure = false,
     TextInputType? keyboard,
   }) {
@@ -180,7 +181,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           controller: c,
           obscureText: obscure,
           keyboardType: keyboard,
-          decoration: InputDecoration(prefixIcon: Icon(icon, size: 20)),
+          decoration: InputDecoration(
+            prefixIcon: Padding(
+              padding: const EdgeInsets.all(12),
+              child: HugeIcon(icon: icon, size: 20, color: AppColors.textMuted),
+            ),
+          ),
         ),
       ],
     );

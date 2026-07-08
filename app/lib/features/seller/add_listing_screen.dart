@@ -424,7 +424,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
                     ),
                     alignment: Alignment.center,
                     child: isDone
-                        ? const Icon(Icons.check, size: 14, color: Colors.white)
+                        ? const HugeIcon(icon: HugeIcons.strokeRoundedCheckmarkCircle02, size: 14, color: Colors.white)
                         : Text(
                             '$stepNum',
                             style: TextStyle(
@@ -609,7 +609,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
                         color: Colors.white.withOpacity(0.8),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.camera_alt_outlined, size: 16, color: AppColors.textPrimary),
+                      child: const HugeIcon(icon: HugeIcons.strokeRoundedCamera01, size: 16, color: AppColors.textPrimary),
                     ),
                   ],
                 ),
@@ -630,7 +630,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.check, size: 10, color: Color(0xFF27AE60)),
+                      HugeIcon(icon: HugeIcons.strokeRoundedCheckmarkCircle02, size: 10, color: Color(0xFF27AE60)),
                       SizedBox(width: 4),
                       Text('Identified', style: TextStyle(color: Color(0xFF27AE60), fontSize: 10, fontWeight: FontWeight.w800)),
                     ],
@@ -987,7 +987,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
                 ),
                 child: const Row(
                   children: [
-                    Icon(Icons.autorenew_outlined, size: 10, color: Color(0xFF27AE60)),
+                    HugeIcon(icon: HugeIcons.strokeRoundedRefresh, size: 10, color: Color(0xFF27AE60)),
                     SizedBox(width: 4),
                     Text('Auto-calculated', style: TextStyle(color: Color(0xFF27AE60), fontSize: 10, fontWeight: FontWeight.w800)),
                   ],
@@ -1019,7 +1019,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
                           ),
                           child: const Text('30% better price for quick sale', style: TextStyle(color: Color(0xFF27AE60), fontSize: 8, fontWeight: FontWeight.w800)),
                         ),
-                        const Icon(Icons.info_outline, size: 11, color: AppColors.textMuted),
+                        const HugeIcon(icon: HugeIcons.strokeRoundedInformationCircle, size: 11, color: AppColors.textMuted),
                       ],
                     ),
                   ],
@@ -1047,7 +1047,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
                       runSpacing: 4,
                       children: [
                         Text('Market Price ₹${marketPrice.toInt()}/kg', style: const TextStyle(fontSize: 10, color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
-                        const Icon(Icons.info_outline, size: 11, color: AppColors.textMuted),
+                        const HugeIcon(icon: HugeIcons.strokeRoundedInformationCircle, size: 11, color: AppColors.textMuted),
                       ],
                     ),
                   ],
@@ -1178,7 +1178,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
           ),
           child: const Row(
             children: [
-              Icon(Icons.lightbulb_outline, size: 14, color: Color(0xFFF2994A)),
+              HugeIcon(icon: HugeIcons.strokeRoundedInformationCircle, size: 14, color: Color(0xFFF2994A)),
               SizedBox(width: 6),
               Expanded(
                 child: Text(
@@ -1293,7 +1293,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
       const SizedBox(height: 10),
       const Row(
         children: [
-          Icon(Icons.local_shipping_outlined, color: Color(0xFF27AE60), size: 14),
+          HugeIcon(icon: HugeIcons.strokeRoundedDeliveryTruck02, color: Color(0xFF27AE60), size: 14),
           SizedBox(width: 6),
           Text('Faster pickups, happier buyers!', style: TextStyle(color: Color(0xFF27AE60), fontSize: 11, fontWeight: FontWeight.w800)),
         ],
@@ -1304,7 +1304,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
         'Pickup address',
         Row(
           children: [
-            const Icon(Icons.location_on, color: Color(0xFF27AE60), size: 18),
+            const HugeIcon(icon: HugeIcons.strokeRoundedLocation01, color: Color(0xFF27AE60), size: 18),
             const SizedBox(width: 8),
             Expanded(
               child: Column(
@@ -1326,7 +1326,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
               ),
               child: IconButton(
                 onPressed: () {},
-                icon: const Icon(Icons.gps_fixed, size: 15),
+                icon: const HugeIcon(icon: HugeIcons.strokeRoundedLocation01, size: 15),
               ),
             ),
           ],
@@ -1355,7 +1355,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
               decoration: BoxDecoration(color: const Color(0xFFEDFBF4), borderRadius: BorderRadius.circular(8)),
               child: Row(
                 children: [
-                  const Icon(Icons.remove_red_eye_outlined, size: 12, color: Color(0xFF27AE60)),
+                  const HugeIcon(icon: HugeIcons.strokeRoundedEye, size: 12, color: Color(0xFF27AE60)),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
@@ -1464,7 +1464,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.calendar_today_outlined, size: 14, color: AppColors.textSecondary),
+                  const HugeIcon(icon: HugeIcons.strokeRoundedCalendar01, size: 14, color: AppColors.textSecondary),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
@@ -1473,7 +1473,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const Icon(Icons.arrow_drop_down, color: AppColors.textSecondary, size: 16),
+                  const HugeIcon(icon: HugeIcons.strokeRoundedArrowDown01, color: AppColors.textSecondary, size: 16),
                 ],
               ),
             ),
@@ -1492,7 +1492,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.access_time, size: 14, color: AppColors.textSecondary),
+                  const HugeIcon(icon: HugeIcons.strokeRoundedClock01, size: 14, color: AppColors.textSecondary),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
@@ -1501,7 +1501,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const Icon(Icons.arrow_drop_down, color: AppColors.textSecondary, size: 16),
+                  const HugeIcon(icon: HugeIcons.strokeRoundedArrowDown01, color: AppColors.textSecondary, size: 16),
                 ],
               ),
             ),
@@ -1525,7 +1525,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(val, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-            const Icon(Icons.arrow_drop_down, color: AppColors.textSecondary),
+            const HugeIcon(icon: HugeIcons.strokeRoundedArrowDown01, color: AppColors.textSecondary),
           ],
         ),
       ),

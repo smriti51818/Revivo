@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 import '../../../core/format.dart';
 import '../../../core/theme/app_colors.dart';
@@ -130,7 +131,7 @@ class _PaymentSheetState extends State<_PaymentSheet> {
             else ...[
               PrimaryButton(
                 label: 'Pay ${formatMoney(widget.amount)}',
-                icon: Icons.lock_outline_rounded,
+                icon: HugeIcons.strokeRoundedLockKey,
                 onPressed: _pay,
               ),
               const SizedBox(height: AppSpacing.sm),

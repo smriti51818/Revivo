@@ -227,7 +227,7 @@ class _UpdateStockScreenState extends ConsumerState<UpdateStockScreen> {
                 const SizedBox(height: 4),
                 const Row(
                   children: [
-                    Icon(Icons.remove_red_eye_outlined, size: 13, color: Color(0xFF27AE60)),
+                    HugeIcon(icon: HugeIcons.strokeRoundedEye, size: 13, color: Color(0xFF27AE60)),
                     SizedBox(width: 4),
                     Text(
                       'View Listing',
@@ -253,7 +253,7 @@ class _UpdateStockScreenState extends ConsumerState<UpdateStockScreen> {
       ),
       child: const Row(
         children: [
-          Icon(Icons.info_outline, size: 14, color: Color(0xFF27AE60)),
+          HugeIcon(icon: HugeIcons.strokeRoundedInformationCircle, size: 14, color: Color(0xFF27AE60)),
           SizedBox(width: 6),
           Expanded(
             child: Text(
@@ -372,7 +372,7 @@ class _UpdateStockScreenState extends ConsumerState<UpdateStockScreen> {
                       style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
                       decoration: const InputDecoration(
                         contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                        prefixIcon: Icon(Icons.scale_outlined, size: 14, color: AppColors.textSecondary),
+                        prefixIcon: HugeIcon(icon: HugeIcons.strokeRoundedNote01, size: 14, color: AppColors.textSecondary),
                         isDense: true,
                       ),
                       items: ['Kilogram (kg)', 'Gram (g)'].map((u) => DropdownMenuItem(value: u, child: Text(u, style: const TextStyle(fontSize: 11)))).toList(),
@@ -410,7 +410,7 @@ class _UpdateStockScreenState extends ConsumerState<UpdateStockScreen> {
                       style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
                       decoration: const InputDecoration(
                         contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                        prefixIcon: Icon(Icons.inventory_2_outlined, size: 14, color: AppColors.textSecondary),
+                        prefixIcon: HugeIcon(icon: HugeIcons.strokeRoundedPackage, size: 14, color: AppColors.textSecondary),
                         isDense: true,
                       ),
                       items: ['Loose/Unpacked', 'Crates', 'Bags'].map((p) => DropdownMenuItem(value: p, child: Text(p, style: const TextStyle(fontSize: 11)))).toList(),
@@ -432,7 +432,7 @@ class _UpdateStockScreenState extends ConsumerState<UpdateStockScreen> {
                       style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
                       decoration: const InputDecoration(
                         contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                        prefixIcon: Icon(Icons.ac_unit, size: 14, color: AppColors.textSecondary),
+                        prefixIcon: HugeIcon(icon: HugeIcons.strokeRoundedTemperature, size: 14, color: AppColors.textSecondary),
                         isDense: true,
                       ),
                       items: StorageCondition.values.map((s) => DropdownMenuItem(value: s, child: Text(s.label, style: const TextStyle(fontSize: 10.5)))).toList(),
@@ -458,7 +458,7 @@ class _UpdateStockScreenState extends ConsumerState<UpdateStockScreen> {
                       style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
                       decoration: const InputDecoration(
                         contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                        prefixIcon: Icon(Icons.analytics_outlined, size: 14, color: AppColors.textSecondary),
+                        prefixIcon: HugeIcon(icon: HugeIcons.strokeRoundedChartLineData01, size: 14, color: AppColors.textSecondary),
                         isDense: true,
                       ),
                       items: ['Excellent (90-100%)', 'Good (70-89%)', 'Average (50-69%)', 'Fair (30-49%)'].map((q) => DropdownMenuItem(value: q, child: Text(q, style: const TextStyle(fontSize: 11)))).toList(),
@@ -480,7 +480,7 @@ class _UpdateStockScreenState extends ConsumerState<UpdateStockScreen> {
                       style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
                       decoration: const InputDecoration(
                         contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                        prefixIcon: Icon(Icons.calendar_today_outlined, size: 14, color: AppColors.textSecondary),
+                        prefixIcon: HugeIcon(icon: HugeIcons.strokeRoundedCalendar01, size: 14, color: AppColors.textSecondary),
                         isDense: true,
                       ),
                       items: ['Just now', '1 day ago', '2-3 days ago', '3-5 days ago', 'A week ago'].map((h) => DropdownMenuItem(value: h, child: Text(h, style: const TextStyle(fontSize: 11)))).toList(),
@@ -506,7 +506,7 @@ class _UpdateStockScreenState extends ConsumerState<UpdateStockScreen> {
                       style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
                       decoration: const InputDecoration(
                         contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                        prefixIcon: Icon(Icons.eco_outlined, size: 14, color: AppColors.textSecondary),
+                        prefixIcon: HugeIcon(icon: HugeIcons.strokeRoundedLeaf02, size: 14, color: AppColors.textSecondary),
                         isDense: true,
                       ),
                       items: ['Yes', 'No'].map((o) => DropdownMenuItem(value: o, child: Text(o, style: const TextStyle(fontSize: 11)))).toList(),
@@ -574,7 +574,7 @@ class _UpdateStockScreenState extends ConsumerState<UpdateStockScreen> {
             decoration: BoxDecoration(color: const Color(0xFFEDFBF4), borderRadius: BorderRadius.circular(8)),
             child: Row(
               children: [
-                const Icon(Icons.remove_red_eye_outlined, size: 12, color: Color(0xFF27AE60)),
+                const HugeIcon(icon: HugeIcons.strokeRoundedEye, size: 12, color: Color(0xFF27AE60)),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(

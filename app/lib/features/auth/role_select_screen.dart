@@ -17,11 +17,9 @@ class RoleSelectScreen extends StatefulWidget {
 class _RoleSelectScreenState extends State<RoleSelectScreen> {
   UserRole? _selected;
 
-  // HugeIcon data for each role
   static const Map<UserRole, dynamic> _hugeIcons = {
     UserRole.vendor: HugeIcons.strokeRoundedStore02,
     UserRole.buyer: HugeIcons.strokeRoundedRestaurant02,
-    UserRole.cook: HugeIcons.strokeRoundedChefHat,
   };
 
   @override
@@ -128,7 +126,6 @@ class _RoleSelectScreenState extends State<RoleSelectScreen> {
 
               PrimaryButton(
                 label: 'Continue',
-                icon: Icons.arrow_forward_rounded,
                 onPressed: _selected == null
                     ? null
                     : () => context.push('/login', extra: _selected),

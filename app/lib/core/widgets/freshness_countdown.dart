@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 import '../format.dart';
 import '../freshness/live_clock.dart';
@@ -103,8 +104,8 @@ class FreshnessCountdownPill extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                urgent ? Icons.bolt : Icons.schedule,
+              HugeIcon(
+                icon: urgent ? HugeIcons.strokeRoundedFlash : HugeIcons.strokeRoundedClock01,
                 size: 13,
                 color: expired ? AppColors.textMuted : tones.fg,
               ),

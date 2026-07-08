@@ -86,12 +86,10 @@ class VendorProfileScreen extends ConsumerWidget {
                         fontSize: 13, fontWeight: FontWeight.w700)),
               ),
               for (var i = 1; i <= 5; i++)
-                Icon(
-                  i <= r.stars
-                      ? Icons.star_rounded
-                      : Icons.star_outline_rounded,
+                HugeIcon(
+                  icon: HugeIcons.strokeRoundedStar,
                   size: 14,
-                  color: AppColors.warning,
+                  color: i <= r.stars ? AppColors.warning : AppColors.border,
                 ),
             ],
           ),

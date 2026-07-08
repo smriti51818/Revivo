@@ -77,19 +77,16 @@ class _Header extends StatelessWidget {
   String get _roleLabel => switch (role) {
         UserRole.vendor => 'Surplus Vendor',
         UserRole.buyer => 'Hotel Kitchen',
-        UserRole.cook => 'Rescue Kitchen',
       };
 
   String get _verifiedLabel => switch (role) {
         UserRole.vendor => 'Verified Seller',
         UserRole.buyer => 'Verified Buyer',
-        UserRole.cook => 'Verified Cook',
       };
 
   dynamic get _roleIcon => switch (role) {
         UserRole.vendor => HugeIcons.strokeRoundedStore02,
         UserRole.buyer => HugeIcons.strokeRoundedRestaurant02,
-        UserRole.cook => HugeIcons.strokeRoundedChefHat,
       };
 
   @override
@@ -372,29 +369,6 @@ class _StatsRow extends StatelessWidget {
               value: formatKg(s.buyerKg),
             ),
           ],
-        UserRole.cook => [
-            _StatTile(
-              icon: HugeIcons.strokeRoundedHandHelping,
-              iconBg: AppColors.primarySurface,
-              iconColor: AppColors.primaryDark,
-              label: 'Rescues',
-              value: '${s.cookRescues}',
-            ),
-            _StatTile(
-              icon: HugeIcons.strokeRoundedChefHat,
-              iconBg: const Color(0xFFFFF3E0),
-              iconColor: const Color(0xFFF2994A),
-              label: 'Meals',
-              value: '~${formatCount(s.cookMeals)}',
-            ),
-            _StatTile(
-              icon: HugeIcons.strokeRoundedLeaf02,
-              iconBg: AppColors.primarySurface,
-              iconColor: AppColors.primaryDark,
-              label: 'kg Saved',
-              value: formatKg(s.cookKg),
-            ),
-          ],
       };
 }
 
@@ -523,38 +497,6 @@ class _MenuCard extends StatelessWidget {
                   route: '/help',
                 ),
               ],
-            UserRole.cook => [
-                (
-                  icon: HugeIcons.strokeRoundedUserCircle,
-                  title: 'Account Details',
-                  subtitle: 'Edit name, phone, address',
-                  route: '/account',
-                ),
-                (
-                  icon: HugeIcons.strokeRoundedHandHelping,
-                  title: 'Rescue History',
-                  subtitle: 'All rescues your kitchen completed',
-                  route: null,
-                ),
-                (
-                  icon: HugeIcons.strokeRoundedChefHat,
-                  title: 'Meal Logs',
-                  subtitle: 'Meals served and photo proofs',
-                  route: null,
-                ),
-                (
-                  icon: HugeIcons.strokeRoundedNotification01,
-                  title: 'Notifications',
-                  subtitle: 'Manage alerts and reminders',
-                  route: '/notifications',
-                ),
-                (
-                  icon: HugeIcons.strokeRoundedHelpCircle,
-                  title: 'Help & Safety',
-                  subtitle: 'FAQs and support',
-                  route: '/help',
-                ),
-              ],
           };
 
   @override
@@ -633,13 +575,6 @@ class _InsightsBanner extends StatelessWidget {
                     'Every order saves food from going to waste. Track your story.',
                 btnLabel: 'View impact',
                 route: '/buyer/impact',
-              ),
-            UserRole.cook => (
-                title: 'You\'re feeding the community',
-                sub:
-                    'Keep accepting rescues and logging meals to grow your impact score.',
-                btnLabel: 'View impact',
-                route: '/cook/impact',
               ),
           };
 

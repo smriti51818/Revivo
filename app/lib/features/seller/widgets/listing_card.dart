@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 import '../../../core/models/freshness.dart';
 import '../../../core/theme/app_colors.dart';
@@ -102,7 +103,7 @@ class ListingCard extends StatelessWidget {
                         BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
                       ],
                     ),
-                    child: const Icon(Icons.favorite_border, size: 12, color: AppColors.textSecondary),
+                    child: const HugeIcon(icon: HugeIcons.strokeRoundedFavourite, size: 12, color: AppColors.textSecondary),
                   ),
                 ),
               ],
@@ -122,7 +123,7 @@ class ListingCard extends StatelessWidget {
                       style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: AppColors.textPrimary),
                     ),
                     const SizedBox(width: 4),
-                    const Icon(Icons.check_circle, size: 12, color: Color(0xFF27AE60)),
+                    const HugeIcon(icon: HugeIcons.strokeRoundedCheckmarkCircle02, size: 12, color: Color(0xFF27AE60)),
                   ],
                 ),
                 const SizedBox(height: 2),
@@ -133,7 +134,7 @@ class ListingCard extends StatelessWidget {
                 const SizedBox(height: 6),
                 Row(
                   children: [
-                    const Icon(Icons.inventory_2_outlined, size: 11, color: AppColors.textMuted),
+                    const HugeIcon(icon: HugeIcons.strokeRoundedPackage, size: 11, color: AppColors.textMuted),
                     const SizedBox(width: 4),
                     Text(
                       '${listing.quantityKg.toInt()} kg available',
@@ -144,7 +145,7 @@ class ListingCard extends StatelessWidget {
                 const SizedBox(height: 3),
                 const Row(
                   children: [
-                    Icon(Icons.location_on_outlined, size: 11, color: AppColors.textMuted),
+                    HugeIcon(icon: HugeIcons.strokeRoundedLocation01, size: 11, color: AppColors.textMuted),
                     SizedBox(width: 4),
                     Expanded(
                       child: Text(
@@ -180,7 +181,7 @@ class ListingCard extends StatelessWidget {
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.access_time, size: 10, color: bandColor),
+                        HugeIcon(icon: HugeIcons.strokeRoundedClock01, size: 10, color: bandColor),
                         const SizedBox(width: 2),
                         Text(
                           timerText,

@@ -233,7 +233,7 @@ class _SellerOrdersScreenState extends ConsumerState<SellerOrdersScreen> {
                           style: TextStyle(fontSize: 12, color: AppColors.textPrimary, fontWeight: FontWeight.w700),
                         ),
                         SizedBox(width: 2),
-                        Icon(Icons.keyboard_arrow_down, size: 14, color: AppColors.textPrimary),
+                        HugeIcon(icon: HugeIcons.strokeRoundedArrowDown01, size: 14, color: AppColors.textPrimary),
                       ],
                     ),
                   ),
@@ -686,8 +686,6 @@ class _OrderCard extends ConsumerWidget {
             ),
           ),
           const Spacer(),
-          _actionIconBtn(HugeIcons.strokeRoundedMessageMultiple01, Colors.transparent, AppColors.textSecondary, () {}),
-          const SizedBox(width: 8),
           _actionIconBtn(
             HugeIcons.strokeRoundedCheckmarkCircle02,
             const Color(0xFF27AE60),
@@ -702,7 +700,7 @@ class _OrderCard extends ConsumerWidget {
       // Accepted State Actions
       return Row(
         children: [
-          const Icon(Icons.check_circle, color: Color(0xFF2F80ED), size: 16),
+          const HugeIcon(icon: HugeIcons.strokeRoundedCheckmarkCircle02, color: Color(0xFF2F80ED), size: 16),
           const SizedBox(width: 6),
           const Text(
             'Accepted',
@@ -713,8 +711,6 @@ class _OrderCard extends ConsumerWidget {
             ),
           ),
           const Spacer(),
-          _actionIconBtn(HugeIcons.strokeRoundedMessageMultiple01, Colors.transparent, AppColors.textSecondary, () {}),
-          const SizedBox(width: 8),
           _actionIconBtn(HugeIcons.strokeRoundedCall, Colors.transparent, AppColors.textSecondary, () => _call(context)),
           const SizedBox(width: 8),
           _actionIconBtn(
@@ -742,8 +738,6 @@ class _OrderCard extends ConsumerWidget {
             ),
           ),
           const Spacer(),
-          _actionIconBtn(HugeIcons.strokeRoundedMessageMultiple01, Colors.transparent, AppColors.textSecondary, () {}),
-          const SizedBox(width: 8),
           _actionIconBtn(HugeIcons.strokeRoundedCall, Colors.transparent, AppColors.textSecondary, () => _call(context)),
           const SizedBox(width: 8),
           _actionIconBtn(
@@ -759,7 +753,7 @@ class _OrderCard extends ConsumerWidget {
     // Completed State Actions
     return Row(
       children: [
-        const Icon(Icons.check_circle, color: Color(0xFF27AE60), size: 16),
+        const HugeIcon(icon: HugeIcons.strokeRoundedCheckmarkCircle02, color: Color(0xFF27AE60), size: 16),
         const SizedBox(width: 6),
         const Text(
           'Delivered on 10 May, 10:30 AM',
@@ -770,8 +764,6 @@ class _OrderCard extends ConsumerWidget {
           ),
         ),
         const Spacer(),
-        _actionIconBtn(HugeIcons.strokeRoundedMessageMultiple01, Colors.transparent, AppColors.textSecondary, () {}),
-        const SizedBox(width: 8),
         _actionIconBtn(HugeIcons.strokeRoundedInvoice01, const Color(0xFFEDFBF4), const Color(0xFF27AE60), () {}),
       ],
     );

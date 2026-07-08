@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 import '../theme/app_colors.dart';
 
-/// Full-width brand button with optional leading icon and a loading state.
+/// Full-width brand button with optional leading HugeIcon and a loading state.
 class PrimaryButton extends StatelessWidget {
   const PrimaryButton({
     super.key,
@@ -14,7 +15,7 @@ class PrimaryButton extends StatelessWidget {
 
   final String label;
   final VoidCallback? onPressed;
-  final IconData? icon;
+  final dynamic icon;
   final bool loading;
 
   @override
@@ -34,7 +35,7 @@ class PrimaryButton extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (icon != null) ...[
-                  Icon(icon, size: 20),
+                  HugeIcon(icon: icon, size: 20, color: AppColors.onPrimary),
                   const SizedBox(width: 8),
                 ],
                 Text(label),

@@ -34,7 +34,7 @@ class SellerEditProfileScreen extends StatelessWidget {
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) {
                           return const Center(
-                            child: Icon(Icons.person, size: 50, color: Color(0xFF81C784)),
+                            child: HugeIcon(icon: HugeIcons.strokeRoundedUserCircle, size: 50, color: Color(0xFF81C784)),
                           );
                         },
                       ),

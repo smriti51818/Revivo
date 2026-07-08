@@ -53,7 +53,7 @@ class _NotificationCenterScreenState
       case 'ORDER':
         context.go(role == UserRole.vendor ? '/seller/orders' : '/buyer/orders');
       case 'RESCUE':
-        if (role == UserRole.cook) context.go('/cook/inbox');
+        break;
     }
   }
 
@@ -161,7 +161,7 @@ class _NotificationCenterScreenState
               color: n.read ? AppColors.surfaceAlt : AppColors.primarySurface,
               borderRadius: BorderRadius.circular(AppRadius.md),
             ),
-            child: Icon(n.icon,
+            child: HugeIcon(icon: n.icon,
                 size: 20, color: n.read ? AppColors.textMuted : AppColors.primary),
           ),
           const SizedBox(width: AppSpacing.md),

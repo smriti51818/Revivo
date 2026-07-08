@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../application/favorites_providers.dart';
@@ -17,8 +18,8 @@ class FavoriteHeart extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final saved = ref.watch(favoritesProvider).contains(offerId);
-    final heart = Icon(
-      saved ? Icons.favorite : Icons.favorite_border,
+    final heart = HugeIcon(
+      icon: HugeIcons.strokeRoundedFavourite,
       size: 18,
       color: saved ? AppColors.danger : AppColors.textSecondary,
     );

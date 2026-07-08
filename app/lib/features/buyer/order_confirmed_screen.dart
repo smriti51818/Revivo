@@ -90,7 +90,6 @@ class OrderConfirmedScreen extends StatelessWidget {
               const Spacer(),
               PrimaryButton(
                 label: 'Track my orders',
-                icon: Icons.receipt_long_outlined,
                 onPressed: () => context.go('/buyer/orders'),
               ),
               const SizedBox(height: AppSpacing.sm),

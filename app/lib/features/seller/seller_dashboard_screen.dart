@@ -43,7 +43,7 @@ class SellerDashboardScreen extends ConsumerWidget {
                 itemBuilder: (context, idx) {
                   final listing = items[idx];
                   return ListTile(
-                    leading: const Icon(Icons.inventory_2_outlined, color: AppColors.primary),
+                    leading: const HugeIcon(icon: HugeIcons.strokeRoundedPackage, color: AppColors.primary, size: 22),
                     title: Text(listing.vegetable, style: const TextStyle(fontWeight: FontWeight.w800)),
                     subtitle: Text('${listing.quantityKg.toInt()} kg available'),
                     onTap: () {
@@ -182,14 +182,14 @@ class SellerDashboardScreen extends ConsumerWidget {
           const SizedBox(height: 16),
           Row(
             children: [
-              const Icon(Icons.location_on, color: Colors.white70, size: 14),
+              const HugeIcon(icon: HugeIcons.strokeRoundedLocation01, color: Colors.white70, size: 14),
               const SizedBox(width: 4),
               const Text(
                 'K.R. Market, Bengaluru',
                 style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w600),
               ),
               const SizedBox(width: 2),
-              const Icon(Icons.arrow_drop_down, color: Colors.white70, size: 14),
+              const HugeIcon(icon: HugeIcons.strokeRoundedArrowDown01, color: Colors.white70, size: 14),
               const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -199,7 +199,7 @@ class SellerDashboardScreen extends ConsumerWidget {
                 ),
                 child: const Row(
                   children: [
-                    Icon(Icons.storefront, color: Colors.white, size: 12),
+                    HugeIcon(icon: HugeIcons.strokeRoundedStore02, color: Colors.white, size: 12),
                     SizedBox(width: 4),
                     Text(
                       'Seller',
@@ -228,7 +228,7 @@ class SellerDashboardScreen extends ConsumerWidget {
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
               ),
               const Spacer(),
-              const Icon(Icons.calendar_today_outlined, size: 11, color: AppColors.textMuted),
+              const HugeIcon(icon: HugeIcons.strokeRoundedCalendar01, size: 11, color: AppColors.textMuted),
               const SizedBox(width: 4),
               const Text(
                 '10 May 2026',
@@ -241,25 +241,25 @@ class SellerDashboardScreen extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _summaryStatBlock(
-                Icons.inventory_2_outlined,
+                HugeIcons.strokeRoundedPackage,
                 listingsCount > 0 ? '$listingsCount' : '12',
                 'Listings Active',
                 '↗ 3 new',
               ),
               _summaryStatBlock(
-                Icons.shopping_bag_outlined,
+                HugeIcons.strokeRoundedShoppingBag01,
                 totalWeight > 0 ? '$totalWeight kg' : '27 kg',
                 'Total Listed',
                 '↗ 8 kg',
               ),
               _summaryStatBlock(
-                Icons.payments_outlined,
+                HugeIcons.strokeRoundedMoney01,
                 '₹1,850',
                 'Total Earnings',
                 '↗ ₹320',
               ),
               _summaryStatBlock(
-                Icons.check_circle_outline,
+                HugeIcons.strokeRoundedCheckmarkCircle02,
                 ordersCount > 0 ? '$ordersCount' : '18',
                 'Orders Completed',
                 '↗ 4 today',
@@ -271,7 +271,7 @@ class SellerDashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _summaryStatBlock(IconData icon, String value, String label, String trend) {
+  Widget _summaryStatBlock(dynamic icon, String value, String label, String trend) {
     return Expanded(
       child: Column(
         children: [
@@ -281,7 +281,7 @@ class SellerDashboardScreen extends ConsumerWidget {
               color: Color(0xFFEDFBF4),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, size: 16, color: const Color(0xFF27AE60)),
+            child: HugeIcon(icon: icon, size: 16, color: const Color(0xFF27AE60)),
           ),
           const SizedBox(height: 6),
           Text(
@@ -321,7 +321,7 @@ class SellerDashboardScreen extends ConsumerWidget {
                 style: TextStyle(color: Color(0xFF27AE60), fontSize: 11, fontWeight: FontWeight.w800),
               ),
               SizedBox(width: 2),
-              Icon(Icons.arrow_forward, size: 11, color: Color(0xFF27AE60)),
+              HugeIcon(icon: HugeIcons.strokeRoundedArrowRight01, size: 11, color: Color(0xFF27AE60)),
             ],
           ),
         ),
@@ -340,7 +340,7 @@ class SellerDashboardScreen extends ConsumerWidget {
               color: Color(0xFFEDFBF4),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.eco_outlined, size: 16, color: Color(0xFF27AE60)),
+            child: const HugeIcon(icon: HugeIcons.strokeRoundedLeaf02, size: 16, color: Color(0xFF27AE60)),
           ),
           const SizedBox(width: 10),
           Expanded(

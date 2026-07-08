@@ -68,12 +68,12 @@ class RescueCard extends StatelessWidget {
           const SizedBox(height: AppSpacing.md),
           Row(
             children: [
-              _meta(Icons.scale_outlined, formatKg(rescue.quantityKg)),
+              _meta(HugeIcons.strokeRoundedNote01, formatKg(rescue.quantityKg)),
               const SizedBox(width: AppSpacing.lg),
-              _meta(Icons.restaurant_outlined,
+              _meta(HugeIcons.strokeRoundedRestaurant01,
                   '~${rescue.estimatedMeals} meals'),
               const SizedBox(width: AppSpacing.lg),
-              _meta(Icons.place_outlined,
+              _meta(HugeIcons.strokeRoundedLocation01,
                   '${rescue.distanceKm.toStringAsFixed(1)} km'),
             ],
           ),
@@ -107,10 +107,10 @@ class RescueCard extends StatelessWidget {
     );
   }
 
-  Widget _meta(IconData icon, String label) => Row(
+  Widget _meta(dynamic icon, String label) => Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: AppColors.textSecondary),
+          HugeIcon(icon: icon, size: 14, color: AppColors.textSecondary),
           const SizedBox(width: 4),
           Text(
             label,

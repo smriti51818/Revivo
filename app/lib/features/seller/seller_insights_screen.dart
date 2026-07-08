@@ -67,7 +67,7 @@ class SellerInsightsScreen extends StatelessWidget {
           Expanded(
             child: Row(
               children: [
-                const Icon(Icons.arrow_back, color: Colors.white),
+                const HugeIcon(icon: HugeIcons.strokeRoundedArrowLeft01, color: Colors.white, size: 22),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -101,15 +101,15 @@ class SellerInsightsScreen extends StatelessWidget {
             ),
             child: Row(
               children: [
-                const Icon(Icons.calendar_today, color: Colors.white, size: 16),
+                const HugeIcon(icon: HugeIcons.strokeRoundedCalendar01, color: Colors.white, size: 16),
                 const SizedBox(width: 6),
                 const Text(
                   'This Week',
                   style: TextStyle(color: Colors.white, fontSize: 13),
                 ),
                 const SizedBox(width: 4),
-                const Icon(
-                  Icons.keyboard_arrow_down,
+                const HugeIcon(
+                  icon: HugeIcons.strokeRoundedArrowDown01,
                   color: Colors.white,
                   size: 16,
                 ),
@@ -223,8 +223,8 @@ class SellerInsightsScreen extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  isUp ? Icons.arrow_drop_up : Icons.arrow_drop_down,
+                HugeIcon(
+                  icon: isUp ? HugeIcons.strokeRoundedArrowUp01 : HugeIcons.strokeRoundedArrowDown01,
                   color: const Color(0xFF27AE60),
                   size: 16,
                 ),
@@ -467,7 +467,7 @@ class SellerInsightsScreen extends StatelessWidget {
             color: const Color(0xFFF4F7F5),
             borderRadius: BorderRadius.circular(6),
           ),
-          child: const Icon(Icons.eco, color: Colors.green, size: 20),
+          child: const HugeIcon(icon: HugeIcons.strokeRoundedLeaf02, color: Colors.green, size: 20),
         ),
         const SizedBox(width: 8),
         Expanded(
@@ -538,7 +538,7 @@ class SellerInsightsScreen extends StatelessWidget {
               Container(width: 1, height: 60, color: AppColors.border),
               Expanded(
                 child: _buildImpactCol(
-                  Icons.currency_rupee,
+                  HugeIcons.strokeRoundedMoney01,
                   const Color(0xFFF2994A),
                   '₹2,340',
                   'Buyer savings',
@@ -587,7 +587,7 @@ class SellerInsightsScreen extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.arrow_drop_up, color: Color(0xFF27AE60), size: 14),
+            const HugeIcon(icon: HugeIcons.strokeRoundedArrowUp01, color: Color(0xFF27AE60), size: 14),
             Text(
               change,
               style: const TextStyle(

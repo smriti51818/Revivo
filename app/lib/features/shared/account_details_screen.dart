@@ -82,28 +82,28 @@ class _AccountDetailsScreenState extends ConsumerState<AccountDetailsScreen> {
             const SizedBox(height: AppSpacing.xl),
             const SectionHeader(title: 'Profile'),
             const SizedBox(height: AppSpacing.sm),
-            _field('Full name', _name, icon: Icons.person_outline),
+            _field('Full name', _name, icon: HugeIcons.strokeRoundedUserCircle),
             const SizedBox(height: AppSpacing.md),
             _field('Phone number', _phone,
-                icon: Icons.call_outlined,
+                icon: HugeIcons.strokeRoundedCall,
                 keyboardType: TextInputType.phone),
             const SizedBox(height: AppSpacing.md),
             _readonlyField(
-                'Email', email.isEmpty ? '—' : email, Icons.mail_outline),
+                'Email', email.isEmpty ? '—' : email, HugeIcons.strokeRoundedMail01),
             const SizedBox(height: AppSpacing.md),
-            _readonlyField('Role', role.label, Icons.badge_outlined),
+            _readonlyField('Role', role.label, HugeIcons.strokeRoundedUserCircle),
             const SizedBox(height: AppSpacing.xl),
             const SectionHeader(title: 'Address'),
             const SizedBox(height: AppSpacing.sm),
-            _field('Address line', _address, icon: Icons.home_outlined),
+            _field('Address line', _address, icon: HugeIcons.strokeRoundedLocation01),
             const SizedBox(height: AppSpacing.md),
             Row(
               children: [
-                Expanded(child: _field('City', _city, icon: Icons.location_city)),
+                Expanded(child: _field('City', _city, icon: HugeIcons.strokeRoundedBuilding01)),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: _field('Pincode', _pincode,
-                      icon: Icons.pin_drop_outlined,
+                      icon: HugeIcons.strokeRoundedLocation01,
                       keyboardType: TextInputType.number),
                 ),
               ],
@@ -113,7 +113,6 @@ class _AccountDetailsScreenState extends ConsumerState<AccountDetailsScreen> {
             const SizedBox(height: AppSpacing.xl),
             PrimaryButton(
               label: 'Save changes',
-              icon: Icons.check_rounded,
               onPressed: _save,
             ),
           ],
@@ -148,25 +147,30 @@ class _AccountDetailsScreenState extends ConsumerState<AccountDetailsScreen> {
   }
 
   Widget _field(String label, TextEditingController controller,
-      {IconData? icon, TextInputType? keyboardType}) {
+      {dynamic icon, TextInputType? keyboardType}) {
     return TextField(
       controller: controller,
       keyboardType: keyboardType,
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: icon == null ? null : Icon(icon, size: 20),
+        prefixIcon: icon == null
+            ? null
+            : Padding(
+                padding: const EdgeInsets.all(12),
+                child: HugeIcon(icon: icon, size: 20, color: AppColors.textMuted),
+              ),
       ),
     );
   }
 
-  Widget _readonlyField(String label, String value, IconData icon) {
+  Widget _readonlyField(String label, String value, dynamic icon) {
     return AppCard(
       padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md, vertical: 14),
       color: AppColors.surfaceAlt,
       child: Row(
         children: [
-          Icon(icon, size: 20, color: AppColors.textSecondary),
+          HugeIcon(icon: icon, size: 20, color: AppColors.textSecondary),
           const SizedBox(width: AppSpacing.md),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,

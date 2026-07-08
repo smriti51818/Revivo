@@ -104,7 +104,6 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
               const SizedBox(height: AppSpacing.xl),
               PrimaryButton(
                 label: 'Track this order',
-                icon: Icons.local_shipping_outlined,
                 onPressed: () => context.push('/buyer/track', extra: order),
               ),
             ],
@@ -126,9 +125,10 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
               color: done ? AppColors.primarySurface : AppColors.infoSurface,
               borderRadius: BorderRadius.circular(AppRadius.md),
             ),
-            child: Icon(
-                done ? Icons.check_rounded : Icons.local_shipping_outlined,
-                color: done ? AppColors.primary : AppColors.info),
+            child: HugeIcon(
+                icon: done ? HugeIcons.strokeRoundedCheckmarkCircle02 : HugeIcons.strokeRoundedDeliveryTruck02,
+                color: done ? AppColors.primary : AppColors.info,
+                size: 24),
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
@@ -181,13 +181,13 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
                 ),
               ),
               const Divider(height: AppSpacing.xl),
-              _detailRow(Icons.event_outlined, 'Ordered',
+              _detailRow(HugeIcons.strokeRoundedCalendar01, 'Ordered',
                   formatDateTime(order.placedAt)),
               const SizedBox(height: 10),
-              _detailRow(Icons.history_rounded, 'Placed',
+              _detailRow(HugeIcons.strokeRoundedClock01, 'Placed',
                   formatAgo(order.placedAt)),
               const SizedBox(height: 10),
-              _detailRow(Icons.eco_outlined, 'Freshness when bought',
+              _detailRow(HugeIcons.strokeRoundedLeaf02, 'Freshness when bought',
                   '${order.band.label} · ${order.band.meaning.toLowerCase()}'),
             ],
           ),
@@ -254,13 +254,13 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _detailRow(Icons.directions_walk_rounded, 'Method',
+              _detailRow(HugeIcons.strokeRoundedWalking, 'Method',
                   'Self-pickup from vendor'),
               const SizedBox(height: 10),
-              _detailRow(Icons.schedule, 'Pickup slot',
+              _detailRow(HugeIcons.strokeRoundedClock01, 'Pickup slot',
                   order.pickupSlot.isEmpty ? 'Anytime today' : order.pickupSlot),
               const SizedBox(height: 10),
-              _detailRow(Icons.place_outlined, 'Address',
+              _detailRow(HugeIcons.strokeRoundedLocation01, 'Address',
                   '${order.vendorName}, Coimbatore'),
               const SizedBox(height: AppSpacing.md),
               Row(
@@ -336,11 +336,10 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
               ),
               child: Row(
                 children: [
-                  Icon(
-                    _arrivedOk! ? Icons.verified_rounded : Icons.support_agent,
+                  HugeIcon(
+                    icon: _arrivedOk! ? HugeIcons.strokeRoundedCheckmarkBadge01 : HugeIcons.strokeRoundedCustomerSupport,
                     size: 18,
-                    color:
-                        _arrivedOk! ? AppColors.primary : AppColors.warning,
+                    color: _arrivedOk! ? AppColors.primary : AppColors.warning,
                   ),
                   const SizedBox(width: 8),
                   Expanded(
@@ -369,12 +368,10 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
                 style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700)),
             const Spacer(),
             for (var i = 1; i <= 5; i++)
-              Icon(
-                i <= order.rating!
-                    ? Icons.star_rounded
-                    : Icons.star_outline_rounded,
+              HugeIcon(
+                icon: HugeIcons.strokeRoundedStar,
                 size: 18,
-                color: AppColors.warning,
+                color: i <= order.rating! ? AppColors.warning : AppColors.border,
               ),
           ],
         ),
@@ -392,7 +389,6 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
           const SizedBox(height: AppSpacing.md),
           PrimaryButton(
             label: 'Rate this rescue',
-            icon: Icons.star_outline_rounded,
             onPressed: () => showRateOrderSheet(context, ref, order),
           ),
         ],
@@ -400,11 +396,11 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
     );
   }
 
-  Widget _detailRow(IconData icon, String label, String value) {
+  Widget _detailRow(dynamic icon, String label, String value) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 17, color: AppColors.textSecondary),
+        HugeIcon(icon: icon, size: 17, color: AppColors.textSecondary),
         const SizedBox(width: 10),
         Text('$label  ',
             style: const TextStyle(

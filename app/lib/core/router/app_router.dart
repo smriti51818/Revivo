@@ -20,7 +20,6 @@ import '../../features/buyer/order_tracking_screen.dart';
 import '../../features/buyer/product_details_screen.dart';
 import '../../features/buyer/rescue_map_screen.dart';
 import '../../features/buyer/vendor_profile_screen.dart';
-import '../../features/cook/cook_inbox_screen.dart';
 import '../../features/impact/impact_screen.dart';
 import '../../features/notifications/notification_center_screen.dart';
 import '../../features/seller/add_listing_screen.dart';
@@ -131,24 +130,24 @@ final routerProvider = Provider<GoRouter>((ref) {
           navigationShell: shell,
           destinations: const [
             NavigationDestination(
-                icon: Icon(Icons.dashboard_outlined),
-                selectedIcon: Icon(Icons.dashboard),
+                icon: HugeIcon(icon: HugeIcons.strokeRoundedStore02),
+                selectedIcon: HugeIcon(icon: HugeIcons.strokeRoundedStore02),
                 label: 'Dashboard'),
             NavigationDestination(
                 icon: HugeIcon(icon: HugeIcons.strokeRoundedInvoice01),
-                selectedIcon: Icon(Icons.receipt_long),
+                selectedIcon: HugeIcon(icon: HugeIcons.strokeRoundedInvoice01),
                 label: 'Orders'),
             NavigationDestination(
-                icon: Icon(Icons.add_circle_outline),
-                selectedIcon: Icon(Icons.add_circle),
+                icon: HugeIcon(icon: HugeIcons.strokeRoundedPlusSign),
+                selectedIcon: HugeIcon(icon: HugeIcons.strokeRoundedPlusSign),
                 label: 'List'),
             NavigationDestination(
                 icon: HugeIcon(icon: HugeIcons.strokeRoundedChartLineData01),
-                selectedIcon: Icon(Icons.insights),
+                selectedIcon: HugeIcon(icon: HugeIcons.strokeRoundedChartLineData01),
                 label: 'Insights'),
             NavigationDestination(
-                icon: HugeIcon(icon: HugeIcons.strokeRoundedUser),
-                selectedIcon: HugeIcon(icon: HugeIcons.strokeRoundedUser),
+                icon: HugeIcon(icon: HugeIcons.strokeRoundedUserCircle),
+                selectedIcon: HugeIcon(icon: HugeIcons.strokeRoundedUserCircle),
                 label: 'Profile'),
           ],
         ),
@@ -210,11 +209,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           destinations: const [
             NavigationDestination(
                 icon: HugeIcon(icon: HugeIcons.strokeRoundedStore01),
-                selectedIcon: Icon(Icons.storefront),
+                selectedIcon: HugeIcon(icon: HugeIcons.strokeRoundedStore01),
                 label: 'Market'),
             NavigationDestination(
                 icon: HugeIcon(icon: HugeIcons.strokeRoundedInvoice01),
-                selectedIcon: Icon(Icons.receipt_long),
+                selectedIcon: HugeIcon(icon: HugeIcons.strokeRoundedInvoice01),
                 label: 'Orders'),
             NavigationDestination(
                 icon: HugeIcon(icon: HugeIcons.strokeRoundedLeaf02),
@@ -234,31 +233,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
 
-      // ─── Cook / NGO shell ───────────────────────────────────────
-      StatefulShellRoute.indexedStack(
-        builder: (_, _, shell) => ScaffoldWithNavBar(
-          navigationShell: shell,
-          destinations: const [
-            NavigationDestination(
-                icon: Icon(Icons.inbox_outlined),
-                selectedIcon: HugeIcon(icon: HugeIcons.strokeRoundedInbox),
-                label: 'Rescues'),
-            NavigationDestination(
-                icon: HugeIcon(icon: HugeIcons.strokeRoundedLeaf02),
-                selectedIcon: HugeIcon(icon: HugeIcons.strokeRoundedLeaf02),
-                label: 'Impact'),
-            NavigationDestination(
-                icon: HugeIcon(icon: HugeIcons.strokeRoundedUser),
-                selectedIcon: HugeIcon(icon: HugeIcons.strokeRoundedUser),
-                label: 'Profile'),
-          ],
-        ),
-        branches: [
-          _branch('/cook/inbox', const CookInboxScreen()),
-          _branch('/cook/impact', const ImpactScreen()),
-          _branch('/cook/profile', const ProfileScreen()),
-        ],
-      ),
 
     ],
   );

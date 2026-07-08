@@ -622,7 +622,7 @@ class SellerOrderDetailsScreen extends ConsumerWidget {
       child: const Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.check_circle, color: Color(0xFF27AE60), size: 18),
+          HugeIcon(icon: HugeIcons.strokeRoundedCheckmarkCircle02, color: Color(0xFF27AE60), size: 18),
           SizedBox(width: 8),
           Text(
             'Order Delivered & Completed Successfully',

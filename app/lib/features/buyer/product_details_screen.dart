@@ -228,7 +228,7 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
             const SizedBox(height: AppSpacing.xl),
             PrimaryButton(
               label: 'Add to cart · ${formatMoney(total)}',
-              icon: Icons.add_shopping_cart_outlined,
+              icon: HugeIcons.strokeRoundedShoppingBag01,
               onPressed: _addToCart,
             ),
           ],
@@ -294,9 +294,9 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
             children: [
               Row(
                 children: [
-                  Icon(band == FreshnessBand.rescue
-                      ? Icons.bolt
-                      : Icons.timelapse, size: 18, color: t.fg),
+                  HugeIcon(icon: band == FreshnessBand.rescue
+                      ? HugeIcons.strokeRoundedFlash
+                      : HugeIcons.strokeRoundedClock01, size: 18, color: t.fg),
                   const SizedBox(width: 6),
                   Text(
                     expired
@@ -397,7 +397,7 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
             ],
           ),
           const Spacer(),
-          _stepBtn(Icons.remove, () => _stepQty(-1),
+          _stepBtn(HugeIcons.strokeRoundedMinusSign, () => _stepQty(-1),
               enabled: _qty > 1),
           SizedBox(
             width: 56,
@@ -408,14 +408,14 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                   const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
             ),
           ),
-          _stepBtn(Icons.add, () => _stepQty(1),
+          _stepBtn(HugeIcons.strokeRoundedPlusSign, () => _stepQty(1),
               enabled: _qty < offer.availableKg),
         ],
       ),
     );
   }
 
-  Widget _stepBtn(IconData icon, VoidCallback onTap, {required bool enabled}) {
+  Widget _stepBtn(dynamic icon, VoidCallback onTap, {required bool enabled}) {
     return InkWell(
       onTap: enabled ? onTap : null,
       borderRadius: BorderRadius.circular(AppRadius.md),
@@ -426,9 +426,11 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
           color: enabled ? AppColors.primarySurface : AppColors.surfaceAlt,
           borderRadius: BorderRadius.circular(AppRadius.md),
         ),
-        child: Icon(icon,
-            size: 20,
-            color: enabled ? AppColors.primaryDark : AppColors.textMuted),
+        child: Center(
+          child: HugeIcon(icon: icon,
+              size: 20,
+              color: enabled ? AppColors.primaryDark : AppColors.textMuted),
+        ),
       ),
     );
   }

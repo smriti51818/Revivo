@@ -182,15 +182,15 @@ class ImpactScreen extends ConsumerWidget {
 
   Widget _metricsGrid(ImpactSummary s, double water) {
     final tiles = <Widget>[
-      _metric(Icons.restaurant, '~${formatCount(s.mealsServed)}', 'Meals served'),
-      _metric(Icons.cloud_outlined, '${formatCount(s.co2SavedKg)} kg',
+      _metric(HugeIcons.strokeRoundedRestaurant01, '~${formatCount(s.mealsServed)}', 'Meals served'),
+      _metric(HugeIcons.strokeRoundedCloudUpload, '${formatCount(s.co2SavedKg)} kg',
           'CO₂ avoided'),
-      _metric(Icons.water_drop_outlined, '${formatCount(water)} L',
+      _metric(HugeIcons.strokeRoundedDroplet, '${formatCount(water)} L',
           'Water saved'),
-      _metric(Icons.savings_outlined, '₹${formatCount(s.moneySaved)}',
+      _metric(HugeIcons.strokeRoundedMoney01, '₹${formatCount(s.moneySaved)}',
           'Value recovered'),
-      _metric(Icons.storefront_outlined, '${s.activeVendors}', 'Vendors'),
-      _metric(Icons.soup_kitchen_outlined, '${s.activeNgos}', 'Kitchens'),
+      _metric(HugeIcons.strokeRoundedStore02, '${s.activeVendors}', 'Vendors'),
+      _metric(HugeIcons.strokeRoundedRestaurant02, '${s.activeNgos}', 'Kitchens'),
     ];
     return Column(
       children: [
@@ -211,13 +211,13 @@ class ImpactScreen extends ConsumerWidget {
     );
   }
 
-  Widget _metric(IconData icon, String value, String label) {
+  Widget _metric(dynamic icon, String value, String label) {
     return AppCard(
       padding: const EdgeInsets.all(14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 20, color: AppColors.primary),
+          HugeIcon(icon: icon, size: 20, color: AppColors.primary),
           const SizedBox(height: 10),
           Text(
             value,

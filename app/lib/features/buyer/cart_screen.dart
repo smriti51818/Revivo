@@ -93,7 +93,6 @@ class CartScreen extends ConsumerWidget {
           Expanded(
             child: PrimaryButton(
               label: 'Checkout',
-              icon: Icons.arrow_forward,
               onPressed: () => context.push('/buyer/checkout'),
             ),
           ),
@@ -242,7 +241,7 @@ class _QtyStepper extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _btn(Icons.remove, () => onChanged(qty - 1)),
+            _btn(HugeIcons.strokeRoundedMinusSign, () => onChanged(qty - 1)),
             SizedBox(
               width: 42,
               child: Text(
@@ -255,24 +254,26 @@ class _QtyStepper extends StatelessWidget {
                 ),
               ),
             ),
-            _btn(Icons.add, qty < max ? () => onChanged(qty + 1) : null),
+            _btn(HugeIcons.strokeRoundedPlusSign, qty < max ? () => onChanged(qty + 1) : null),
           ],
         ),
       ),
     );
   }
 
-  Widget _btn(IconData icon, VoidCallback? onTap) => InkWell(
+  Widget _btn(dynamic icon, VoidCallback? onTap) => InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.md),
         child: SizedBox(
           width: 34,
           height: 34,
-          child: Icon(icon,
+          child: Center(
+            child: HugeIcon(
+              icon: icon,
               size: 18,
-              color: onTap == null
-                  ? AppColors.textMuted
-                  : AppColors.primaryDark),
+              color: onTap == null ? AppColors.textMuted : AppColors.primaryDark,
+            ),
+          ),
         ),
       );
 }
