@@ -5,9 +5,7 @@ import 'package:hugeicons/hugeicons.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_card.dart';
-import '../buyer/domain/order.dart';
 import 'application/insights_providers.dart';
-import 'application/vendor_orders_providers.dart';
 import 'domain/seller_insights.dart';
 
 const _vegEmoji = <String, String>{
@@ -29,36 +27,9 @@ class SellerInsightsScreen extends ConsumerStatefulWidget {
 class _SellerInsightsScreenState extends ConsumerState<SellerInsightsScreen> {
   String _period = 'week';
 
-  List<Order> _filter(List<Order> orders) {
-    final now = DateTime.now();
-    final cutoff = switch (_period) {
-      'month' => DateTime(now.year, now.month - 1, now.day),
-      'year' => DateTime(now.year - 1, now.month, now.day),
-      _ => now.subtract(const Duration(days: 7)),
-    };
-    return orders.where((o) => o.placedAt.isAfter(cutoff)).toList();
-  }
-
-  List<double> _dailyEarnings(List<Order> orders) {
-    final now = DateTime.now();
-    final buckets = List<double>.filled(7, 0);
-    for (final o in orders) {
-      final diff = now.difference(o.placedAt).inDays;
-      if (diff >= 0 && diff < 7) buckets[6 - diff] += o.total;
-    }
-    return buckets;
-  }
-
   @override
   Widget build(BuildContext context) {
-    final insightsAsync = ref.watch(sellerInsightsProvider);
-    final allOrders =
-        ref.watch(vendorOrdersProvider).valueOrNull ?? const <Order>[];
-    final filtered = _filter(allOrders);
-
-    final earnings = filtered.fold<double>(0, (s, o) => s + o.total);
-    final qty = filtered.fold<double>(0, (s, o) => s + o.quantityKg);
-    final meals = (qty * 2.5).toInt();
+    final insightsAsync = ref.watch(sellerInsightsProvider(_period));
 
     return Scaffold(
       backgroundColor: const Color(0xFF0E692D),
@@ -88,10 +59,9 @@ class _SellerInsightsScreenState extends ConsumerState<SellerInsightsScreen> {
                       children: [
                         _buildPeriodFilter(),
                         const SizedBox(height: 12),
-                        _buildTopRow(
-                            insights, earnings, qty, meals, filtered.length),
+                        _buildTopRow(insights),
                         const SizedBox(height: 16),
-                        _buildEarningsOverview(filtered),
+                        _buildEarningsOverview(insights.earnings),
                         const SizedBox(height: 16),
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -104,7 +74,7 @@ class _SellerInsightsScreenState extends ConsumerState<SellerInsightsScreen> {
                           ],
                         ),
                         const SizedBox(height: 16),
-                        _buildImpact(qty, earnings),
+                        _buildImpact(insights.impact),
                         const SizedBox(height: 16),
                         _buildRecentInsights(insights),
                         const SizedBox(height: 80),
@@ -187,8 +157,7 @@ class _SellerInsightsScreenState extends ConsumerState<SellerInsightsScreen> {
     );
   }
 
-  Widget _buildTopRow(SellerInsightsData insights, double earnings, double qty,
-      int meals, int orderCount) {
+  Widget _buildTopRow(SellerInsightsData insights) {
     return Row(
       children: [
         Expanded(
@@ -196,8 +165,8 @@ class _SellerInsightsScreenState extends ConsumerState<SellerInsightsScreen> {
                 HugeIcons.strokeRoundedShoppingBag01,
                 const Color(0xFF27AE60),
                 'Earnings',
-                '₹${earnings.toInt()}',
-                '$orderCount orders')),
+                '₹${insights.revenue.toInt()}',
+                '${insights.orders} orders')),
         const SizedBox(width: 8),
         Expanded(
             child: _buildStatCard(
@@ -212,7 +181,7 @@ class _SellerInsightsScreenState extends ConsumerState<SellerInsightsScreen> {
                 HugeIcons.strokeRoundedShoppingBag02,
                 const Color(0xFF2D9CDB),
                 'Qty Sold',
-                '${qty.toInt()} kg',
+                '${insights.soldKg.toInt()} kg',
                 'Sold')),
         const SizedBox(width: 8),
         Expanded(
@@ -220,7 +189,7 @@ class _SellerInsightsScreenState extends ConsumerState<SellerInsightsScreen> {
                 HugeIcons.strokeRoundedRestaurant01,
                 const Color(0xFFF2994A),
                 'Meals',
-                '$meals',
+                '${insights.impact.meals}',
                 'Saved')),
       ],
     );
@@ -240,7 +209,7 @@ class _SellerInsightsScreenState extends ConsumerState<SellerInsightsScreen> {
           Container(
             padding: const EdgeInsets.all(7),
             decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.1),
+              color: iconColor.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: HugeIcon(icon: icon, size: 18, color: iconColor),
@@ -274,13 +243,7 @@ class _SellerInsightsScreenState extends ConsumerState<SellerInsightsScreen> {
     );
   }
 
-  Widget _buildEarningsOverview(List<Order> orders) {
-    final daily = _dailyEarnings(orders);
-    final maxVal = daily.reduce(max);
-    final normalized = maxVal > 0
-        ? daily.map((v) => v / maxVal).toList()
-        : List<double>.filled(7, 0);
-
+  Widget _buildEarningsOverview(EarningsSeries earnings) {
     return AppCard(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -293,12 +256,19 @@ class _SellerInsightsScreenState extends ConsumerState<SellerInsightsScreen> {
           SizedBox(
             height: 160,
             width: double.infinity,
-            child: CustomPaint(
-              painter: EarningsChartPainter(
-                data: normalized,
-                maxValue: maxVal,
-              ),
-            ),
+            child: earnings.hasData
+                ? CustomPaint(
+                    painter: EarningsChartPainter(
+                      labels: earnings.labels,
+                      values: earnings.values,
+                    ),
+                  )
+                : const Center(
+                    child: Text('No earnings in this period yet',
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary)),
+                  ),
           ),
         ],
       ),
@@ -338,7 +308,7 @@ class _SellerInsightsScreenState extends ConsumerState<SellerInsightsScreen> {
                             style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold)),
-                        const Text('Total',
+                        const Text('Active',
                             style: TextStyle(
                                 fontSize: 10,
                                 color: AppColors.textSecondary)),
@@ -400,7 +370,7 @@ class _SellerInsightsScreenState extends ConsumerState<SellerInsightsScreen> {
                   TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
           if (movers.isEmpty)
-            const Text('No data yet',
+            const Text('No sales in this period yet',
                 style: TextStyle(
                     fontSize: 12, color: AppColors.textSecondary))
           else
@@ -458,10 +428,7 @@ class _SellerInsightsScreenState extends ConsumerState<SellerInsightsScreen> {
     );
   }
 
-  Widget _buildImpact(double qty, double earnings) {
-    final meals = (qty * 2.5).toInt();
-    final buyerSavings = (earnings * 0.3).toInt();
-
+  Widget _buildImpact(SellerImpact impact) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -477,21 +444,21 @@ class _SellerInsightsScreenState extends ConsumerState<SellerInsightsScreen> {
                   child: _buildImpactCol(
                       HugeIcons.strokeRoundedLeaf02,
                       const Color(0xFF27AE60),
-                      '${qty.toInt()} kg',
+                      '${impact.foodKeptKg.toInt()} kg',
                       'Food kept from waste')),
               Container(width: 1, height: 60, color: AppColors.border),
               Expanded(
                   child: _buildImpactCol(
                       HugeIcons.strokeRoundedUserMultiple,
                       const Color(0xFF2D9CDB),
-                      '$meals',
+                      '${impact.meals}',
                       'Meals saved')),
               Container(width: 1, height: 60, color: AppColors.border),
               Expanded(
                   child: _buildImpactCol(
                       HugeIcons.strokeRoundedMoney01,
                       const Color(0xFFF2994A),
-                      '₹$buyerSavings',
+                      '₹${impact.buyerSavings.toInt()}',
                       'Buyer savings')),
             ],
           ),
@@ -506,8 +473,8 @@ class _SellerInsightsScreenState extends ConsumerState<SellerInsightsScreen> {
       children: [
         Container(
           padding: const EdgeInsets.all(8),
-          decoration:
-              BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
+          decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
           child: HugeIcon(icon: icon, size: 18, color: color),
         ),
         const SizedBox(height: 8),
@@ -528,21 +495,15 @@ class _SellerInsightsScreenState extends ConsumerState<SellerInsightsScreen> {
     final recs = insights.recommendations;
     final aiPowered = insights.aiPowered;
 
-    final fallbackIcons = [
+    final icons = [
       HugeIcons.strokeRoundedChartLineData01,
       HugeIcons.strokeRoundedTime01,
       HugeIcons.strokeRoundedTag01,
     ];
-    final fallbackColors = [
+    final colors = [
       const Color(0xFF27AE60),
       const Color(0xFF7CB342),
       const Color(0xFFF2994A),
-    ];
-    const fallbackTitles = ['Great week! 🎉', 'Quick tip', 'Opportunity'];
-    const fallbackBodies = [
-      'Your earnings are up this period. Keep listing regularly!',
-      'Listings added in the morning tend to sell 30% faster.',
-      'Consider listing more leafy greens — high demand this week!',
     ];
 
     return Column(
@@ -552,42 +513,53 @@ class _SellerInsightsScreenState extends ConsumerState<SellerInsightsScreen> {
           children: [
             const Text('Recent Insights',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            if (aiPowered) ...[
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 7, vertical: 3),
-                decoration: BoxDecoration(
-                    color: const Color(0xFFE8F5E9),
-                    borderRadius: BorderRadius.circular(10)),
-                child: const Text('AI',
-                    style: TextStyle(
-                        fontSize: 10,
-                        color: Color(0xFF27AE60),
-                        fontWeight: FontWeight.w800)),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 7, vertical: 3),
+              decoration: BoxDecoration(
+                  color: aiPowered
+                      ? const Color(0xFFE8F5E9)
+                      : const Color(0xFFEFEFEF),
+                  borderRadius: BorderRadius.circular(10)),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  HugeIcon(
+                      icon: HugeIcons.strokeRoundedSparkles,
+                      size: 11,
+                      color: aiPowered
+                          ? const Color(0xFF27AE60)
+                          : AppColors.textMuted),
+                  const SizedBox(width: 3),
+                  Text(aiPowered ? 'AI generated' : 'Data-driven',
+                      style: TextStyle(
+                          fontSize: 9.5,
+                          color: aiPowered
+                              ? const Color(0xFF27AE60)
+                              : AppColors.textMuted,
+                          fontWeight: FontWeight.w800)),
+                ],
               ),
-            ],
+            ),
           ],
         ),
         const SizedBox(height: 12),
-        if (recs.isNotEmpty)
+        if (recs.isEmpty)
+          const AppCard(
+            padding: EdgeInsets.all(16),
+            child: Text('Insights will appear as you list and sell.',
+                style: TextStyle(
+                    fontSize: 12, color: AppColors.textSecondary)),
+          )
+        else
           for (var i = 0; i < recs.length; i++) ...[
             if (i > 0) const SizedBox(height: 12),
             _buildInsightItem(
-              fallbackIcons[i % fallbackIcons.length],
-              fallbackColors[i % fallbackColors.length],
+              icons[i % icons.length],
+              colors[i % colors.length],
               recs[i].title,
               recs[i].body,
-            ),
-          ]
-        else
-          for (var i = 0; i < fallbackTitles.length; i++) ...[
-            if (i > 0) const SizedBox(height: 12),
-            _buildInsightItem(
-              fallbackIcons[i],
-              fallbackColors[i],
-              fallbackTitles[i],
-              fallbackBodies[i],
             ),
           ],
       ],
@@ -603,7 +575,7 @@ class _SellerInsightsScreenState extends ConsumerState<SellerInsightsScreen> {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-                color: color.withOpacity(0.1), shape: BoxShape.circle),
+                color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
             child: HugeIcon(icon: icon, size: 20, color: color),
           ),
           const SizedBox(width: 12),
@@ -682,18 +654,21 @@ class DonutChartPainter extends CustomPainter {
 }
 
 class EarningsChartPainter extends CustomPainter {
-  EarningsChartPainter({required this.data, required this.maxValue});
-  final List<double> data; // 7 normalized values (0–1)
-  final double maxValue;
+  EarningsChartPainter({required this.labels, required this.values});
+  final List<String> labels;
+  final List<double> values;
 
   @override
   void paint(Canvas canvas, Size size) {
+    if (values.isEmpty) return;
+    final n = values.length;
+    final maxValue = values.reduce(max);
+
     final paintLine = Paint()
       ..color = const Color(0xFF27AE60)
       ..strokeWidth = 2
       ..style = PaintingStyle.stroke;
 
-    const xLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     const yCount = 5;
     final textPainter = TextPainter(textDirection: TextDirection.ltr);
 
@@ -702,7 +677,9 @@ class EarningsChartPainter extends CustomPainter {
     final chartWidth = size.width - leftPadding;
     final chartHeight = size.height - bottomPadding;
 
-    final yStep = maxValue > 0 ? maxValue / (yCount - 1) : 500;
+    // Nice y-axis top: round the max up so labels read cleanly.
+    final axisTop = maxValue <= 0 ? 500.0 : _niceCeil(maxValue);
+    final yStep = axisTop / (yCount - 1);
     for (int i = 0; i < yCount; i++) {
       final y = chartHeight / (yCount - 1) * i;
       final val = (yCount - 1 - i) * yStep;
@@ -724,48 +701,56 @@ class EarningsChartPainter extends CustomPainter {
       );
     }
 
-    final xStep = chartWidth / 6;
-    for (int i = 0; i < 7; i++) {
+    final xStep = n > 1 ? chartWidth / (n - 1) : chartWidth;
+    for (int i = 0; i < n; i++) {
       final x = leftPadding + i * xStep;
+      final label = i < labels.length ? labels[i] : '';
       textPainter.text = TextSpan(
-          text: xLabels[i],
+          text: label,
           style: const TextStyle(fontSize: 9, color: AppColors.textSecondary));
       textPainter.layout();
       textPainter.paint(
           canvas, Offset(x - textPainter.width / 2, size.height - 14));
     }
 
-    if (data.length == 7) {
-      final path = Path();
-      for (int i = 0; i < 7; i++) {
-        final x = leftPadding + i * xStep;
-        final y = chartHeight - (data[i] * chartHeight);
-        if (i == 0) {
-          path.moveTo(x, y);
-        } else {
-          path.lineTo(x, y);
-        }
-      }
-      canvas.drawPath(path, paintLine);
-
-      final maxIdx = data.indexOf(data.reduce(max));
-      if (maxIdx >= 0 && data[maxIdx] > 0) {
-        final mx = leftPadding + maxIdx * xStep;
-        final my = chartHeight - (data[maxIdx] * chartHeight);
-        canvas.drawCircle(
-            Offset(mx, my), 4, Paint()..color = Colors.white..style = PaintingStyle.fill);
-        canvas.drawCircle(
-            Offset(mx, my),
-            4,
-            Paint()
-              ..color = const Color(0xFF27AE60)
-              ..style = PaintingStyle.stroke
-              ..strokeWidth = 2);
+    final path = Path();
+    for (int i = 0; i < n; i++) {
+      final x = leftPadding + i * xStep;
+      final y = chartHeight - (values[i] / axisTop * chartHeight);
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
       }
     }
+    canvas.drawPath(path, paintLine);
+
+    // Mark the peak point.
+    final maxIdx = values.indexOf(maxValue);
+    if (maxIdx >= 0 && maxValue > 0) {
+      final mx = leftPadding + maxIdx * xStep;
+      final my = chartHeight - (values[maxIdx] / axisTop * chartHeight);
+      canvas.drawCircle(Offset(mx, my), 4,
+          Paint()..color = Colors.white..style = PaintingStyle.fill);
+      canvas.drawCircle(
+          Offset(mx, my),
+          4,
+          Paint()
+            ..color = const Color(0xFF27AE60)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 2);
+    }
+  }
+
+  double _niceCeil(double v) {
+    if (v <= 0) return 500;
+    final mag = pow(10, (log(v) / ln10).floor()).toDouble();
+    final n = v / mag;
+    final nice = n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10;
+    return nice * mag;
   }
 
   @override
   bool shouldRepaint(EarningsChartPainter old) =>
-      old.data != data || old.maxValue != maxValue;
+      old.values != values || old.labels != labels;
 }

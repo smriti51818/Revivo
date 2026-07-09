@@ -11,6 +11,10 @@ final insightsRepositoryProvider = Provider<InsightsRepository>((ref) {
   return HttpInsightsRepository(ref.read(apiClientProvider));
 });
 
-final sellerInsightsProvider = FutureProvider<SellerInsightsData>((ref) {
-  return ref.read(insightsRepositoryProvider).fetch();
+/// Period-keyed insights: 'week' | 'month' | 'year'. Switching the filter
+/// refetches from AWS so every number (revenue, chart, impact, AI recs) is
+/// computed on the backend for that range.
+final sellerInsightsProvider =
+    FutureProvider.family<SellerInsightsData, String>((ref, period) {
+  return ref.read(insightsRepositoryProvider).fetch(period: period);
 });

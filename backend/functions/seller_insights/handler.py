@@ -38,6 +38,8 @@ def handler(event, context):
     if not vendor_id:
         return error(401, "unauthenticated")
 
+    period = (event.get("queryStringParameters") or {}).get("period")
+
     table = get_table()
     listings = table.query(
         IndexName="GSI1",
@@ -48,7 +50,7 @@ def handler(event, context):
         KeyConditionExpression=Key("GSI3PK").eq(f"VENDOR#{vendor_id}"),
     ).get("Items", [])
 
-    agg = aggregate_seller_insights(listings, orders)
+    agg = aggregate_seller_insights(listings, orders, period=period)
 
     recommendations = None
     source = "fallback"
