@@ -1,14 +1,65 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hugeicons/hugeicons.dart';
-import 'package:revivo/core/theme/app_colors.dart';
-import 'package:revivo/core/widgets/app_card.dart';
 
-class SellerInsightsScreen extends StatelessWidget {
+import '../../core/theme/app_colors.dart';
+import '../../core/widgets/app_card.dart';
+import '../buyer/domain/order.dart';
+import 'application/insights_providers.dart';
+import 'application/vendor_orders_providers.dart';
+import 'domain/seller_insights.dart';
+
+const _vegEmoji = <String, String>{
+  'Tomato': '🍅', 'Potato': '🥔', 'Onion': '🧅', 'Spinach': '🥬',
+  'Coriander': '🌿', 'Carrot': '🥕', 'Bell Pepper': '🫑', 'Cabbage': '🥬',
+  'Cauliflower': '🥦', 'Brinjal': '🍆', 'Okra': '🌱', 'Green Chilli': '🌶️',
+  'Cucumber': '🥒', 'Beans': '🫘', 'Beetroot': '🫚', 'Pumpkin': '🎃',
+  'Drumstick': '🌿', 'Curry Leaves': '🌿', 'Mint': '🌿', 'Radish': '🌱',
+};
+
+class SellerInsightsScreen extends ConsumerStatefulWidget {
   const SellerInsightsScreen({super.key});
 
   @override
+  ConsumerState<SellerInsightsScreen> createState() =>
+      _SellerInsightsScreenState();
+}
+
+class _SellerInsightsScreenState extends ConsumerState<SellerInsightsScreen> {
+  String _period = 'week';
+
+  List<Order> _filter(List<Order> orders) {
+    final now = DateTime.now();
+    final cutoff = switch (_period) {
+      'month' => DateTime(now.year, now.month - 1, now.day),
+      'year' => DateTime(now.year - 1, now.month, now.day),
+      _ => now.subtract(const Duration(days: 7)),
+    };
+    return orders.where((o) => o.placedAt.isAfter(cutoff)).toList();
+  }
+
+  List<double> _dailyEarnings(List<Order> orders) {
+    final now = DateTime.now();
+    final buckets = List<double>.filled(7, 0);
+    for (final o in orders) {
+      final diff = now.difference(o.placedAt).inDays;
+      if (diff >= 0 && diff < 7) buckets[6 - diff] += o.total;
+    }
+    return buckets;
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final insightsAsync = ref.watch(sellerInsightsProvider);
+    final allOrders =
+        ref.watch(vendorOrdersProvider).valueOrNull ?? const <Order>[];
+    final filtered = _filter(allOrders);
+
+    final earnings = filtered.fold<double>(0, (s, o) => s + o.total);
+    final qty = filtered.fold<double>(0, (s, o) => s + o.quantityKg);
+    final meals = (qty * 2.5).toInt();
+
     return Scaffold(
       backgroundColor: const Color(0xFF0E692D),
       body: SafeArea(
@@ -21,33 +72,44 @@ class SellerInsightsScreen extends StatelessWidget {
                 width: double.infinity,
                 decoration: const BoxDecoration(
                   color: Color(0xFFF8F9FA),
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                  borderRadius:
+                      BorderRadius.vertical(top: Radius.circular(16)),
                 ),
                 child: ClipRRect(
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(16),
-                  ),
-                  child: ListView(
-                    padding: const EdgeInsets.all(16),
-                    children: [
-                      _buildTopRow(),
-                      const SizedBox(height: 16),
-                      _buildEarningsOverview(),
-                      const SizedBox(height: 16),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(child: _buildListingsPerformance()),
-                          const SizedBox(width: 12),
-                          Expanded(child: _buildTopPerformingProduce()),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      _buildImpact(),
-                      const SizedBox(height: 16),
-                      _buildRecentInsights(),
-                      const SizedBox(height: 80),
-                    ],
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(16)),
+                  child: insightsAsync.when(
+                    loading: () =>
+                        const Center(child: CircularProgressIndicator()),
+                    error: (e, _) =>
+                        Center(child: Text('Could not load insights: $e')),
+                    data: (insights) => ListView(
+                      padding: const EdgeInsets.all(16),
+                      children: [
+                        _buildPeriodFilter(),
+                        const SizedBox(height: 12),
+                        _buildTopRow(
+                            insights, earnings, qty, meals, filtered.length),
+                        const SizedBox(height: 16),
+                        _buildEarningsOverview(filtered),
+                        const SizedBox(height: 16),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                                child: _buildListingsPerformance(insights)),
+                            const SizedBox(width: 12),
+                            Expanded(
+                                child: _buildTopPerformingProduce(insights)),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        _buildImpact(qty, earnings),
+                        const SizedBox(height: 16),
+                        _buildRecentInsights(insights),
+                        const SizedBox(height: 80),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -62,57 +124,24 @@ class SellerInsightsScreen extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Expanded(
-            child: Row(
-              children: [
-                const HugeIcon(icon: HugeIcons.strokeRoundedArrowLeft01, color: Colors.white, size: 22),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Insights',
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        'Track your impact, performance and growth',
-                        style: TextStyle(
-                            color: Colors.white.withOpacity(0.9), fontSize: 13),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
+          const HugeIcon(
+              icon: HugeIcons.strokeRoundedArrowLeft01,
+              color: Colors.white,
+              size: 22),
           const SizedBox(width: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.white.withOpacity(0.3)),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const HugeIcon(icon: HugeIcons.strokeRoundedCalendar01, color: Colors.white, size: 16),
-                const SizedBox(width: 6),
-                const Text(
-                  'This Week',
-                  style: TextStyle(color: Colors.white, fontSize: 13),
-                ),
-                const SizedBox(width: 4),
-                const HugeIcon(
-                  icon: HugeIcons.strokeRoundedArrowDown01,
-                  color: Colors.white,
-                  size: 16,
-                ),
+                Text('Insights',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold)),
+                Text('Track your impact, performance and growth',
+                    style: TextStyle(color: Colors.white70, fontSize: 13),
+                    overflow: TextOverflow.ellipsis),
               ],
             ),
           ),
@@ -121,66 +150,86 @@ class SellerInsightsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTopRow() {
+  Widget _buildPeriodFilter() {
+    const options = {
+      'week': 'This Week',
+      'month': 'This Month',
+      'year': 'This Year',
+    };
+    return Row(
+      children: options.entries.map((e) {
+        final active = _period == e.key;
+        return Padding(
+          padding: const EdgeInsets.only(right: 8),
+          child: GestureDetector(
+            onTap: () => setState(() => _period = e.key),
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+              decoration: BoxDecoration(
+                color: active ? AppColors.primary : Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                    color: active ? AppColors.primary : AppColors.border),
+              ),
+              child: Text(
+                e.value,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: active ? Colors.white : AppColors.textSecondary,
+                ),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildTopRow(SellerInsightsData insights, double earnings, double qty,
+      int meals, int orderCount) {
     return Row(
       children: [
         Expanded(
-          child: _buildStatCard(
-            HugeIcons.strokeRoundedShoppingBag01,
-            const Color(0xFF27AE60),
-            'Total Earnings',
-            '₹4,680',
-            '+ 18% vs last week',
-            true,
-          ),
-        ),
+            child: _buildStatCard(
+                HugeIcons.strokeRoundedShoppingBag01,
+                const Color(0xFF27AE60),
+                'Earnings',
+                '₹${earnings.toInt()}',
+                '$orderCount orders')),
         const SizedBox(width: 8),
         Expanded(
-          child: _buildStatCard(
-            HugeIcons.strokeRoundedTag01,
-            const Color(0xFF27AE60),
-            'Total Listings',
-            '28',
-            '+ 12% vs last week',
-            true,
-          ),
-        ),
+            child: _buildStatCard(
+                HugeIcons.strokeRoundedTag01,
+                const Color(0xFF27AE60),
+                'Listings',
+                '${insights.activeListings}',
+                'Active')),
         const SizedBox(width: 8),
         Expanded(
-          child: _buildStatCard(
-            HugeIcons.strokeRoundedShoppingBag02,
-            const Color(0xFF2D9CDB),
-            'Quantity Sold',
-            '156 kg',
-            '+ 22% vs last week',
-            true,
-          ),
-        ),
+            child: _buildStatCard(
+                HugeIcons.strokeRoundedShoppingBag02,
+                const Color(0xFF2D9CDB),
+                'Qty Sold',
+                '${qty.toInt()} kg',
+                'Sold')),
         const SizedBox(width: 8),
         Expanded(
-          child: _buildStatCard(
-            HugeIcons.strokeRoundedRestaurant01,
-            const Color(0xFFF2994A),
-            'Meals Saved',
-            '390',
-            '+ 26% vs last week',
-            true,
-          ),
-        ),
+            child: _buildStatCard(
+                HugeIcons.strokeRoundedRestaurant01,
+                const Color(0xFFF2994A),
+                'Meals',
+                '$meals',
+                'Saved')),
       ],
     );
   }
 
   Widget _buildStatCard(
-    dynamic icon,
-    Color iconColor,
-    String title,
-    String value,
-    String change,
-    bool isUp,
-  ) {
+      dynamic icon, Color iconColor, String title, String value, String sub) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -189,128 +238,87 @@ class SellerInsightsScreen extends StatelessWidget {
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(7),
             decoration: BoxDecoration(
               color: iconColor.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: icon is IconData
-                ? Icon(icon, size: 20, color: iconColor)
-                : HugeIcon(icon: icon, size: 20, color: iconColor),
+            child: HugeIcon(icon: icon, size: 18, color: iconColor),
           ),
-          const SizedBox(height: 12),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 10,
-              color: AppColors.textSecondary,
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 1,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
+          Text(title,
+              style: const TextStyle(
+                  fontSize: 9, color: AppColors.textSecondary),
+              textAlign: TextAlign.center,
+              maxLines: 1),
+          const SizedBox(height: 3),
           FittedBox(
             fit: BoxFit.scaleDown,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                HugeIcon(
-                  icon: isUp ? HugeIcons.strokeRoundedArrowUp01 : HugeIcons.strokeRoundedArrowDown01,
-                  color: const Color(0xFF27AE60),
-                  size: 16,
-                ),
-                Text(
-                  change,
-                  style: const TextStyle(
+            child: Text(value,
+                style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary)),
+          ),
+          const SizedBox(height: 3),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(sub,
+                style: const TextStyle(
                     fontSize: 9,
                     color: Color(0xFF27AE60),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
+                    fontWeight: FontWeight.w600)),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildEarningsOverview() {
+  Widget _buildEarningsOverview(List<Order> orders) {
+    final daily = _dailyEarnings(orders);
+    final maxVal = daily.reduce(max);
+    final normalized = maxVal > 0
+        ? daily.map((v) => v / maxVal).toList()
+        : List<double>.filled(7, 0);
+
     return AppCard(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Earnings Overview',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              Row(
-                children: [
-                  Container(
-                    width: 12,
-                    height: 2,
-                    color: const Color(0xFF27AE60),
-                  ),
-                  const SizedBox(width: 4),
-                  const Text(
-                    'This Week',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Container(
-                    width: 12,
-                    height: 2,
-                    color: Colors.grey.withOpacity(0.5),
-                  ),
-                  const SizedBox(width: 4),
-                  const Text(
-                    'Last Week',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+          const Text('Earnings Overview',
+              style:
+                  TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 24),
           SizedBox(
             height: 160,
             width: double.infinity,
-            child: CustomPaint(painter: EarningsChartPainter()),
+            child: CustomPaint(
+              painter: EarningsChartPainter(
+                data: normalized,
+                maxValue: maxVal,
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildListingsPerformance() {
+  Widget _buildListingsPerformance(SellerInsightsData insights) {
+    final total = insights.good + insights.useSoon + insights.rescue;
+    final goodPct = total > 0 ? insights.good / total * 100 : 0.0;
+    final soonPct = total > 0 ? insights.useSoon / total * 100 : 0.0;
+    final rescuePct = total > 0 ? insights.rescue / total * 100 : 0.0;
+
     return AppCard(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Listings Performance',
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-          ),
+          const Text('Listings Performance',
+              style:
+                  TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
           Column(
             children: [
@@ -318,58 +326,36 @@ class SellerInsightsScreen extends StatelessWidget {
                 width: 70,
                 height: 70,
                 child: CustomPaint(
-                  painter: DonutChartPainter(),
-                  child: const Center(
+                  painter: DonutChartPainter(
+                      goodPct: goodPct,
+                      soonPct: soonPct,
+                      rescuePct: rescuePct),
+                  child: Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          '28',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          'Total',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
+                        Text('$total',
+                            style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold)),
+                        const Text('Total',
+                            style: TextStyle(
+                                fontSize: 10,
+                                color: AppColors.textSecondary)),
                       ],
                     ),
                   ),
                 ),
               ),
               const SizedBox(height: 24),
-              _buildLegendItem(
-                const Color(0xFF27AE60),
-                'Sold',
-                '18',
-                '(64%)',
-              ),
+              _buildLegendItem(const Color(0xFF27AE60), 'Good',
+                  '${insights.good}', '(${goodPct.toInt()}%)'),
               const SizedBox(height: 8),
-              _buildLegendItem(
-                const Color(0xFF2D9CDB),
-                'Active',
-                '7',
-                '(25%)',
-              ),
+              _buildLegendItem(const Color(0xFFF2994A), 'Use Soon',
+                  '${insights.useSoon}', '(${soonPct.toInt()}%)'),
               const SizedBox(height: 8),
-              _buildLegendItem(
-                const Color(0xFFF2C94C),
-                'Expired',
-                '2',
-                '(7%)',
-              ),
-              const SizedBox(height: 8),
-              _buildLegendItem(
-                const Color(0xFFBDBDBD),
-                'Unsold',
-                '1',
-                '(4%)',
-              ),
+              _buildLegendItem(const Color(0xFFD32F2F), 'Rescue',
+                  '${insights.rescue}', '(${rescuePct.toInt()}%)'),
             ],
           ),
         ],
@@ -377,174 +363,136 @@ class SellerInsightsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildLegendItem(Color color, String label, String value, String pct) {
+  Widget _buildLegendItem(
+      Color color, String label, String value, String pct) {
     return Row(
       children: [
         Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
+            width: 8,
+            height: 8,
+            decoration:
+                BoxDecoration(color: color, shape: BoxShape.circle)),
         const SizedBox(width: 6),
         Expanded(
-          child: Text(
-            label,
-            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
-          ),
-        ),
-        Text(
-          value,
-          style: const TextStyle(fontSize: 11, color: AppColors.textPrimary),
-        ),
+            child: Text(label,
+                style: const TextStyle(
+                    fontSize: 11, fontWeight: FontWeight.w600))),
+        Text(value,
+            style: const TextStyle(
+                fontSize: 11, color: AppColors.textPrimary)),
         const SizedBox(width: 4),
-        Text(
-          pct,
-          style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
-        ),
+        Text(pct,
+            style: const TextStyle(
+                fontSize: 11, color: AppColors.textSecondary)),
       ],
     );
   }
 
-  Widget _buildTopPerformingProduce() {
+  Widget _buildTopPerformingProduce(SellerInsightsData insights) {
+    final movers = insights.movers;
     return AppCard(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Top Performing Produce',
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-          ),
+          const Text('Top Performing Produce',
+              style:
+                  TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
-          _buildProduceRow(
-            'assets/images/tomato.png',
-            'Tomato',
-            '78 kg sold',
-            '₹2,210',
-          ),
-          const SizedBox(height: 12),
-          _buildProduceRow(
-            'assets/images/spinach.png',
-            'Spinach',
-            '32 kg sold',
-            '₹840',
-          ),
-          const SizedBox(height: 12),
-          _buildProduceRow(
-            'assets/images/okra.png',
-            'Okra',
-            '18 kg sold',
-            '₹520',
-          ),
+          if (movers.isEmpty)
+            const Text('No data yet',
+                style: TextStyle(
+                    fontSize: 12, color: AppColors.textSecondary))
+          else
+            for (var i = 0; i < movers.length; i++) ...[
+              if (i > 0) const SizedBox(height: 12),
+              _buildProduceRow(movers[i]),
+            ],
           const SizedBox(height: 12),
           Center(
-            child: Text(
-              'View all produce >',
-              style: TextStyle(
-                fontSize: 11,
-                color: const Color(0xFF27AE60),
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            child: Text('View all produce >',
+                style: const TextStyle(
+                    fontSize: 11,
+                    color: Color(0xFF27AE60),
+                    fontWeight: FontWeight.bold)),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildProduceRow(
-    String img,
-    String name,
-    String subtitle,
-    String price,
-  ) {
+  Widget _buildProduceRow(MoverRow mover) {
+    final emoji = _vegEmoji[mover.vegetable] ?? '🥬';
     return Row(
       children: [
         Container(
           width: 32,
           height: 32,
           decoration: BoxDecoration(
-            color: const Color(0xFFF4F7F5),
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: const HugeIcon(icon: HugeIcons.strokeRoundedLeaf02, color: Colors.green, size: 20),
+              color: const Color(0xFFF4F7F5),
+              borderRadius: BorderRadius.circular(6)),
+          child: Center(
+              child: Text(emoji,
+                  style: const TextStyle(fontSize: 18))),
         ),
         const SizedBox(width: 8),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                name,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text(
-                subtitle,
-                style: const TextStyle(
-                  fontSize: 10,
-                  color: AppColors.textSecondary,
-                ),
-              ),
+              Text(mover.vegetable,
+                  style: const TextStyle(
+                      fontSize: 12, fontWeight: FontWeight.bold)),
+              Text('${mover.kg.toInt()} kg sold',
+                  style: const TextStyle(
+                      fontSize: 10, color: AppColors.textSecondary)),
             ],
           ),
         ),
-        Text(
-          price,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF27AE60),
-          ),
-        ),
+        Text('₹${mover.revenue.toInt()}',
+            style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF27AE60))),
       ],
     );
   }
 
-  Widget _buildImpact() {
+  Widget _buildImpact(double qty, double earnings) {
+    final meals = (qty * 2.5).toInt();
+    final buyerSavings = (earnings * 0.3).toInt();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Impact You\'re Creating',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
+        const Text("Impact You're Creating",
+            style:
+                TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         const SizedBox(height: 12),
         AppCard(
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
               Expanded(
-                child: _buildImpactCol(
-                  HugeIcons.strokeRoundedLeaf02,
-                  const Color(0xFF27AE60),
-                  '156 kg',
-                  'Food kept from waste',
-                  '+ 22% vs last week',
-                ),
-              ),
+                  child: _buildImpactCol(
+                      HugeIcons.strokeRoundedLeaf02,
+                      const Color(0xFF27AE60),
+                      '${qty.toInt()} kg',
+                      'Food kept from waste')),
               Container(width: 1, height: 60, color: AppColors.border),
               Expanded(
-                child: _buildImpactCol(
-                  HugeIcons.strokeRoundedUserMultiple,
-                  const Color(0xFF2D9CDB),
-                  '390',
-                  'Meals saved',
-                  '+ 26% vs last week',
-                ),
-              ),
+                  child: _buildImpactCol(
+                      HugeIcons.strokeRoundedUserMultiple,
+                      const Color(0xFF2D9CDB),
+                      '$meals',
+                      'Meals saved')),
               Container(width: 1, height: 60, color: AppColors.border),
               Expanded(
-                child: _buildImpactCol(
-                  HugeIcons.strokeRoundedMoney01,
-                  const Color(0xFFF2994A),
-                  '₹2,340',
-                  'Buyer savings',
-                  '+ 20% vs last week',
-                ),
-              ),
+                  child: _buildImpactCol(
+                      HugeIcons.strokeRoundedMoney01,
+                      const Color(0xFFF2994A),
+                      '₹$buyerSavings',
+                      'Buyer savings')),
             ],
           ),
         ),
@@ -553,94 +501,101 @@ class SellerInsightsScreen extends StatelessWidget {
   }
 
   Widget _buildImpactCol(
-    dynamic icon,
-    Color color,
-    String value,
-    String subtitle,
-    String change,
-  ) {
+      dynamic icon, Color color, String value, String subtitle) {
     return Column(
       children: [
         Container(
           padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            shape: BoxShape.circle,
-          ),
-          child: icon is IconData
-              ? Icon(icon, size: 18, color: color)
-              : HugeIcon(icon: icon, size: 18, color: color),
+          decoration:
+              BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
+          child: HugeIcon(icon: icon, size: 18, color: color),
         ),
         const SizedBox(height: 8),
-        Text(
-          value,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
+        Text(value,
+            style: const TextStyle(
+                fontSize: 16, fontWeight: FontWeight.bold)),
         const SizedBox(height: 2),
-        Text(
-          subtitle,
-          style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
-          textAlign: TextAlign.center,
-          maxLines: 1,
-        ),
-        const SizedBox(height: 6),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const HugeIcon(icon: HugeIcons.strokeRoundedArrowUp01, color: Color(0xFF27AE60), size: 14),
-            Text(
-              change,
-              style: const TextStyle(
-                fontSize: 9,
-                color: Color(0xFF27AE60),
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
+        Text(subtitle,
+            style: const TextStyle(
+                fontSize: 10, color: AppColors.textSecondary),
+            textAlign: TextAlign.center,
+            maxLines: 2),
       ],
     );
   }
 
-  Widget _buildRecentInsights() {
+  Widget _buildRecentInsights(SellerInsightsData insights) {
+    final recs = insights.recommendations;
+    final aiPowered = insights.aiPowered;
+
+    final fallbackIcons = [
+      HugeIcons.strokeRoundedChartLineData01,
+      HugeIcons.strokeRoundedTime01,
+      HugeIcons.strokeRoundedTag01,
+    ];
+    final fallbackColors = [
+      const Color(0xFF27AE60),
+      const Color(0xFF7CB342),
+      const Color(0xFFF2994A),
+    ];
+    const fallbackTitles = ['Great week! 🎉', 'Quick tip', 'Opportunity'];
+    const fallbackBodies = [
+      'Your earnings are up this period. Keep listing regularly!',
+      'Listings added in the morning tend to sell 30% faster.',
+      'Consider listing more leafy greens — high demand this week!',
+    ];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Recent Insights',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        Row(
+          children: [
+            const Text('Recent Insights',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            if (aiPowered) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 7, vertical: 3),
+                decoration: BoxDecoration(
+                    color: const Color(0xFFE8F5E9),
+                    borderRadius: BorderRadius.circular(10)),
+                child: const Text('AI',
+                    style: TextStyle(
+                        fontSize: 10,
+                        color: Color(0xFF27AE60),
+                        fontWeight: FontWeight.w800)),
+              ),
+            ],
+          ],
         ),
         const SizedBox(height: 12),
-        _buildInsightItem(
-          HugeIcons.strokeRoundedChartLineData01,
-          const Color(0xFF27AE60),
-          'Great week! 🎉',
-          'Your earnings are 18% higher than last week.',
-        ),
-        const SizedBox(height: 12),
-        _buildInsightItem(
-          HugeIcons.strokeRoundedTime01,
-          const Color(0xFF7CB342),
-          'Quick tip',
-          'Tomatoes listings sell 30% faster when added in the morning.',
-        ),
-        const SizedBox(height: 12),
-        _buildInsightItem(
-          HugeIcons.strokeRoundedTag01,
-          const Color(0xFFF2994A),
-          'Opportunity',
-          'Consider listing more Leafy Greens - high demand this week!',
-        ),
+        if (recs.isNotEmpty)
+          for (var i = 0; i < recs.length; i++) ...[
+            if (i > 0) const SizedBox(height: 12),
+            _buildInsightItem(
+              fallbackIcons[i % fallbackIcons.length],
+              fallbackColors[i % fallbackColors.length],
+              recs[i].title,
+              recs[i].body,
+            ),
+          ]
+        else
+          for (var i = 0; i < fallbackTitles.length; i++) ...[
+            if (i > 0) const SizedBox(height: 12),
+            _buildInsightItem(
+              fallbackIcons[i],
+              fallbackColors[i],
+              fallbackTitles[i],
+              fallbackBodies[i],
+            ),
+          ],
       ],
     );
   }
 
   Widget _buildInsightItem(
-    dynamic icon,
-    Color color,
-    String title,
-    String body,
-  ) {
+      dynamic icon, Color color, String title, String body) {
     return AppCard(
       padding: const EdgeInsets.all(12),
       child: Row(
@@ -648,9 +603,7 @@ class SellerInsightsScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
+                color: color.withOpacity(0.1), shape: BoxShape.circle),
             child: HugeIcon(icon: icon, size: 20, color: color),
           ),
           const SizedBox(width: 12),
@@ -658,21 +611,13 @@ class SellerInsightsScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                Text(title,
+                    style: const TextStyle(
+                        fontSize: 13, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 2),
-                Text(
-                  body,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
+                Text(body,
+                    style: const TextStyle(
+                        fontSize: 11, color: AppColors.textSecondary)),
               ],
             ),
           ),
@@ -683,11 +628,18 @@ class SellerInsightsScreen extends StatelessWidget {
 }
 
 class DonutChartPainter extends CustomPainter {
+  DonutChartPainter(
+      {required this.goodPct,
+      required this.soonPct,
+      required this.rescuePct});
+  final double goodPct, soonPct, rescuePct;
+
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2 - 8;
     const stroke = 12.0;
+
     final track = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = stroke
@@ -695,15 +647,17 @@ class DonutChartPainter extends CustomPainter {
     canvas.drawCircle(center, radius, track);
 
     final segments = [
-      (64.0, const Color(0xFF27AE60)),
-      (25.0, const Color(0xFF2D9CDB)),
-      (7.0, const Color(0xFFF2C94C)),
-      (4.0, const Color(0xFFBDBDBD)),
+      (goodPct, const Color(0xFF27AE60)),
+      (soonPct, const Color(0xFFF2994A)),
+      (rescuePct, const Color(0xFFD32F2F)),
     ];
+
     var start = -pi / 2;
     const gap = 0.08;
     for (final (pct, color) in segments) {
+      if (pct <= 0) continue;
       final sweep = 2 * pi * (pct / 100) - gap;
+      if (sweep <= 0) continue;
       final paint = Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = stroke
@@ -721,39 +675,43 @@ class DonutChartPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(DonutChartPainter old) =>
+      old.goodPct != goodPct ||
+      old.soonPct != soonPct ||
+      old.rescuePct != rescuePct;
 }
 
 class EarningsChartPainter extends CustomPainter {
+  EarningsChartPainter({required this.data, required this.maxValue});
+  final List<double> data; // 7 normalized values (0–1)
+  final double maxValue;
+
   @override
   void paint(Canvas canvas, Size size) {
-    final paintLine1 = Paint()
+    final paintLine = Paint()
       ..color = const Color(0xFF27AE60)
       ..strokeWidth = 2
       ..style = PaintingStyle.stroke;
-    final paintLine2 = Paint()
-      ..color = Colors.grey.withOpacity(0.5)
-      ..strokeWidth = 1.5
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
 
-    final yLabels = ['₹2.0k', '₹1.5k', '₹1.0k', '₹500', '₹0'];
-    final xLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
+    const xLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const yCount = 5;
     final textPainter = TextPainter(textDirection: TextDirection.ltr);
 
-    double leftPadding = 36;
-    double bottomPadding = 20;
-    double chartWidth = size.width - leftPadding;
-    double chartHeight = size.height - bottomPadding;
+    const leftPadding = 40.0;
+    const bottomPadding = 20.0;
+    final chartWidth = size.width - leftPadding;
+    final chartHeight = size.height - bottomPadding;
 
-    // Draw Y axis labels & horizontal lines
-    for (int i = 0; i < 5; i++) {
-      double y = i * (chartHeight / 4);
+    final yStep = maxValue > 0 ? maxValue / (yCount - 1) : 500;
+    for (int i = 0; i < yCount; i++) {
+      final y = chartHeight / (yCount - 1) * i;
+      final val = (yCount - 1 - i) * yStep;
+      final label = val >= 1000
+          ? '₹${(val / 1000).toStringAsFixed(1)}k'
+          : '₹${val.toInt()}';
       textPainter.text = TextSpan(
-        text: yLabels[i],
-        style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
-      );
+          text: label,
+          style: const TextStyle(fontSize: 9, color: AppColors.textSecondary));
       textPainter.layout();
       textPainter.paint(canvas, Offset(0, y - 6));
 
@@ -766,126 +724,48 @@ class EarningsChartPainter extends CustomPainter {
       );
     }
 
-    // Draw X axis labels
-    double xStep = chartWidth / 6;
+    final xStep = chartWidth / 6;
     for (int i = 0; i < 7; i++) {
-      double x = leftPadding + i * xStep;
+      final x = leftPadding + i * xStep;
       textPainter.text = TextSpan(
-        text: xLabels[i],
-        style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
-      );
+          text: xLabels[i],
+          style: const TextStyle(fontSize: 9, color: AppColors.textSecondary));
       textPainter.layout();
       textPainter.paint(
-        canvas,
-        Offset(x - textPainter.width / 2, size.height - 14),
-      );
+          canvas, Offset(x - textPainter.width / 2, size.height - 14));
     }
 
-    // Data points
-    final data1 = [0.2, 0.4, 0.45, 0.4, 0.6, 0.65, 0.4];
-    final data2 = [0.1, 0.2, 0.3, 0.25, 0.4, 0.45, 0.3];
-
-    Path path1 = Path();
-    Path path2 = Path();
-
-    for (int i = 0; i < 7; i++) {
-      double x = leftPadding + i * xStep;
-      double y1 = chartHeight - (data1[i] * chartHeight);
-      double y2 = chartHeight - (data2[i] * chartHeight);
-
-      if (i == 0) {
-        path1.moveTo(x, y1);
-        path2.moveTo(x, y2);
-      } else {
-        path1.lineTo(x, y1);
-        path2.lineTo(x, y2);
-      }
-    }
-
-    canvas.drawPath(path1, paintLine1);
-    // Draw dashed line for path 2 (simplification: draw solid for now, or use a dashed path generator)
-    // To make it simple, let's just draw it dotted.
-    for (int i = 0; i < 7; i++) {
-      if (i > 0) {
-        double x1 = leftPadding + (i - 1) * xStep;
-        double y2_prev = chartHeight - (data2[i - 1] * chartHeight);
-        double x2 = leftPadding + i * xStep;
-        double y2_curr = chartHeight - (data2[i] * chartHeight);
-        // Draw 5 dashes between points
-        for (int j = 1; j <= 5; j += 2) {
-          double dx1 = x1 + (x2 - x1) * (j - 1) / 5;
-          double dy1 = y2_prev + (y2_curr - y2_prev) * (j - 1) / 5;
-          double dx2 = x1 + (x2 - x1) * j / 5;
-          double dy2 = y2_prev + (y2_curr - y2_prev) * j / 5;
-          canvas.drawLine(Offset(dx1, dy1), Offset(dx2, dy2), paintLine2);
+    if (data.length == 7) {
+      final path = Path();
+      for (int i = 0; i < 7; i++) {
+        final x = leftPadding + i * xStep;
+        final y = chartHeight - (data[i] * chartHeight);
+        if (i == 0) {
+          path.moveTo(x, y);
+        } else {
+          path.lineTo(x, y);
         }
       }
+      canvas.drawPath(path, paintLine);
+
+      final maxIdx = data.indexOf(data.reduce(max));
+      if (maxIdx >= 0 && data[maxIdx] > 0) {
+        final mx = leftPadding + maxIdx * xStep;
+        final my = chartHeight - (data[maxIdx] * chartHeight);
+        canvas.drawCircle(
+            Offset(mx, my), 4, Paint()..color = Colors.white..style = PaintingStyle.fill);
+        canvas.drawCircle(
+            Offset(mx, my),
+            4,
+            Paint()
+              ..color = const Color(0xFF27AE60)
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = 2);
+      }
     }
-
-    // Draw the tooltip point on Thu (index 3)
-    double targetX = leftPadding + 3 * xStep;
-    double targetY = chartHeight - (data1[3] * chartHeight);
-
-    // Dotted vertical line
-    canvas.drawLine(
-      Offset(targetX, targetY),
-      Offset(targetX, chartHeight),
-      Paint()
-        ..color = const Color(0xFF27AE60)
-        ..strokeWidth = 1
-        ..style = PaintingStyle.stroke,
-    );
-
-    // Circle point
-    canvas.drawCircle(
-      Offset(targetX, targetY),
-      4,
-      Paint()
-        ..color = Colors.white
-        ..style = PaintingStyle.fill,
-    );
-    canvas.drawCircle(
-      Offset(targetX, targetY),
-      4,
-      Paint()
-        ..color = const Color(0xFF27AE60)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2,
-    );
-
-    // Tooltip box
-    final rrect = RRect.fromRectAndRadius(
-      Rect.fromCenter(
-        center: Offset(targetX, targetY - 24),
-        width: 44,
-        height: 24,
-      ),
-      const Radius.circular(4),
-    );
-    canvas.drawRRect(rrect, Paint()..color = const Color(0xFF0F7033));
-    textPainter.text = const TextSpan(
-      text: '₹920',
-      style: TextStyle(
-        fontSize: 10,
-        color: Colors.white,
-        fontWeight: FontWeight.bold,
-      ),
-    );
-    textPainter.layout();
-    textPainter.paint(
-      canvas,
-      Offset(targetX - textPainter.width / 2, targetY - 32),
-    );
-
-    // Little triangle pointing down
-    Path triangle = Path()
-      ..moveTo(targetX - 4, targetY - 12)
-      ..lineTo(targetX + 4, targetY - 12)
-      ..lineTo(targetX, targetY - 6)
-      ..close();
-    canvas.drawPath(triangle, Paint()..color = const Color(0xFF0F7033));
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(EarningsChartPainter old) =>
+      old.data != data || old.maxValue != maxValue;
 }

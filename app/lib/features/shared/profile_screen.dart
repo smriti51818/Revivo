@@ -125,15 +125,6 @@ class _Header extends StatelessWidget {
                           color: Colors.white,
                         ),
                       ),
-                      const SizedBox(height: 3),
-                      Text(
-                        _roleLabel,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white.withValues(alpha: 0.8),
-                        ),
-                      ),
                     ],
                   ),
                   const Spacer(),

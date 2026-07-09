@@ -24,10 +24,10 @@ class SellerDashboardScreen extends ConsumerWidget {
 
     final listings = listingsAsync.valueOrNull ?? const <Listing>[];
 
-    // Compute dynamic stats based on real listings/orders
     final listingsCount = listings.length;
     final totalWeight = listings.fold<double>(0, (sum, item) => sum + item.quantityKg).toInt();
     final ordersCount = orders.length;
+    final totalEarnings = orders.fold<double>(0, (s, o) => s + o.total);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9FB),
@@ -44,7 +44,7 @@ class SellerDashboardScreen extends ConsumerWidget {
               child: ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 children: [
-                  _buildTodaySummaryCard(listingsCount, totalWeight, ordersCount),
+                  _buildTodaySummaryCard(listingsCount, totalWeight, ordersCount, totalEarnings),
                   const SizedBox(height: 16),
                   _buildActiveListingsHeader(context),
                   const SizedBox(height: 8),
@@ -163,7 +163,14 @@ class SellerDashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildTodaySummaryCard(int listingsCount, int totalWeight, int ordersCount) {
+  Widget _buildTodaySummaryCard(int listingsCount, int totalWeight, int ordersCount, double totalEarnings) {
+    final now = DateTime.now();
+    final months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    final dateStr = '${now.day} ${months[now.month - 1]} ${now.year}';
+    final earningsStr = totalEarnings > 0
+        ? '₹${totalEarnings.toInt()}'
+        : '₹0';
+
     return AppCard(
       padding: const EdgeInsets.all(12),
       child: Column(
@@ -178,39 +185,38 @@ class SellerDashboardScreen extends ConsumerWidget {
               const Spacer(),
               const HugeIcon(icon: HugeIcons.strokeRoundedCalendar01, size: 11, color: AppColors.textMuted),
               const SizedBox(width: 4),
-              const Text(
-                '10 May 2026',
-                style: TextStyle(fontSize: 10.5, color: AppColors.textMuted, fontWeight: FontWeight.w500),
+              Text(
+                dateStr,
+                style: const TextStyle(fontSize: 10.5, color: AppColors.textMuted, fontWeight: FontWeight.w500),
               ),
             ],
           ),
           const SizedBox(height: 12),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _summaryStatBlock(
                 HugeIcons.strokeRoundedPackage,
-                listingsCount > 0 ? '$listingsCount' : '12',
+                '$listingsCount',
                 'Listings Active',
-                '↗ 3 new',
+                listingsCount > 0 ? '↗ ${listingsCount} active' : '—',
               ),
               _summaryStatBlock(
                 HugeIcons.strokeRoundedShoppingBag01,
-                totalWeight > 0 ? '$totalWeight kg' : '27 kg',
+                '$totalWeight kg',
                 'Total Listed',
-                '↗ 8 kg',
+                totalWeight > 0 ? '↗ $totalWeight kg' : '—',
               ),
               _summaryStatBlock(
                 HugeIcons.strokeRoundedMoney01,
-                '₹1,850',
+                earningsStr,
                 'Total Earnings',
-                '↗ ₹320',
+                ordersCount > 0 ? '↗ $ordersCount orders' : '—',
               ),
               _summaryStatBlock(
                 HugeIcons.strokeRoundedCheckmarkCircle02,
-                ordersCount > 0 ? '$ordersCount' : '18',
-                'Orders Completed',
-                '↗ 4 today',
+                '$ordersCount',
+                'Orders',
+                ordersCount > 0 ? '↗ all time' : '—',
               ),
             ],
           ),

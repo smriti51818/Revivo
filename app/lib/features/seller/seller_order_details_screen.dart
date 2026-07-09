@@ -462,7 +462,7 @@ class SellerOrderDetailsScreen extends ConsumerWidget {
           _infoRow(HugeIcons.strokeRoundedInvoice01, 'Order ID', '#RV${currentOrder.id.substring(0, 5).toUpperCase()}'),
           _infoRow(HugeIcons.strokeRoundedStore01, 'Business Type', 'Hotel'),
           _infoRow(HugeIcons.strokeRoundedClock01, 'Preferred Pickup', 'Today, 12:00 – 2:00 PM'),
-          _infoRow(HugeIcons.strokeRoundedUser, 'Contact Person', 'Rahul Sharma'),
+          _infoRow(HugeIcons.strokeRoundedUserCircle, 'Contact Person', 'Rahul Sharma'),
           _infoRow(HugeIcons.strokeRoundedCall, 'Phone Number', '+91 98765 43210'),
           _infoRow(HugeIcons.strokeRoundedNote01, 'Additional Note', 'Please ensure fresh and firm tomatoes.'),
         ],
@@ -478,17 +478,18 @@ class SellerOrderDetailsScreen extends ConsumerWidget {
         children: [
           HugeIcon(icon: icon, color: AppColors.textMuted, size: 15),
           const SizedBox(width: 10),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12.5,
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.w600,
+          SizedBox(
+            width: 110,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12.5,
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
-          const Spacer(),
-          Flexible(
-            flex: 2,
+          Expanded(
             child: Text(
               value,
               textAlign: TextAlign.end,

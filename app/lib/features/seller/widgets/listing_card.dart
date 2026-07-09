@@ -89,23 +89,6 @@ class ListingCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                // Heart Overlay
-                Positioned(
-                  bottom: 4,
-                  right: 4,
-                  child: Container(
-                    width: 22,
-                    height: 22,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
-                      ],
-                    ),
-                    child: const HugeIcon(icon: HugeIcons.strokeRoundedFavourite, size: 12, color: AppColors.textSecondary),
-                  ),
-                ),
               ],
             ),
           ),
@@ -127,9 +110,9 @@ class ListingCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 2),
-                const Text(
-                  'Fresh • Grade A',
-                  style: TextStyle(fontSize: 10, color: AppColors.textSecondary, fontWeight: FontWeight.w500),
+                Text(
+                  '$bandLabel • ${band == FreshnessBand.good ? 'Grade A' : band == FreshnessBand.useSoon ? 'Grade B' : 'Grade C'}',
+                  style: TextStyle(fontSize: 10, color: bandColor, fontWeight: FontWeight.w500),
                 ),
                 const SizedBox(height: 6),
                 Row(

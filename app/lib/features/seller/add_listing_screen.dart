@@ -188,7 +188,10 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
             storage: _storage,
             purchasedAt: _purchasedAt,
           );
-      if (mounted) setState(() => _analysis = a);
+      if (mounted) {
+        setState(() => _analysis = a);
+        _priceController.text = a.recommendedPrice.toStringAsFixed(2);
+      }
     } catch (_) {}
   }
 
@@ -497,6 +500,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
               controller: _description,
               maxLines: 3,
               maxLength: 300,
+              style: const TextStyle(fontSize: 11),
               decoration: const InputDecoration(
                 hintText: 'Enter description...',
                 counterText: '',
@@ -950,7 +954,14 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
                       ),
                       child: Text(_analysis != null ? '${_analysis?.band.label}' : 'Excellent (90-100%)', style: const TextStyle(color: Color(0xFF27AE60), fontSize: 11, fontWeight: FontWeight.w800)),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 4),
+                    Text(
+                      _analysis == null ? 'Grade A' :
+                      _analysis!.band == FreshnessBand.good ? 'Grade A' :
+                      _analysis!.band == FreshnessBand.useSoon ? 'Grade B' : 'Grade C',
+                      style: const TextStyle(fontSize: 11, color: AppColors.textPrimary, fontWeight: FontWeight.w800),
+                    ),
+                    const SizedBox(height: 4),
                     Wrap(
                       crossAxisAlignment: WrapCrossAlignment.center,
                       spacing: 4,
@@ -1193,6 +1204,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
           controller: _pickupInstructions,
           maxLines: 2,
           maxLength: 150,
+          style: const TextStyle(fontSize: 11.5),
           decoration: const InputDecoration(
             counterText: '',
             hintText: 'e.g. gate code, phone contact...',

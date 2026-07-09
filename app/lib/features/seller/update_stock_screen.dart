@@ -321,8 +321,9 @@ class _UpdateStockScreenState extends ConsumerState<UpdateStockScreen> {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
                       children: [5, 10, 25, 30, 50].map((val) {
                         final active = _value == val.toDouble();
                         return GestureDetector(
@@ -331,7 +332,7 @@ class _UpdateStockScreenState extends ConsumerState<UpdateStockScreen> {
                             setState(() {});
                           },
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                             decoration: BoxDecoration(
                               color: active ? const Color(0xFFEDFBF4) : Colors.white,
                               border: Border.all(color: active ? const Color(0xFF27AE60) : AppColors.border),
@@ -340,7 +341,7 @@ class _UpdateStockScreenState extends ConsumerState<UpdateStockScreen> {
                             child: Text(
                               '$val kg',
                               style: TextStyle(
-                                fontSize: 9,
+                                fontSize: 10,
                                 fontWeight: FontWeight.w800,
                                 color: active ? const Color(0xFF27AE60) : AppColors.textSecondary,
                               ),
@@ -372,7 +373,7 @@ class _UpdateStockScreenState extends ConsumerState<UpdateStockScreen> {
                       style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
                       decoration: const InputDecoration(
                         contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                        prefixIcon: HugeIcon(icon: HugeIcons.strokeRoundedNote01, size: 14, color: AppColors.textSecondary),
+                        prefixIcon: HugeIcon(icon: HugeIcons.strokeRoundedNote01, size: 12, color: AppColors.textSecondary),
                         isDense: true,
                       ),
                       items: ['Kilogram (kg)', 'Gram (g)'].map((u) => DropdownMenuItem(value: u, child: Text(u, style: const TextStyle(fontSize: 11)))).toList(),
@@ -410,7 +411,7 @@ class _UpdateStockScreenState extends ConsumerState<UpdateStockScreen> {
                       style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
                       decoration: const InputDecoration(
                         contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                        prefixIcon: HugeIcon(icon: HugeIcons.strokeRoundedPackage, size: 14, color: AppColors.textSecondary),
+                        prefixIcon: HugeIcon(icon: HugeIcons.strokeRoundedPackage, size: 12, color: AppColors.textSecondary),
                         isDense: true,
                       ),
                       items: ['Loose/Unpacked', 'Crates', 'Bags'].map((p) => DropdownMenuItem(value: p, child: Text(p, style: const TextStyle(fontSize: 11)))).toList(),
@@ -432,7 +433,7 @@ class _UpdateStockScreenState extends ConsumerState<UpdateStockScreen> {
                       style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
                       decoration: const InputDecoration(
                         contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                        prefixIcon: HugeIcon(icon: HugeIcons.strokeRoundedTemperature, size: 14, color: AppColors.textSecondary),
+                        prefixIcon: HugeIcon(icon: HugeIcons.strokeRoundedTemperature, size: 12, color: AppColors.textSecondary),
                         isDense: true,
                       ),
                       items: StorageCondition.values.map((s) => DropdownMenuItem(value: s, child: Text(s.label, style: const TextStyle(fontSize: 10.5)))).toList(),
@@ -458,7 +459,7 @@ class _UpdateStockScreenState extends ConsumerState<UpdateStockScreen> {
                       style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
                       decoration: const InputDecoration(
                         contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                        prefixIcon: HugeIcon(icon: HugeIcons.strokeRoundedChartLineData01, size: 14, color: AppColors.textSecondary),
+                        prefixIcon: HugeIcon(icon: HugeIcons.strokeRoundedChartLineData01, size: 12, color: AppColors.textSecondary),
                         isDense: true,
                       ),
                       items: ['Excellent (90-100%)', 'Good (70-89%)', 'Average (50-69%)', 'Fair (30-49%)'].map((q) => DropdownMenuItem(value: q, child: Text(q, style: const TextStyle(fontSize: 11)))).toList(),
@@ -480,7 +481,7 @@ class _UpdateStockScreenState extends ConsumerState<UpdateStockScreen> {
                       style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
                       decoration: const InputDecoration(
                         contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                        prefixIcon: HugeIcon(icon: HugeIcons.strokeRoundedCalendar01, size: 14, color: AppColors.textSecondary),
+                        prefixIcon: HugeIcon(icon: HugeIcons.strokeRoundedCalendar01, size: 12, color: AppColors.textSecondary),
                         isDense: true,
                       ),
                       items: ['Just now', '1 day ago', '2-3 days ago', '3-5 days ago', 'A week ago'].map((h) => DropdownMenuItem(value: h, child: Text(h, style: const TextStyle(fontSize: 11)))).toList(),
@@ -506,7 +507,7 @@ class _UpdateStockScreenState extends ConsumerState<UpdateStockScreen> {
                       style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
                       decoration: const InputDecoration(
                         contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                        prefixIcon: HugeIcon(icon: HugeIcons.strokeRoundedLeaf02, size: 14, color: AppColors.textSecondary),
+                        prefixIcon: HugeIcon(icon: HugeIcons.strokeRoundedLeaf02, size: 12, color: AppColors.textSecondary),
                         isDense: true,
                       ),
                       items: ['Yes', 'No'].map((o) => DropdownMenuItem(value: o, child: Text(o, style: const TextStyle(fontSize: 11)))).toList(),
