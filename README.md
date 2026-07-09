@@ -81,7 +81,9 @@ Both use **one Amazon Cognito user pool** with a `custom:role` attribute for zer
 
 ## 🗺️ Architecture
 
-See [`docs/architecture.md`](docs/architecture.md) and the diagram at [`docs/architecture.svg`](docs/architecture.svg).
+![Revivo serverless architecture](docs/architecture.png)
+
+See [`docs/architecture.md`](docs/architecture.md) for the write-up (diagram source: [`docs/architecture.svg`](docs/architecture.svg)).
 
 ```mermaid
 flowchart TD
@@ -165,14 +167,15 @@ Connect the GitHub repo in the Amplify console — it builds and hosts `build/we
 2. **Seller:** tap *Add Listing* → capture a photo → confirm the Rekognition-identified vegetable, purchase date, and storage → the freshness band and price are computed automatically → publish. Check *Insights* for the AI (Bedrock) recommendations and waste-risk projection.
 3. **Buyer:** browse the live marketplace → open a product → one-tap order.
 4. Watch the order advance through **Confirmed → Preparing → Ready for Pickup → Completed** — live in the app (8s poll) or in the AWS Step Functions console (`revivo-order-lifecycle`).
-5. Rate the completed order, then check **Impact** for kg rescued / meals / CO₂ / ₹ saved and the leaderboard.
+5. Rate the completed order, then check **Impact** for your own kg rescued / meals / CO₂ avoided / ₹ saved — computed from your real completed orders.
 6. Browse the read-only **Rescue** network to see surplus routed to an NGO kitchen with a Bedrock-written explanation.
 
 ## 📦 Deliverables
 - ✅ Source code (this repo)
-- ✅ Architecture diagram — [`docs/architecture.svg`](docs/architecture.svg)
+- ✅ Architecture diagram — [`docs/architecture.png`](docs/architecture.png) ([source](docs/architecture.svg))
 - ✅ Demo script — [`docs/demo-script.md`](docs/demo-script.md)
 - ✅ Live backend — `https://j5aq1g1vbd.execute-api.ap-south-1.amazonaws.com/prod` (see [`DEMO_LOGINS.md`](DEMO_LOGINS.md))
+- ✅ Release APK — `flutter build apk --release` → ~19 MB (see [Setup & installation](#-setup--installation))
 - 🔗 Deployment link (Amplify web hosting) — *added once the Amplify app is connected*
 - 🎬 Demo video (YouTube) — *added after the live demo*
 
