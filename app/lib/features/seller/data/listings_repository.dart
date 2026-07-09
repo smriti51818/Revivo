@@ -9,8 +9,10 @@ abstract class ListingsRepository {
   Future<List<Listing>> fetchListings();
   Future<Listing> createListing(Listing draft);
 
-  /// Updates a listing's available stock (quantity). Owner-only server-side.
-  Future<Listing> updateStock(String id, double quantityKg);
+  /// Updates a listing's available stock (quantity), and optionally replaces its
+  /// photo ([imageKey]). Owner-only server-side.
+  Future<Listing> updateStock(String id, double quantityKg,
+      {String? imageKey});
 
   /// Uploads a captured photo to S3, returning its object key (or '' on
   /// failure). Done at capture time so Rekognition can read it.
@@ -91,11 +93,16 @@ class InMemoryListingsRepository implements ListingsRepository {
   }
 
   @override
-  Future<Listing> updateStock(String id, double quantityKg) async {
+  Future<Listing> updateStock(String id, double quantityKg,
+      {String? imageKey}) async {
     await Future.delayed(const Duration(milliseconds: 250));
     final idx = _items.indexWhere((l) => l.id == id);
     if (idx == -1) throw StateError('Listing $id not found');
-    final updated = _items[idx].copyWith(quantityKg: quantityKg);
+    // Offline, [imageKey] is the picked file path — show it as the image.
+    final updated = _items[idx].copyWith(
+      quantityKg: quantityKg,
+      imagePath: (imageKey != null && imageKey.isNotEmpty) ? imageKey : null,
+    );
     _items[idx] = updated;
     return updated;
   }
@@ -103,7 +110,7 @@ class InMemoryListingsRepository implements ListingsRepository {
   @override
   Future<String> uploadPhoto(String path) async {
     await Future.delayed(const Duration(milliseconds: 200));
-    return ''; // offline: no real upload
+    return path; // offline: reuse the local path so the photo still displays
   }
 
   @override

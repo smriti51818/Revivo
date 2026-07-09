@@ -200,6 +200,7 @@ class _BuyerMarketScreenState extends ConsumerState<BuyerMarketScreen> {
       child: Column(
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: Column(
@@ -207,42 +208,46 @@ class _BuyerMarketScreenState extends ConsumerState<BuyerMarketScreen> {
                   children: [
                     Text(
                       'Good morning, $name 👋',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 18,
+                        fontSize: 19,
                         fontWeight: FontWeight.w800,
+                        letterSpacing: -0.2,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 6),
                     GestureDetector(
+                      behavior: HitTestBehavior.opaque,
                       onTap: () => showLocationPicker(context, ref),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const HugeIcon(
+                          HugeIcon(
                             icon: HugeIcons.strokeRoundedLocation01,
-                            color: Colors.white,
+                            color: Colors.white.withValues(alpha: 0.9),
                             size: 14,
                           ),
-                          const SizedBox(width: 4),
+                          const SizedBox(width: 5),
                           ConstrainedBox(
                             constraints: const BoxConstraints(maxWidth: 220),
                             child: Text(
                               location,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.85),
                                 fontSize: 12,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ),
-                          const SizedBox(width: 2),
-                          const HugeIcon(
+                          const SizedBox(width: 3),
+                          HugeIcon(
                             icon: HugeIcons.strokeRoundedArrowDown01,
-                            color: Colors.white,
-                            size: 12,
+                            color: Colors.white.withValues(alpha: 0.85),
+                            size: 13,
                           ),
                         ],
                       ),
@@ -252,7 +257,7 @@ class _BuyerMarketScreenState extends ConsumerState<BuyerMarketScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 20),
           Row(
             children: [
               Expanded(
@@ -390,6 +395,7 @@ class _BuyerMarketScreenState extends ConsumerState<BuyerMarketScreen> {
             child: Column(
               children: [
                 for (var i = 0; i < list.length; i++) ...[
+                  if (i > 0) const SizedBox(height: AppSpacing.md),
                   FadeSlideIn(
                     delay: Duration(milliseconds: i < 8 ? i * 45 : 0),
                     child: OfferCard(
@@ -398,7 +404,6 @@ class _BuyerMarketScreenState extends ConsumerState<BuyerMarketScreen> {
                           context.push('/buyer/product', extra: list[i]),
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.md),
                 ],
               ],
             ),
@@ -409,19 +414,11 @@ class _BuyerMarketScreenState extends ConsumerState<BuyerMarketScreen> {
 
   Widget _categoryRow() {
     final categories = [
-      (ProduceCategory.all, 'All', HugeIcons.strokeRoundedGridView),
-      (ProduceCategory.leafy, 'Leafy Greens', HugeIcons.strokeRoundedLeaf02),
-      (ProduceCategory.roots, 'Root Veggies', HugeIcons.strokeRoundedTree02),
-      (
-        ProduceCategory.fruiting,
-        'Fruits & Gourds',
-        HugeIcons.strokeRoundedApple,
-      ),
-      (
-        ProduceCategory.herbs,
-        'Herbs & Others',
-        HugeIcons.strokeRoundedMoreHorizontal,
-      ),
+      (ProduceCategory.all, 'All'),
+      (ProduceCategory.leafy, 'Leafy'),
+      (ProduceCategory.roots, 'Roots'),
+      (ProduceCategory.fruiting, 'Gourd'),
+      (ProduceCategory.herbs, 'Others'),
     ];
 
     return SingleChildScrollView(
@@ -446,27 +443,15 @@ class _BuyerMarketScreenState extends ConsumerState<BuyerMarketScreen> {
                         : AppColors.border,
                   ),
                 ),
-                child: Row(
-                  children: [
-                    HugeIcon(
-                      icon: cat.$3,
-                      color: _category == cat.$1
-                          ? Colors.white
-                          : AppColors.textSecondary,
-                      size: 16,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      cat.$2,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: _category == cat.$1
-                            ? Colors.white
-                            : AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  cat.$2,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: _category == cat.$1
+                        ? Colors.white
+                        : AppColors.textSecondary,
+                  ),
                 ),
               ),
             ),

@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -48,7 +47,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
   // Form states pre-filled with mockup data
   final _quantity = TextEditingController(text: '25.0');
   final _priceController = TextEditingController(text: '28.00');
-  final _variety = TextEditingController(text: 'Hybrid Tomato');
+  final _variety = TextEditingController();
   final _description = TextEditingController(
       text: 'Fresh, firm and juicy tomatoes. Handpicked and sorted for best quality. Ideal for cooking, salads and sauces.');
   final _pickupInstructions = TextEditingController(
@@ -57,7 +56,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
   XFile? _photo;
   String _imageKey = '';
 
-  String? _vegetable = 'Tomato';
+  String? _vegetable;
   StorageCondition _storage = StorageCondition.refrigerated;
   int _purchaseIdx = 0;
   bool _organic = true;
@@ -69,7 +68,6 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
   String _availUntilDate = '14 May 2025';
   String _availUntilTime = '06:00 PM';
   String _location = 'R.S. Puram, Coimbatore, Tamil Nadu 641002';
-  bool _stockVisibility = true;
 
   FreshnessAnalysis? _analysis;
   Timer? _debounce;
@@ -300,7 +298,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
     setState(() {
       _photo = null;
       _imageKey = '';
-      _vegetable = 'Tomato';
+      _vegetable = null;
       _storage = StorageCondition.refrigerated;
       _purchaseIdx = 0;
       _organic = true;
@@ -324,7 +322,8 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
           _buildStepper(),
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screen, vertical: 16),
+              padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.screen, 16, AppSpacing.screen, 28),
               children: [
                 if (_currentStep == 1) ..._buildStep1(),
                 if (_currentStep == 2) ..._buildStep2(),
@@ -352,56 +351,25 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
         left: AppSpacing.screen,
         right: AppSpacing.screen,
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          IconButton(
-            onPressed: () => context.pop(),
-            icon: const HugeIcon(
-              icon: HugeIcons.strokeRoundedArrowLeft01,
+          const Text(
+            'Add New Listing',
+            style: TextStyle(
               color: Colors.white,
-              size: 24,
-            ),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Add New Listing',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  _currentStep == 4 ? 'Review your details before publishing' : 'List your surplus produce and help reduce food waste',
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
             ),
           ),
-          OutlinedButton.icon(
-            onPressed: () {
-              _toast('Draft Saved Successfully');
-              context.pop();
-            },
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size(0, 36),
-              side: const BorderSide(color: Colors.white38),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          const SizedBox(height: 2),
+          Text(
+            _currentStep == 4 ? 'Review your details before publishing' : 'List your surplus produce and help reduce food waste',
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
             ),
-            icon: const HugeIcon(icon: HugeIcons.strokeRoundedInvoice01, color: Colors.white, size: 15),
-            label: const Text('Save Draft', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -528,25 +496,8 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
           ),
         ],
       ),
-      const SizedBox(height: 16),
-      _buildInputContainer(
-        'Organic',
-        'Grown without synthetic chemicals',
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text('Organic', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
-            Transform.scale(
-              scale: 0.9,
-              child: Switch(
-                value: _organic,
-                activeColor: AppColors.primary,
-                onChanged: (v) => setState(() => _organic = v),
-              ),
-            ),
-          ],
-        ),
-      ),
+      const SizedBox(height: 12),
+      _buildOrganicToggle(),
       const SizedBox(height: 16),
       _buildInputContainer(
         'Description *',
@@ -594,6 +545,40 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
         ),
       ),
     ];
+  }
+
+  /// A slim inline organic toggle — a single row, not a full card.
+  Widget _buildOrganicToggle() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          const HugeIcon(
+              icon: HugeIcons.strokeRoundedLeaf02,
+              size: 16,
+              color: AppColors.primary),
+          const SizedBox(width: 8),
+          const Expanded(
+            child: Text('Organically grown',
+                style: TextStyle(
+                    fontSize: 12.5, fontWeight: FontWeight.w700)),
+          ),
+          Transform.scale(
+            scale: 0.85,
+            child: Switch(
+              value: _organic,
+              activeThumbColor: AppColors.primary,
+              onChanged: (v) => setState(() => _organic = v),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildSectionHeader(String title, String subtitle) {
@@ -647,31 +632,56 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
               child: SizedBox(
                 width: 90,
                 height: 90,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    _photo != null
-                        ? Image.file(File(_photo!.path), fit: BoxFit.cover, width: 90, height: 90)
-                        : Container(
-                            color: AppColors.primarySurface,
-                            alignment: Alignment.center,
-                            child: HugeIcon(
-                              icon: HugeIcons.strokeRoundedLeaf02,
-                              size: 40,
-                              color: AppColors.primary.withValues(alpha: 0.55),
+                child: _photo != null
+                    // Existing photo: show it with a small camera badge to retake.
+                    ? Stack(
+                        children: [
+                          Positioned.fill(
+                            child: Image.file(File(_photo!.path),
+                                fit: BoxFit.cover),
+                          ),
+                          Positioned(
+                            right: 5,
+                            bottom: 5,
+                            child: Container(
+                              padding: const EdgeInsets.all(5),
+                              decoration: const BoxDecoration(
+                                color: AppColors.primary,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const HugeIcon(
+                                  icon: HugeIcons.strokeRoundedCamera01,
+                                  size: 12,
+                                  color: Colors.white),
                             ),
                           ),
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.8),
-                        shape: BoxShape.circle,
+                        ],
+                      )
+                    // Empty: a single camera prompt (no leaf behind it).
+                    : Container(
+                        color: AppColors.primarySurface,
+                        alignment: Alignment.center,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            HugeIcon(
+                              icon: HugeIcons.strokeRoundedCamera01,
+                              size: 26,
+                              color: AppColors.primary.withValues(alpha: 0.85),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Add photo',
+                              style: TextStyle(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w700,
+                                color:
+                                    AppColors.primary.withValues(alpha: 0.85),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      child: const HugeIcon(icon: HugeIcons.strokeRoundedCamera01, size: 16, color: AppColors.textPrimary),
-                    ),
-                  ],
-                ),
               ),
             ),
           ),
@@ -903,8 +913,12 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
       _buildPricingSuggestionBox(marketPrice),
       const SizedBox(height: 16),
       _buildInputContainer(
-        'Your Selling Price (per kg) *',
-        'Suggested range: ₹24 – ₹32/kg',
+        _priceType == 'Fixed Price'
+            ? 'Your Selling Price (total) *'
+            : 'Your Selling Price (per kg) *',
+        _priceType == 'Fixed Price'
+            ? 'Total price for the whole batch'
+            : 'Suggested range: ₹24 – ₹32/kg',
         _buildSellingPriceCounter(),
       ),
       const SizedBox(height: 16),
@@ -1085,9 +1099,9 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
                   textAlign: TextAlign.center,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
-                  decoration: const InputDecoration(
-                    suffixText: '₹/kg',
-                    contentPadding: EdgeInsets.symmetric(vertical: 8),
+                  decoration: InputDecoration(
+                    suffixText: _priceType == 'Fixed Price' ? '₹ total' : '₹/kg',
+                    contentPadding: const EdgeInsets.symmetric(vertical: 8),
                   ),
                   onChanged: (_) => setState(() {}),
                 ),
@@ -1173,84 +1187,23 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
   }
 
   Widget _buildImpactSummaryCard(double marketPrice) {
-    final price = double.tryParse(_priceController.text) ?? 28.0;
-    final totalValue = price * (_qty ?? 0.0);
-    final saves = (marketPrice - price).clamp(0, 999.0) * (_qty ?? 0.0);
-    final meals = (totalValue / 11.2).toInt();
-
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            color: const Color(0xFFFFF7EE),
-            border: Border.all(color: const Color(0xFFFFEAD1)),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Row(
-            children: [
-              HugeIcon(icon: HugeIcons.strokeRoundedInformationCircle, size: 14, color: Color(0xFFF2994A)),
-              SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  'Tip: Pricing slightly lower helps you sell faster and reduces food waste.',
-                  style: TextStyle(color: Color(0xFFD6751D), fontSize: 11, fontWeight: FontWeight.w600),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        AppCard(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Your Earnings & Impact', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
-              const SizedBox(height: 2),
-              const Text('See how your listing creates value and impact.', style: TextStyle(fontSize: 10.5, color: AppColors.textMuted)),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _impactMetric(HugeIcons.strokeRoundedMoneyBag01, 'Listing Value', '₹${totalValue.toInt()}', 'You earn'),
-                  Container(width: 1, height: 50, color: AppColors.border, margin: const EdgeInsets.symmetric(horizontal: 8)),
-                  _impactMetric(HugeIcons.strokeRoundedUserGroup, 'Buyer Saves', '₹${saves.toInt()}', 'vs market price'),
-                  Container(width: 1, height: 50, color: AppColors.border, margin: const EdgeInsets.symmetric(horizontal: 8)),
-                  _impactMetric(HugeIcons.strokeRoundedDish01, 'Meal Equivalent', '$meals', 'Meals saved'),
-                ],
-              ),
-              const Divider(height: 24),
-              const Row(
-                children: [
-                  HugeIcon(icon: HugeIcons.strokeRoundedLeaf02, color: Color(0xFF27AE60), size: 16),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'By listing this produce, you\'re helping reduce food waste and support sustainability.',
-                      style: TextStyle(fontSize: 10.5, color: AppColors.textSecondary, fontWeight: FontWeight.w500),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _impactMetric(List<List<dynamic>> icon, String label, String value, String sub) {
-    return Expanded(
-      child: Column(
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF7EE),
+        border: Border.all(color: const Color(0xFFFFEAD1)),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: const Row(
         children: [
-          HugeIcon(icon: icon, color: const Color(0xFF27AE60), size: 20),
-          const SizedBox(height: 6),
-          Text(label, style: const TextStyle(fontSize: 9.5, color: AppColors.textMuted, fontWeight: FontWeight.w600)),
-          const SizedBox(height: 4),
-          Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
-          const SizedBox(height: 2),
-          Text(sub, style: const TextStyle(fontSize: 9, color: AppColors.textMuted)),
+          HugeIcon(icon: HugeIcons.strokeRoundedInformationCircle, size: 14, color: Color(0xFFF2994A)),
+          SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              'Tip: Pricing slightly lower helps you sell faster and reduces food waste.',
+              style: TextStyle(color: Color(0xFFD6751D), fontSize: 11, fontWeight: FontWeight.w600),
+            ),
+          ),
         ],
       ),
     );
@@ -1344,43 +1297,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
           ],
         ),
       ),
-      const SizedBox(height: 16),
-      _buildInputContainer(
-        'Stock Visibility',
-        'Show available quantity to buyers',
-        Column(
-          children: [
-            Row(
-              children: [
-                const Text('Stock Visibility', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
-                const Spacer(),
-                Switch(
-                  value: _stockVisibility,
-                  activeColor: AppColors.primary,
-                  onChanged: (v) => setState(() => _stockVisibility = v),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              decoration: BoxDecoration(color: const Color(0xFFEDFBF4), borderRadius: BorderRadius.circular(8)),
-              child: Row(
-                children: [
-                  const HugeIcon(icon: HugeIcons.strokeRoundedEye, size: 12, color: Color(0xFF27AE60)),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      'Displaying stock builds trust and can increase order chances.',
-                      style: TextStyle(color: const Color(0xFF27AE60), fontSize: 10, fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+      const SizedBox(height: 24),
     ];
   }
 
@@ -1561,7 +1478,6 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
           ('Available Until', '$_availUntilDate, $_availUntilTime'),
           ('Pickup Instructions', _pickupInstructions.text),
           ('Location', _location),
-          ('Stock Visibility', _stockVisibility ? 'On' : 'Off'),
         ],
         3,
       ),

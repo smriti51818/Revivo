@@ -122,7 +122,12 @@ class Listing {
     return null;
   }
 
-  Listing copyWith({double? quantityKg}) => Listing(
+  Listing copyWith({
+    double? quantityKg,
+    String? imagePath,
+    String? imageKey,
+    String? imageUrl,
+  }) => Listing(
         id: id,
         vegetable: vegetable,
         quantityKg: quantityKg ?? this.quantityKg,
@@ -133,9 +138,9 @@ class Listing {
         storage: storage,
         createdAt: createdAt,
         organic: organic,
-        imagePath: imagePath,
-        imageKey: imageKey,
-        imageUrl: imageUrl,
+        imagePath: imagePath ?? this.imagePath,
+        imageKey: imageKey ?? this.imageKey,
+        imageUrl: imageUrl ?? this.imageUrl,
         purchasedAt: purchasedAt,
         tempC: tempC,
         expiresAt: expiresAt,

@@ -48,23 +48,23 @@ class ListingCard extends StatelessWidget {
     return Pressable(
       onTap: onUpdateStock ?? onEdit,
       child: AppCard(
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.all(12),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Left Image
             ClipRRect(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(14),
               child: SizedBox(
-                width: 88,
-                height: 88,
+                width: 92,
+                height: 92,
                 child: Stack(
                   children: [
                     Positioned.fill(
                       child: listing.imagePath != null && listing.imagePath!.isNotEmpty
-                          ? Image.file(File(listing.imagePath!), fit: BoxFit.cover, errorBuilder: (_, __, ___) => _fallbackImage())
+                          ? Image.file(File(listing.imagePath!), fit: BoxFit.cover, errorBuilder: (_, _, _) => _fallbackImage())
                           : listing.imageUrl != null && listing.imageUrl!.isNotEmpty
-                              ? Image.network(listing.imageUrl!, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _fallbackImage())
+                              ? Image.network(listing.imageUrl!, fit: BoxFit.cover, errorBuilder: (_, _, _) => _fallbackImage())
                               : _fallbackImage(),
                     ),
                     Positioned(

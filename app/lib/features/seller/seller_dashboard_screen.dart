@@ -4,13 +4,15 @@ import 'package:go_router/go_router.dart';
 import 'package:hugeicons/hugeicons.dart';
 
 import '../../core/discovery/vendor_directory.dart';
+import '../../core/format.dart';
 import '../../core/session/session_controller.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/location_picker_sheet.dart';
-import '../../core/widgets/app_card.dart';
+import '../../core/widgets/motion.dart';
 import 'application/listings_providers.dart';
 import 'application/vendor_orders_providers.dart';
+import 'domain/listing.dart';
 import 'widgets/listing_card.dart';
 
 class SellerDashboardScreen extends ConsumerWidget {
@@ -22,51 +24,77 @@ class SellerDashboardScreen extends ConsumerWidget {
     final name = ref.watch(sessionProvider)?.name ?? 'Vendor';
     final location = vendorInfo(name).areaLabel;
 
+    // Real, derivable summary stats — no fabricated numbers.
+    final items = listingsAsync.valueOrNull ?? const <Listing>[];
+    final activeCount = items.length;
+    final atRiskCount = items.where((l) => l.atRisk()).length;
+    final potentialValue =
+        items.fold<double>(0, (sum, l) => sum + l.liveValue());
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9FB),
+      backgroundColor: AppColors.background,
       body: Column(
         children: [
-          _buildGreenHeader(context, ref, name, location),
+          _Header(
+            name: name,
+            location: location,
+            activeCount: activeCount,
+            atRiskCount: atRiskCount,
+            potentialValue: potentialValue,
+            onTapLocation: () => showLocationPicker(context, ref),
+          ),
           Expanded(
             child: RefreshIndicator(
+              color: AppColors.primary,
               onRefresh: () async {
                 ref.read(vendorOrdersProvider.notifier).reload();
                 ref.invalidate(listingsProvider);
                 await ref.read(listingsProvider.future);
               },
               child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, 96),
                 children: [
-
-                  _buildActiveListingsHeader(context),
-                  const SizedBox(height: 8),
+                  _AddListingCta(onTap: () => context.push('/seller/add')),
+                  const SizedBox(height: AppSpacing.xl),
+                  _SectionHeader(
+                    title: 'Your inventory',
+                    count: activeCount,
+                    onViewAll: () => context.push('/seller/listings'),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
                   listingsAsync.when(
                     loading: () => const Padding(
-                      padding: EdgeInsets.only(top: 48),
-                      child: Center(child: CircularProgressIndicator()),
+                      padding: EdgeInsets.only(top: 56),
+                      child: Center(
+                        child: CircularProgressIndicator(
+                            color: AppColors.primary),
+                      ),
                     ),
-                    error: (e, _) => Padding(
-                      padding: const EdgeInsets.only(top: 32),
-                      child: Center(child: Text('Could not load listings: $e')),
-                    ),
-                    data: (items) => items.isEmpty
-                        ? _empty()
+                    error: (e, _) => _ErrorState(message: '$e'),
+                    data: (list) => list.isEmpty
+                        ? const _EmptyState()
                         : Column(
                             children: [
-                              for (final listing in items) ...[
-                                ListingCard(
-                                  listing: listing,
-                                  onUpdateStock: () => context.push('/seller/update-stock', extra: listing),
-                                  onEdit: () => context.push('/seller/update-stock', extra: listing),
+                              for (var i = 0; i < list.length; i++) ...[
+                                FadeSlideIn(
+                                  delay: Duration(milliseconds: 60 * i),
+                                  child: ListingCard(
+                                    listing: list[i],
+                                    onUpdateStock: () => context.push(
+                                        '/seller/update-stock',
+                                        extra: list[i]),
+                                    onEdit: () => context.push(
+                                        '/seller/update-stock',
+                                        extra: list[i]),
+                                  ),
                                 ),
-                                const SizedBox(height: 12),
+                                const SizedBox(height: AppSpacing.md),
                               ],
                             ],
                           ),
                   ),
-                  const SizedBox(height: 8),
-                  _buildBottomBanner(context),
-                  const SizedBox(height: 16),
                 ],
               ),
             ),
@@ -75,17 +103,42 @@ class SellerDashboardScreen extends ConsumerWidget {
       ),
     );
   }
+}
 
-  Widget _buildGreenHeader(BuildContext context, WidgetRef ref, String name, String location) {
+/// Green rounded header with greeting, location, and a floating stats strip —
+/// the "partner app" home hero.
+class _Header extends StatelessWidget {
+  const _Header({
+    required this.name,
+    required this.location,
+    required this.activeCount,
+    required this.atRiskCount,
+    required this.potentialValue,
+    required this.onTapLocation,
+  });
+
+  final String name;
+  final String location;
+  final int activeCount;
+  final int atRiskCount;
+  final double potentialValue;
+  final VoidCallback onTapLocation;
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
       decoration: const BoxDecoration(
-        color: AppColors.primary,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppColors.primary, AppColors.primaryDark],
+        ),
         borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
       ),
       padding: EdgeInsets.only(
         top: MediaQuery.of(context).padding.top + 8,
-        bottom: 20,
+        bottom: AppSpacing.lg,
         left: AppSpacing.screen,
         right: AppSpacing.screen,
       ),
@@ -98,16 +151,20 @@ class SellerDashboardScreen extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Good morning, $name 👋',
+                      'Hello, $name 👋',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 18,
+                        fontSize: 19,
                         fontWeight: FontWeight.w800,
+                        letterSpacing: -0.2,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 3),
                     GestureDetector(
-                      onTap: () => showLocationPicker(context, ref),
+                      onTap: onTapLocation,
+                      behavior: HitTestBehavior.opaque,
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -118,14 +175,14 @@ class SellerDashboardScreen extends ConsumerWidget {
                           ),
                           const SizedBox(width: 4),
                           ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 220),
+                            constraints: const BoxConstraints(maxWidth: 200),
                             child: Text(
                               location,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.9),
+                                fontSize: 12.5,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -143,122 +200,382 @@ class SellerDashboardScreen extends ConsumerWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.white30),
-                  borderRadius: BorderRadius.circular(20),
+                  color: Colors.white.withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
                 ),
                 child: const Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    HugeIcon(icon: HugeIcons.strokeRoundedStore02, color: Colors.white, size: 12),
-                    SizedBox(width: 4),
+                    HugeIcon(
+                        icon: HugeIcons.strokeRoundedStore02,
+                        color: Colors.white,
+                        size: 13),
+                    SizedBox(width: 5),
                     Text(
                       'Seller',
-                      style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700),
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700),
                     ),
                   ],
                 ),
               ),
             ],
           ),
+          const SizedBox(height: AppSpacing.lg),
+          _StatsStrip(
+            activeCount: activeCount,
+            atRiskCount: atRiskCount,
+            potentialValue: potentialValue,
+          ),
         ],
       ),
     );
   }
+}
 
+/// A single white card holding the three headline stats with hairline dividers.
+class _StatsStrip extends StatelessWidget {
+  const _StatsStrip({
+    required this.activeCount,
+    required this.atRiskCount,
+    required this.potentialValue,
+  });
 
+  final int activeCount;
+  final int atRiskCount;
+  final double potentialValue;
 
-  Widget _buildActiveListingsHeader(BuildContext context) {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primaryDark.withValues(alpha: 0.18),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          _Stat(
+            icon: HugeIcons.strokeRoundedPackage,
+            iconColor: AppColors.primary,
+            value: '$activeCount',
+            label: 'Active',
+          ),
+          const _StatDivider(),
+          _Stat(
+            icon: HugeIcons.strokeRoundedAlert02,
+            iconColor:
+                atRiskCount > 0 ? AppColors.warning : AppColors.textMuted,
+            value: '$atRiskCount',
+            label: 'At risk',
+          ),
+          const _StatDivider(),
+          _Stat(
+            icon: HugeIcons.strokeRoundedRupee,
+            iconColor: AppColors.primary,
+            value: '₹${formatCount(potentialValue)}',
+            label: 'Potential',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Stat extends StatelessWidget {
+  const _Stat({
+    required this.icon,
+    required this.iconColor,
+    required this.value,
+    required this.label,
+  });
+
+  final dynamic icon;
+  final Color iconColor;
+  final String value;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Column(
+        children: [
+          HugeIcon(icon: icon, color: iconColor, size: 18),
+          const SizedBox(height: 6),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              maxLines: 1,
+              style: const TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary,
+                letterSpacing: -0.3,
+              ),
+            ),
+          ),
+          const SizedBox(height: 1),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 10.5,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textMuted,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatDivider extends StatelessWidget {
+  const _StatDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 1,
+      height: 34,
+      color: AppColors.border,
+    );
+  }
+}
+
+/// Prominent primary action to list new surplus.
+class _AddListingCta extends StatelessWidget {
+  const _AddListingCta({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Pressable(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg, vertical: 14),
+        decoration: BoxDecoration(
+          color: AppColors.primary,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.35),
+              blurRadius: 18,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(7),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.18),
+                shape: BoxShape.circle,
+              ),
+              child: const HugeIcon(
+                icon: HugeIcons.strokeRoundedAddCircle,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'List surplus produce',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  SizedBox(height: 1),
+                  Text(
+                    'Reach nearby buyers before it wastes',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const HugeIcon(
+              icon: HugeIcons.strokeRoundedArrowRight01,
+              color: Colors.white,
+              size: 18,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({
+    required this.title,
+    required this.count,
+    required this.onViewAll,
+  });
+
+  final String title;
+  final int count;
+  final VoidCallback onViewAll;
+
+  @override
+  Widget build(BuildContext context) {
     return Row(
       children: [
-        const Text(
-          'Active Listings',
-          style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+            color: AppColors.textPrimary,
+            letterSpacing: -0.2,
+          ),
         ),
+        const SizedBox(width: 8),
+        if (count > 0)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: AppColors.primarySurface,
+              borderRadius: BorderRadius.circular(AppRadius.pill),
+            ),
+            child: Text(
+              '$count',
+              style: const TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w800,
+                color: AppColors.primaryDark,
+              ),
+            ),
+          ),
         const Spacer(),
         GestureDetector(
-          onTap: () => context.push('/seller/listings'),
+          onTap: onViewAll,
+          behavior: HitTestBehavior.opaque,
           child: const Row(
             children: [
               Text(
                 'View all',
-                style: TextStyle(color: Color(0xFF27AE60), fontSize: 11, fontWeight: FontWeight.w800),
+                style: TextStyle(
+                    color: AppColors.primary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700),
               ),
               SizedBox(width: 2),
-              HugeIcon(icon: HugeIcons.strokeRoundedArrowRight01, size: 11, color: Color(0xFF27AE60)),
+              HugeIcon(
+                  icon: HugeIcons.strokeRoundedArrowRight01,
+                  size: 13,
+                  color: AppColors.primary),
             ],
           ),
         ),
       ],
     );
   }
+}
 
-  Widget _buildBottomBanner(BuildContext context) {
-    return AppCard(
-      padding: const EdgeInsets.all(12),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: const BoxDecoration(
-              color: Color(0xFFEDFBF4),
-              shape: BoxShape.circle,
+class _EmptyState extends StatelessWidget {
+  const _EmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 48),
+      child: Center(
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: const BoxDecoration(
+                color: AppColors.primarySurface,
+                shape: BoxShape.circle,
+              ),
+              child: const HugeIcon(
+                icon: HugeIcons.strokeRoundedPackage,
+                size: 38,
+                color: AppColors.primary,
+              ),
             ),
-            child: const HugeIcon(icon: HugeIcons.strokeRoundedLeaf02, size: 16, color: Color(0xFF27AE60)),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Keep your stock updated',
-                  style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
-                ),
-                Text(
-                  'Update quantities and prices to reach more buyers and reduce waste.',
-                  style: TextStyle(fontSize: 9, color: AppColors.textMuted),
-                ),
-              ],
+            const SizedBox(height: AppSpacing.lg),
+            const Text(
+              'No listings yet',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textSecondary,
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
-          ElevatedButton(
-            onPressed: () => context.push('/seller/add'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF27AE60),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            const SizedBox(height: 4),
+            const Text(
+              'Tap “List surplus produce” to get started',
+              style: TextStyle(fontSize: 12.5, color: AppColors.textMuted),
             ),
-            child: const Text(
-              'Add New Listing +',
-              style: TextStyle(color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.w800),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
+}
 
-  Widget _empty() => const Padding(
-        padding: EdgeInsets.only(top: 56),
-        child: Center(
-          child: Column(
-            children: [
-              HugeIcon(icon: HugeIcons.strokeRoundedPackage,
-                  size: 40, color: AppColors.textMuted),
-              SizedBox(height: AppSpacing.md),
-              Text('No listings yet',
-                  style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textSecondary)),
-              SizedBox(height: 2),
-              Text('Tap + to list your surplus produce',
-                  style: TextStyle(fontSize: 12.5, color: AppColors.textMuted)),
-            ],
-          ),
+class _ErrorState extends StatelessWidget {
+  const _ErrorState({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 40),
+      child: Center(
+        child: Column(
+          children: [
+            const HugeIcon(
+              icon: HugeIcons.strokeRoundedAlert02,
+              size: 34,
+              color: AppColors.textMuted,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            const Text(
+              'Could not load listings',
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 11.5, color: AppColors.textMuted),
+            ),
+          ],
         ),
-      );
+      ),
+    );
+  }
 }

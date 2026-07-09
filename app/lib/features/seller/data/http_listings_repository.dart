@@ -44,8 +44,11 @@ class HttpListingsRepository implements ListingsRepository {
   }
 
   @override
-  Future<Listing> updateStock(String id, double quantityKg) async {
-    final res = await _api.patch('/listings/$id', {'quantityKg': quantityKg});
+  Future<Listing> updateStock(String id, double quantityKg,
+      {String? imageKey}) async {
+    final body = <String, dynamic>{'quantityKg': quantityKg};
+    if (imageKey != null && imageKey.isNotEmpty) body['imageKey'] = imageKey;
+    final res = await _api.patch('/listings/$id', body);
     return _fromJson((res['listing'] as Map).cast<String, dynamic>());
   }
 

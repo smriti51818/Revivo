@@ -52,11 +52,19 @@ class HttpInsightsRepository implements InsightsRepository {
             asDouble(v),
         ],
       ),
+      // Impact is aggregated server-side; if a stale deploy omits it, derive the
+      // reliable parts from real soldKg with the same 2.5-per-kg constants so the
+      // numbers are always correct (never left at a misleading zero).
       impact: SellerImpact(
-        foodKeptKg: asDouble(impact['foodKeptKg']),
-        meals: (impact['meals'] as num?)?.toInt() ?? 0,
+        foodKeptKg: impact['foodKeptKg'] != null
+            ? asDouble(impact['foodKeptKg'])
+            : asDouble(totals['soldKg']),
+        meals: (impact['meals'] as num?)?.toInt() ??
+            (asDouble(totals['soldKg']) * 2.5).round(),
         buyerSavings: asDouble(impact['buyerSavings']),
-        co2SavedKg: asDouble(impact['co2SavedKg']),
+        co2SavedKg: impact['co2SavedKg'] != null
+            ? asDouble(impact['co2SavedKg'])
+            : asDouble(totals['soldKg']) * 2.5,
       ),
       recommendations: [
         for (final r in recsRaw)

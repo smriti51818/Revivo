@@ -7,9 +7,10 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/app_card.dart';
 import 'trust_badges.dart';
 
-/// The "Quality Confidence Card" from the spec's five-layer trust model —
-/// rating, AI defect screening, GPS-verified photo, and fulfilment record — so
-/// the buyer can commit with confidence before pickup.
+/// The "Quality & trust" card — states only true, generic facts the buyer can
+/// rely on: the vendor's rating, their fulfilment record, and Revivo's
+/// pay-on-pickup, inspect-before-you-accept policy. It makes no per-item
+/// verification claims (no "this photo was AI-screened" / "GPS-verified").
 class QualityCard extends StatelessWidget {
   const QualityCard({super.key, required this.vendorName});
 
@@ -35,14 +36,14 @@ class QualityCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.md),
-          _check('AI-screened produce',
-              'Vendor photos are screened for visible defects on Rekognition'),
-          const SizedBox(height: 10),
-          _check('GPS-verified listings',
-              'Photos are captured and tagged at the vendor stall'),
+          _check('Pay on pickup',
+              'Inspect the produce in person and only pay once you accept it'),
           const SizedBox(height: 10),
           _check('${info.completedOrders} orders fulfilled',
-              'Pay on pickup — inspect before you accept'),
+              'This vendor has completed ${info.completedOrders} pickups on Revivo'),
+          const SizedBox(height: 10),
+          _check('${info.rating.toStringAsFixed(1)}★ from ${info.reviews} buyers',
+              'Average rating across past Revivo pickups'),
         ],
       ),
     );

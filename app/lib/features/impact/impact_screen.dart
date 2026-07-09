@@ -4,624 +4,275 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/format.dart';
+import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
-import 'application/impact_providers.dart';
-import 'domain/impact.dart';
+import '../../core/widgets/motion.dart';
+import '../buyer/application/marketplace_providers.dart';
+import '../buyer/domain/order.dart';
 
-/// Litres of water kept in the system per kg of produce rescued (a conservative
-/// vegetable blue-water footprint; shown as an estimate, derived — not stored).
-const double _waterPerKg = 26;
+/// Impact constants shared with the backend engine: 2.5 meals and 2.5 kg of
+/// avoided CO₂ per kg of produce rescued.
+const double _mealsPerKg = 2.5;
+const double _co2PerKg = 2.5;
 
-const _green = Color(0xFF27AE60);
-const _greenDark = Color(0xFF1B4332);
-const _greenSurface = Color(0xFFF2F9F3);
-const _greenBorder = Color(0xFFD4E9D9);
+/// The current buyer's own impact, derived from their real completed orders —
+/// no network-wide or fabricated numbers.
+class _MyImpact {
+  const _MyImpact(this.orders, this.kg, this.meals, this.co2, this.saved);
+  final int orders;
+  final double kg;
+  final double meals;
+  final double co2;
+  final double saved;
+  bool get isEmpty => orders == 0;
 
-/// Community-wide impact for the pilot, driven entirely by [impactProvider]
-/// (server-side `aggregate_impact` when live, the seeded in-memory summary
-/// offline). Every number here is bound to [ImpactData] — nothing is hardcoded.
+  static _MyImpact from(List<Order> all) {
+    final done = all.where((o) => o.status == OrderStatus.completed).toList();
+    final kg = done.fold<double>(0, (s, o) => s + o.quantityKg);
+    final saved = done.fold<double>(0, (s, o) => s + o.saved);
+    return _MyImpact(
+        done.length, kg, kg * _mealsPerKg, kg * _co2PerKg, saved);
+  }
+}
+
+const _co2Accent = (
+  fg: Color(0xFF0F766E),
+  bg: Color(0xFFD5F5F1),
+  border: Color(0xFFB4EBE4),
+);
+
+/// Buyer-facing "Impact" tab — the buyer's own contribution only, styled like
+/// the seller dashboard's stats strip: a standard green header + a floating
+/// white stats card with real numbers from the buyer's completed orders.
 class ImpactScreen extends ConsumerWidget {
   const ImpactScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final impact = ref.watch(impactProvider);
+    final ordersAsync = ref.watch(ordersProvider);
+    final m = _MyImpact.from(ordersAsync.valueOrNull ?? const []);
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: () => ref.refresh(impactProvider.future),
-          color: _green,
-          child: impact.when(
-            loading: () => ListView(
-              children: const [
-                SizedBox(height: 240),
-                Center(child: CircularProgressIndicator(color: _green)),
-              ],
-            ),
-            error: (e, _) => ListView(
-              padding: const EdgeInsets.all(AppSpacing.screen),
-              children: [
-                _buildHeader(),
-                const SizedBox(height: 48),
-                Center(child: Text('Could not load impact: $e')),
-              ],
-            ),
-            data: (data) => ListView(
-              padding: const EdgeInsets.all(AppSpacing.screen),
-              children: [
-                _buildHeader(),
-                const SizedBox(height: 24),
-                _buildBanner(),
-                const SizedBox(height: 24),
-                _buildAtAGlance(data.summary),
-                const SizedBox(height: 24),
-                _buildGoal(data.summary),
-                const SizedBox(height: 24),
-                _buildCommunityImpact(data.summary),
-                const SizedBox(height: 24),
-                _buildRescueCta(context),
-                const SizedBox(height: 24),
-                _buildPlanetImpact(data.summary),
-                const SizedBox(height: 24),
-                _buildLeaderboard(data.leaderboard),
-                const SizedBox(height: 24),
-                _buildFooterCard(),
-                const SizedBox(height: 80),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
-              Text(
-                'Impact',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 4),
-              Text(
-                'Making a positive difference with every meal',
-                style: TextStyle(fontSize: 12, color: Colors.grey),
-              ),
-            ],
-          ),
-        ),
-        HugeIcon(
-            icon: HugeIcons.strokeRoundedNotification02,
-            size: 20,
-            color: Colors.grey.shade800),
-      ],
-    );
-  }
-
-  Widget _buildBanner() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: _greenSurface,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 10,
-                )
-              ],
-            ),
-            child: const HugeIcon(
-              icon: HugeIcons.strokeRoundedLeaf02,
-              color: _green,
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Good for People. Good for Planet.',
-                  style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: _greenDark),
+      backgroundColor: AppColors.background,
+      body: RefreshIndicator(
+        onRefresh: () => ref.refresh(ordersProvider.future),
+        color: AppColors.primary,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsets.zero,
+          children: [
+            _buildHeader(context, m),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.screen, AppSpacing.lg, AppSpacing.screen, 90),
+              child: ordersAsync.when(
+                loading: () => const Padding(
+                  padding: EdgeInsets.only(top: 40),
+                  child: Center(child: CircularProgressIndicator()),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'Thank you for being a part of a movement towards a better tomorrow.',
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAtAGlance(ImpactSummary s) {
-    final water = s.kgRescued * _waterPerKg;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Pilot at a Glance',
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: _cardDecoration(),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: _buildGlanceItem(HugeIcons.strokeRoundedRestaurant01,
-                    '${formatCount(s.kgRescued)} kg', 'Food Waste\nPrevented'),
-              ),
-              Expanded(
-                child: _buildGlanceItem(HugeIcons.strokeRoundedUserMultiple,
-                    formatCount(s.mealsServed), 'Meals Provided'),
-              ),
-              Expanded(
-                child: _buildGlanceItem(HugeIcons.strokeRoundedDroplet,
-                    '${formatCount(water)} L', 'Water Saved'),
-              ),
-              Expanded(
-                child: _buildGlanceItem(HugeIcons.strokeRoundedCloudUpload,
-                    '${formatCount(s.co2SavedKg)} kg', 'CO₂ Emissions\nReduced'),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildGlanceItem(dynamic icon, String value, String label) {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: _greenSurface,
-            shape: BoxShape.circle,
-            border: Border.all(color: _greenBorder),
-          ),
-          child: HugeIcon(icon: icon, color: _green, size: 20),
-        ),
-        const SizedBox(height: 12),
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(
-            value,
-            style: const TextStyle(
-                fontSize: 14, fontWeight: FontWeight.bold, color: _green),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-              fontSize: 9,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey.shade600),
-        ),
-      ],
-    );
-  }
-
-  /// Money saved vs market + the meals-goal progress bar — both from the summary.
-  Widget _buildGoal(ImpactSummary s) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: _cardDecoration(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: _greenSurface,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: _greenBorder),
-                ),
-                child: const HugeIcon(
-                    icon: HugeIcons.strokeRoundedMoney01,
-                    color: _green,
-                    size: 20),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
+                error: (e, _) => Center(child: Text('Could not load orders: $e')),
+                data: (_) => Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      formatMoney(s.moneySaved),
-                      style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: _green),
-                    ),
-                    Text('Saved for buyers vs market price',
-                        style: TextStyle(
-                            fontSize: 11, color: Colors.grey.shade600)),
+                    if (m.isEmpty)
+                      _emptyState()
+                    else ...[
+                      FadeSlideIn(child: _co2Card(m)),
+                      const SizedBox(height: AppSpacing.lg),
+                    ],
+                    _rescueCta(context),
+                    const SizedBox(height: AppSpacing.md),
+                    _footerNote(m),
                   ],
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Meals-served goal',
-                  style: TextStyle(
-                      fontSize: 12, fontWeight: FontWeight.w700)),
-              Text('${formatCount(s.mealsServed)} / ${formatCount(s.mealsGoal)}',
-                  style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.grey.shade700)),
-            ],
-          ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: LinearProgressIndicator(
-              value: s.goalProgress,
-              minHeight: 10,
-              backgroundColor: _greenSurface,
-              valueColor: const AlwaysStoppedAnimation(_green),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Standard green header (flat, matches every other screen) + a floating
+  // white stats strip in the seller-dashboard style.
+  // ---------------------------------------------------------------------------
+  Widget _buildHeader(BuildContext context, _MyImpact m) {
+    return Container(
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.only(
+        top: MediaQuery.of(context).padding.top + 16,
+        bottom: AppSpacing.lg,
+        left: AppSpacing.screen,
+        right: AppSpacing.screen,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Your Impact',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
             ),
           ),
-          const SizedBox(height: 6),
-          Text('${(s.goalProgress * 100).round()}% of the pilot goal reached',
-              style: TextStyle(fontSize: 10.5, color: Colors.grey.shade600)),
+          const SizedBox(height: 4),
+          const Text(
+            'Real numbers from the orders you\'ve completed',
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          _StatsStrip(m: m),
         ],
       ),
     );
   }
 
-  Widget _buildCommunityImpact(ImpactSummary s) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Community Impact',
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          decoration: _cardDecoration(),
-          child: Column(
-            children: [
-              _buildCommunityItem(
-                HugeIcons.strokeRoundedUserMultiple,
-                'Meals for Those in Need',
-                'Your surplus food is reaching people who need it most.',
-                formatCount(s.mealsServed),
-                'Meals Provided',
-              ),
-              Divider(height: 1, color: Colors.grey.shade200),
-              _buildCommunityItem(
-                HugeIcons.strokeRoundedStore01,
-                'Supporting Local Vendors',
-                'You\'re supporting local vendors and small businesses in your community.',
-                '${s.activeVendors}',
-                'Active Vendors',
-              ),
-              Divider(height: 1, color: Colors.grey.shade200),
-              _buildCommunityItem(
-                HugeIcons.strokeRoundedFavourite,
-                'Partnering with NGOs',
-                'Together with community kitchens, we turn surplus into meals.',
-                '${s.activeNgos}',
-                'NGO Partners',
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCommunityItem(dynamic icon, String title, String desc,
-      String statValue, String statLabel) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
+  Widget _co2Card(_MyImpact m) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: _co2Accent.bg,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: _co2Accent.border),
+      ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(11),
             decoration: BoxDecoration(
-              color: _greenSurface,
+              color: Colors.white.withValues(alpha: 0.7),
               shape: BoxShape.circle,
-              border: Border.all(color: _greenBorder),
             ),
-            child: HugeIcon(icon: icon, color: _green, size: 24),
+            child: HugeIcon(
+                icon: HugeIcons.strokeRoundedLeaf02,
+                color: _co2Accent.fg,
+                size: 22),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
-                  style: const TextStyle(
-                      fontSize: 12, fontWeight: FontWeight.bold),
+                  '${formatCount(m.co2)} kg CO₂ avoided',
+                  style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: _co2Accent.fg),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  desc,
-                  style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+                const SizedBox(height: 2),
+                const Text(
+                  'Estimated from the produce you rescued instead of letting it waste.',
+                  style: TextStyle(
+                      fontSize: 11.5, color: AppColors.textSecondary),
                 ),
               ],
             ),
-          ),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                statValue,
-                style: const TextStyle(
-                    fontSize: 14, fontWeight: FontWeight.bold, color: _green),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                statLabel,
-                style: TextStyle(fontSize: 9, color: Colors.grey.shade600),
-              ),
-            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildPlanetImpact(ImpactSummary s) {
-    final water = s.kgRescued * _waterPerKg;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Planet Impact',
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: _cardDecoration(),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: _buildPlanetItem(
-                  HugeIcons.strokeRoundedRecycle01,
-                  '${formatCount(s.kgRescued)} kg',
-                  'Food Waste Prevented',
-                  'Keeping good food out of landfills',
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildPlanetItem(
-                  HugeIcons.strokeRoundedTree02,
-                  '${formatCount(water)} L',
-                  'Water Saved',
-                  'Embedded water kept in the food system',
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildPlanetItem(
-                  HugeIcons.strokeRoundedLeaf02,
-                  '${formatCount(s.co2SavedKg)} kg',
-                  'CO₂ Emissions Reduced',
-                  'Lowering our carbon footprint together',
-                ),
-              ),
-            ],
+  Widget _emptyState() {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: const BoxDecoration(
+              color: AppColors.primarySurface,
+              shape: BoxShape.circle,
+            ),
+            child: const HugeIcon(
+              icon: HugeIcons.strokeRoundedShoppingBasket01,
+              size: 32,
+              color: AppColors.primary,
+            ),
           ),
-        ),
-      ],
+          const SizedBox(height: AppSpacing.md),
+          const Text(
+            'No completed orders yet',
+            style: TextStyle(
+                fontSize: 14.5,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Rescue your first surplus order and your impact will start '
+            'adding up here.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 12.5, color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+        ],
+      ),
     );
   }
 
-  Widget _buildPlanetItem(
-      dynamic icon, String value, String title, String desc) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: _greenSurface,
-            shape: BoxShape.circle,
-            border: Border.all(color: _greenBorder),
-          ),
-          child: HugeIcon(icon: icon, color: _green, size: 18),
-        ),
-        const SizedBox(height: 12),
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(
-            value,
-            style: const TextStyle(
-                fontSize: 14, fontWeight: FontWeight.bold, color: _green),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          title,
-          style: const TextStyle(
-              fontSize: 10, fontWeight: FontWeight.bold, color: Colors.black87),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          desc,
-          style: TextStyle(fontSize: 9, color: Colors.grey.shade600),
-        ),
-      ],
-    );
-  }
-
-  /// The pilot leaderboard — top contributors, straight from [ImpactData].
-  Widget _buildLeaderboard(List<LeaderboardEntry> entries) {
-    if (entries.isEmpty) return const SizedBox.shrink();
-    final maxKg = entries.fold<double>(
-        0, (m, e) => e.kg > m ? e.kg : m);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Top Contributors',
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: _cardDecoration(),
-          child: Column(
-            children: [
-              for (var i = 0; i < entries.length; i++) ...[
-                _buildLeaderRow(entries[i], maxKg),
-                if (i != entries.length - 1) const SizedBox(height: 14),
-              ],
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLeaderRow(LeaderboardEntry e, double maxKg) {
-    return Row(
-      children: [
-        Container(
-          width: 24,
-          height: 24,
-          alignment: Alignment.center,
-          decoration: const BoxDecoration(
-            color: _greenSurface,
-            shape: BoxShape.circle,
-          ),
-          child: Text('${e.rank}',
-              style: const TextStyle(
-                  fontSize: 11, fontWeight: FontWeight.w800, color: _greenDark)),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(e.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            fontSize: 12.5, fontWeight: FontWeight.w800)),
-                  ),
-                  Text('${formatCount(e.kg)} kg',
-                      style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w800,
-                          color: _green)),
-                ],
-              ),
-              const SizedBox(height: 5),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(6),
-                child: LinearProgressIndicator(
-                  value: maxKg <= 0 ? 0 : (e.kg / maxKg).clamp(0, 1).toDouble(),
-                  minHeight: 6,
-                  backgroundColor: _greenSurface,
-                  valueColor: const AlwaysStoppedAnimation(_green),
-                ),
-              ),
-              const SizedBox(height: 3),
-              Text('${e.role} · ${formatCount(e.meals)} meals',
-                  style: TextStyle(fontSize: 9.5, color: Colors.grey.shade600)),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// Entry point to the read-only rescue network — the "Transform" leg where
-  /// end-of-life surplus becomes meals through NGO kitchens.
-  Widget _buildRescueCta(BuildContext context) {
-    return InkWell(
+  Widget _rescueCta(BuildContext context) {
+    return Pressable(
       onTap: () => context.push('/rescues'),
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(AppRadius.lg),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: _greenBorder),
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(color: AppColors.border),
+          boxShadow: AppShadows.card,
         ),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(11),
               decoration: const BoxDecoration(
-                color: _greenSurface,
+                color: AppColors.primarySurface,
                 shape: BoxShape.circle,
               ),
               child: const HugeIcon(
                   icon: HugeIcons.strokeRoundedDeliveryTruck02,
-                  color: _green,
+                  color: AppColors.primaryDark,
                   size: 22),
             ),
-            const SizedBox(width: 14),
-            Expanded(
+            const SizedBox(width: AppSpacing.md),
+            const Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Explore the rescue network',
+                  Text('Explore the rescue network',
                       style: TextStyle(
                           fontSize: 13.5,
                           fontWeight: FontWeight.bold,
-                          color: _greenDark)),
-                  const SizedBox(height: 2),
+                          color: AppColors.textPrimary)),
+                  SizedBox(height: 2),
                   Text(
                       'See surplus routed to community kitchens & NGOs, live.',
-                      style:
-                          TextStyle(fontSize: 11.5, color: Colors.grey.shade600)),
+                      style: TextStyle(
+                          fontSize: 11.5, color: AppColors.textSecondary)),
                 ],
               ),
             ),
-            HugeIcon(
+            const HugeIcon(
                 icon: HugeIcons.strokeRoundedArrowRight01,
-                color: Colors.grey.shade500,
+                color: AppColors.textMuted,
                 size: 18),
           ],
         ),
@@ -629,62 +280,126 @@ class ImpactScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildFooterCard() {
+  Widget _footerNote(_MyImpact m) {
+    return Center(
+      child: Text(
+        m.isEmpty
+            ? 'Your impact grows with every order you complete.'
+            : 'From ${m.orders} completed order${m.orders == 1 ? '' : 's'} — thank you for reducing food waste.',
+        textAlign: TextAlign.center,
+        style: const TextStyle(fontSize: 11.5, color: AppColors.textMuted),
+      ),
+    );
+  }
+}
+
+/// A floating white stats strip inside the header, matching the seller
+/// dashboard's `_StatsStrip` pattern exactly: three headline numbers with
+/// hairline dividers.
+class _StatsStrip extends StatelessWidget {
+  const _StatsStrip({required this.m});
+  final _MyImpact m;
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
       decoration: BoxDecoration(
-        color: _greenSurface,
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primaryDark.withValues(alpha: 0.18),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: const BoxDecoration(
-              color: _greenBorder,
-              shape: BoxShape.circle,
-            ),
-            child: const HugeIcon(
-              icon: HugeIcons.strokeRoundedLeaf02,
-              color: _green,
-              size: 20,
+          _Stat(
+            icon: HugeIcons.strokeRoundedRecycle01,
+            iconColor: AppColors.primary,
+            value: formatKg(m.kg),
+            label: 'Rescued',
+          ),
+          const _StatDivider(),
+          _Stat(
+            icon: HugeIcons.strokeRoundedUserMultiple,
+            iconColor: const Color(0xFFB45309),
+            value: formatCount(m.meals),
+            label: 'Meals',
+          ),
+          const _StatDivider(),
+          _Stat(
+            icon: HugeIcons.strokeRoundedMoneyBag02,
+            iconColor: const Color(0xFF6D28D9),
+            value: formatMoney(m.saved),
+            label: 'Saved',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Stat extends StatelessWidget {
+  const _Stat({
+    required this.icon,
+    required this.iconColor,
+    required this.value,
+    required this.label,
+  });
+
+  final dynamic icon;
+  final Color iconColor;
+  final String value;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Column(
+        children: [
+          HugeIcon(icon: icon, color: iconColor, size: 18),
+          const SizedBox(height: 6),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              maxLines: 1,
+              style: const TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary,
+                letterSpacing: -0.3,
+              ),
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Proud of our impact!',
-                  style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: _greenDark),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Small actions today, bigger change tomorrow.',
-                  style: TextStyle(fontSize: 10, color: Colors.grey.shade700),
-                ),
-              ],
+          const SizedBox(height: 1),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 10.5,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textMuted,
             ),
           ),
         ],
       ),
     );
   }
+}
 
-  BoxDecoration _cardDecoration() => BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          )
-        ],
-      );
+class _StatDivider extends StatelessWidget {
+  const _StatDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 1,
+      height: 34,
+      color: AppColors.border,
+    );
+  }
 }

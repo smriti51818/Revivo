@@ -27,9 +27,11 @@ class ListingsController extends AsyncNotifier<List<Listing>> {
   }
 
   /// Updates a listing's stock, reflecting the change in the dashboard live.
-  Future<void> updateStock(String id, double quantityKg) async {
-    final updated =
-        await ref.read(listingsRepositoryProvider).updateStock(id, quantityKg);
+  Future<void> updateStock(String id, double quantityKg,
+      {String? imageKey}) async {
+    final updated = await ref
+        .read(listingsRepositoryProvider)
+        .updateStock(id, quantityKg, imageKey: imageKey);
     final current = state.valueOrNull ?? const <Listing>[];
     state = AsyncData([
       for (final l in current) l.id == id ? updated : l,

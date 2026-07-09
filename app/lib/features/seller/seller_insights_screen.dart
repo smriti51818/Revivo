@@ -8,8 +8,10 @@ import 'package:hugeicons/hugeicons.dart';
 import '../../core/format.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_card.dart';
+import '../buyer/domain/order.dart';
 import 'application/insights_providers.dart';
 import 'application/listings_providers.dart';
+import 'application/vendor_orders_providers.dart';
 import 'domain/listing.dart';
 import 'domain/seller_insights.dart';
 import 'domain/waste_risk.dart';
@@ -56,7 +58,7 @@ class _SellerInsightsScreenState extends ConsumerState<SellerInsightsScreen> {
                   _buildTopRow(insights),
                   const SizedBox(height: 16),
                   _buildWasteRisk(),
-                  _buildEarningsOverview(insights.earnings),
+                  _buildEarningsOverview(_earningsFor(insights)),
                   const SizedBox(height: 16),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -394,6 +396,60 @@ class _SellerInsightsScreenState extends ConsumerState<SellerInsightsScreen> {
     );
   }
 
+  /// The earnings series to chart. Prefers the server-aggregated series; if a
+  /// stale deploy omits it, buckets the seller's *real* orders locally with the
+  /// same day-window logic so the chart shows genuine revenue, never a blank.
+  EarningsSeries _earningsFor(SellerInsightsData insights) {
+    if (insights.earnings.hasData) return insights.earnings;
+    final orders = ref.watch(vendorOrdersProvider).valueOrNull ?? const <Order>[];
+    return _earningsFromOrders(orders, _period);
+  }
+
+  EarningsSeries _earningsFromOrders(List<Order> orders, String period) {
+    // Bucket by day for week/today, by week for month. Revenue = order totals
+    // whose placed time falls in each bucket (paid/settled orders count).
+    final now = DateTime.now();
+    const wd = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final int days = switch (period) {
+      'today' => 1,
+      'month' => 30,
+      _ => 7,
+    };
+    if (days <= 7) {
+      final labels = <String>[];
+      final values = <double>[];
+      for (var i = days - 1; i >= 0; i--) {
+        final day = DateTime(now.year, now.month, now.day)
+            .subtract(Duration(days: i));
+        labels.add(days == 1 ? 'Today' : wd[day.weekday - 1]);
+        final total = orders
+            .where((o) =>
+                o.placedAt.year == day.year &&
+                o.placedAt.month == day.month &&
+                o.placedAt.day == day.day)
+            .fold<double>(0, (s, o) => s + o.total);
+        values.add(double.parse(total.toStringAsFixed(0)));
+      }
+      return EarningsSeries(labels: labels, values: values);
+    }
+    // Month view: 4 weekly buckets.
+    final labels = <String>[];
+    final values = <double>[];
+    for (var w = 3; w >= 0; w--) {
+      final end = DateTime(now.year, now.month, now.day)
+          .subtract(Duration(days: w * 7));
+      final start = end.subtract(const Duration(days: 6));
+      labels.add('W${4 - w}');
+      final total = orders
+          .where((o) =>
+              !o.placedAt.isBefore(start) &&
+              !o.placedAt.isAfter(end.add(const Duration(days: 1))))
+          .fold<double>(0, (s, o) => s + o.total);
+      values.add(double.parse(total.toStringAsFixed(0)));
+    }
+    return EarningsSeries(labels: labels, values: values);
+  }
+
   Widget _buildEarningsOverview(EarningsSeries earnings) {
     return AppCard(
       padding: const EdgeInsets.all(16),
@@ -590,14 +646,6 @@ class _SellerInsightsScreenState extends ConsumerState<SellerInsightsScreen> {
               if (i > 0) const SizedBox(height: 12),
               _buildProduceRow(movers[i]),
             ],
-          const SizedBox(height: 12),
-          Center(
-            child: Text('View all produce >',
-                style: const TextStyle(
-                    fontSize: 11,
-                    color: Color(0xFF27AE60),
-                    fontWeight: FontWeight.bold)),
-          ),
         ],
       ),
     );
