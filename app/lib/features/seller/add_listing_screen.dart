@@ -8,12 +8,10 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:hugeicons/hugeicons.dart';
 
-import '../../core/format.dart';
 import '../../core/models/freshness.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/app_card.dart';
-import '../../core/widgets/primary_button.dart';
 import 'application/listings_providers.dart';
 import 'domain/freshness_analysis.dart';
 import 'domain/listing.dart';
@@ -57,15 +55,11 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
 
   XFile? _photo;
   String _imageKey = '';
-  bool _photoBusy = false;
-  String? _photoResult;
 
   String? _vegetable = 'Tomato';
   StorageCondition _storage = StorageCondition.refrigerated;
   int _purchaseIdx = 0;
-  String _quality = 'Excellent';
   bool _organic = true;
-  String _grade = 'Grade A';
   String _priceType = 'Per kg';
   String _pickupPreference = 'Self Pickup';
 
@@ -77,8 +71,6 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
   bool _stockVisibility = true;
 
   FreshnessAnalysis? _analysis;
-  bool _analyzing = false;
-  bool _submitting = false;
   Timer? _debounce;
 
   DateTime get _purchasedAt => DateTime.now()
@@ -123,8 +115,6 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
     setState(() {
       _photo = file;
       _imageKey = '';
-      _photoBusy = true;
-      _photoResult = null;
     });
 
     final notifier = ref.read(listingsProvider.notifier);
@@ -134,16 +124,12 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
 
     final veg = key.isEmpty ? null : await notifier.identify(key);
     if (!mounted) return;
-    setState(() {
-      _photoBusy = false;
-      if (veg != null) {
+    if (veg != null && mounted) {
+      setState(() {
         _vegetable = veg;
-        _photoResult = 'Identified as $veg';
         _analysis = null;
-      } else {
-        _photoResult = 'Not sure — choose below';
-      }
-    });
+      });
+    }
     _scheduleAnalyze();
   }
 
@@ -195,7 +181,6 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
 
   Future<void> _analyze() async {
     if (_vegetable == null || !_qtyOk) return;
-    if (mounted) setState(() => _analyzing = true);
     try {
       final a = await ref.read(listingsProvider.notifier).analyze(
             vegetable: _vegetable!,
@@ -203,14 +188,8 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
             storage: _storage,
             purchasedAt: _purchasedAt,
           );
-      if (mounted) {
-        setState(() {
-          _analysis = a;
-        });
-      }
-    } catch (_) {} finally {
-      if (mounted) setState(() => _analyzing = false);
-    }
+      if (mounted) setState(() => _analysis = a);
+    } catch (_) {}
   }
 
   String? _validate() {
@@ -242,14 +221,10 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
       purchasedAt: _purchasedAt,
     );
 
-    setState(() => _submitting = true);
     try {
       await ref.read(listingsProvider.notifier).addListing(listing);
     } catch (e) {
-      if (mounted) {
-        setState(() => _submitting = false);
-        _toast('Could not publish: $e');
-      }
+      if (mounted) _toast('Could not publish: $e');
       return;
     }
     if (!mounted) return;
@@ -264,15 +239,11 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
     setState(() {
       _photo = null;
       _imageKey = '';
-      _photoBusy = false;
-      _photoResult = null;
       _vegetable = 'Tomato';
       _storage = StorageCondition.refrigerated;
       _purchaseIdx = 0;
       _organic = true;
       _analysis = null;
-      _analyzing = false;
-      _submitting = false;
       _currentStep = 1;
     });
   }
@@ -773,34 +744,6 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
     );
   }
 
-  Widget _buildUnitDropdown() {
-    return DropdownButtonFormField<String>(
-      value: 'Kilogram (kg)',
-      isExpanded: true,
-      style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
-      decoration: const InputDecoration(
-        contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        isDense: true,
-      ),
-      items: ['Kilogram (kg)', 'Gram (g)'].map((u) => DropdownMenuItem(value: u, child: Text(u, style: const TextStyle(fontSize: 11.5)))).toList(),
-      onChanged: (_) {},
-    );
-  }
-
-  Widget _buildPackagingDropdown() {
-    return DropdownButtonFormField<String>(
-      value: 'Loose/Unpacked',
-      isExpanded: true,
-      style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
-      decoration: const InputDecoration(
-        contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        isDense: true,
-      ),
-      items: ['Loose/Unpacked', 'Crates', 'Bags'].map((p) => DropdownMenuItem(value: p, child: Text(p, style: const TextStyle(fontSize: 11.5)))).toList(),
-      onChanged: (_) {},
-    );
-  }
-
   Widget _buildHarvestChips() {
     return Wrap(
       spacing: 6,
@@ -858,39 +801,6 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
         setState(() => _storage = v ?? _storage);
         _scheduleAnalyze();
       },
-    );
-  }
-
-  Widget _buildQualityRating() {
-    final ratings = [
-      ('Excellent', '90-100%', const Color(0xFF27AE60)),
-      ('Good', '70-89%', const Color(0xFF27AE60)),
-      ('Average', '50-69%', const Color(0xFFF2994A)),
-      ('Fair', '30-49%', const Color(0xFFF23E3E)),
-    ];
-    return Column(
-      children: ratings.map((r) {
-        final active = _quality == r.$1;
-        return GestureDetector(
-          onTap: () => setState(() => _quality = r.$1),
-          child: Container(
-            width: double.infinity,
-            margin: const EdgeInsets.only(bottom: 4),
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-            decoration: BoxDecoration(
-              color: active ? r.$3.withOpacity(0.08) : Colors.white,
-              border: Border.all(color: active ? r.$3 : AppColors.border),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Column(
-              children: [
-                Text(r.$1, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: active ? r.$3 : AppColors.textPrimary)),
-                Text(r.$2, style: TextStyle(fontSize: 7.5, fontWeight: FontWeight.w600, color: AppColors.textMuted)),
-              ],
-            ),
-          ),
-        );
-      }).toList(),
     );
   }
 
@@ -1508,27 +1418,6 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildDropdownSelector(String val, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: AppColors.border),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(val, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-            const HugeIcon(icon: HugeIcons.strokeRoundedArrowDown01, color: AppColors.textSecondary),
-          ],
-        ),
-      ),
     );
   }
 

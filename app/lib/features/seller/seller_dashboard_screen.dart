@@ -3,13 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hugeicons/hugeicons.dart';
 
-import '../../core/format.dart';
 import '../../core/session/session_controller.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/app_card.dart';
 import '../buyer/domain/order.dart';
-import '../notifications/widgets/notification_bell.dart';
 import 'application/listings_providers.dart';
 import 'application/vendor_orders_providers.dart';
 import 'domain/listing.dart';
@@ -18,61 +16,11 @@ import 'widgets/listing_card.dart';
 class SellerDashboardScreen extends ConsumerWidget {
   const SellerDashboardScreen({super.key});
 
-  void _showUpdateStockPicker(BuildContext context, List<Listing> items) {
-    if (items.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No active listings to update')),
-      );
-      return;
-    }
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Select Produce to Update Stock', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
-              const SizedBox(height: 12),
-              ListView.builder(
-                shrinkWrap: true,
-                itemCount: items.length,
-                itemBuilder: (context, idx) {
-                  final listing = items[idx];
-                  return ListTile(
-                    leading: const HugeIcon(icon: HugeIcons.strokeRoundedPackage, color: AppColors.primary, size: 22),
-                    title: Text(listing.vegetable, style: const TextStyle(fontWeight: FontWeight.w800)),
-                    subtitle: Text('${listing.quantityKg.toInt()} kg available'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      context.push('/seller/update-stock', extra: listing);
-                    },
-                  );
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final listingsAsync = ref.watch(listingsProvider);
     final orders = ref.watch(vendorOrdersProvider).valueOrNull ?? const <Order>[];
     final name = ref.watch(sessionProvider)?.name ?? 'Ramesh';
-
-    final now = DateTime.now();
-    final todayKg = orders
-        .where((o) =>
-            o.placedAt.year == now.year &&
-            o.placedAt.month == now.month &&
-            o.placedAt.day == now.day)
-        .fold<double>(0, (sum, o) => sum + o.quantityKg);
 
     final listings = listingsAsync.valueOrNull ?? const <Listing>[];
 

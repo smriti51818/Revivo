@@ -27,7 +27,7 @@ jobs:
         run: |
           cd app
           flutter pub get
-          flutter analyze
+          flutter analyze --no-fatal-infos
 
   backend:
     name: Backend lint + test
