@@ -20,7 +20,10 @@ from boto3.dynamodb.conditions import Key
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from decimal import Decimal  # noqa: E402
+
 from shared.models import build_order_item  # noqa: E402
+from shared.profile import vendor_stats_key  # noqa: E402
 
 _REGION = os.environ.get("AWS_REGION", "ap-south-1")
 _TABLE = os.environ.get("TABLE_NAME", "RevivoTable")
@@ -100,15 +103,42 @@ def main() -> None:
     if existing:
         print(f"Cleared {len(existing)} existing order(s) for the buyer.\n")
 
+    # Accumulate the demo seller's own aggregates so the persisted VENDOR STATS
+    # (what GET /profile reads) matches what the insights endpoint computes from
+    # the same order items — otherwise the profile shows 0s while insights shows
+    # the real totals. Seeded orders bypass the live record_vendor_sale path, so
+    # we write the counter here to keep every screen consistent.
+    seller = {"orders": 0, "soldKg": 0.0, "revenue": 0.0}
+
+    def _track(vendor_id, kg, price):
+        if vendor_id == seller_sub:
+            seller["orders"] += 1
+            seller["soldKg"] += kg
+            seller["revenue"] += kg * price
+
     print("Completed orders (impact + history):")
     for vendor, veg, kg, market, price, band, days in _COMPLETED:
-        _order(table, buyer, vendor, _vendor_id(vendor, seller_sub), veg, kg,
+        vid = _vendor_id(vendor, seller_sub)
+        _order(table, buyer, vendor, vid, veg, kg,
                market, price, band, "COMPLETED", days * 86400)
+        _track(vid, kg, price)
 
     print("\nLive incoming orders to GreenLeaf Farms:")
     for veg, kg, market, price, band, status, hrs in _LIVE:
         _order(table, buyer, "GreenLeaf Farms", seller_sub, veg, kg, market,
                price, band, status, hrs * 3600)
+        _track(seller_sub, kg, price)
+
+    # Overwrite (not ADD) the seller's STATS counter so re-running the seed stays
+    # idempotent and always reconciles with the live order items.
+    table.put_item(Item={
+        **vendor_stats_key(seller_sub),
+        "orders": seller["orders"],
+        "soldKg": Decimal(str(round(seller["soldKg"], 2))),
+        "revenue": Decimal(str(round(seller["revenue"], 2))),
+    })
+    print(f"\nSeller STATS synced: {seller['orders']} orders, "
+          f"{round(seller['soldKg'],1)} kg, ₹{round(seller['revenue'])}.")
 
     print(f"\nSeeded {len(_COMPLETED) + len(_LIVE)} orders.")
 

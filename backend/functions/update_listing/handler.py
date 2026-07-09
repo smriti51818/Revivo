@@ -44,6 +44,12 @@ def handler(event, context):
         names["#s"] = "status"
         values[":sold"] = "SOLD"
 
+    # Optional: replace the listing's photo (the seller changed it on edit).
+    image_key = body.get("imageKey")
+    if isinstance(image_key, str) and image_key.strip():
+        update += ", imageKey = :img"
+        values[":img"] = image_key.strip()
+
     try:
         result = get_table().update_item(
             Key={"PK": f"LISTING#{listing_id}", "SK": "META"},

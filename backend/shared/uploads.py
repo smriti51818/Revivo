@@ -32,12 +32,18 @@ def presigned_get_url(key: str, expires: int = 3600) -> str:
 
 
 def attach_image_url(listing: dict) -> dict:
-    """Add a viewable `imageUrl` to a public listing based on its imageKey.
+    """Add a viewable `imageUrl` to a public listing.
 
-    Seed data may carry a direct http(s) image URL — keep it as-is.
+    A real uploaded photo (`imageKey`) always wins, so when a seller changes a
+    listing's photo the new image reflects immediately. Only when there is no
+    `imageKey` do we fall back to a stored direct http(s) URL (legacy seed data).
     """
+    key = listing.get("imageKey")
+    if key:
+        listing["imageUrl"] = presigned_get_url(key)
+        return listing
     existing = listing.get("imageUrl")
     if existing and str(existing).startswith("http"):
         return listing
-    listing["imageUrl"] = presigned_get_url(listing.get("imageKey") or "")
+    listing["imageUrl"] = ""
     return listing
