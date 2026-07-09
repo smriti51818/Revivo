@@ -68,7 +68,7 @@ class _SellerEditProfileScreenState
         elevation: 0,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
         child: Column(
           children: [
             Center(

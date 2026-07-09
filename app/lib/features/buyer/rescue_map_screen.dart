@@ -62,7 +62,8 @@ class _RescueMapScreenState extends ConsumerState<RescueMapScreen>
       appBar: AppBar(title: const Text('Rescue radar')),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(AppSpacing.screen),
+          padding: const EdgeInsets.fromLTRB(
+              AppSpacing.screen, AppSpacing.screen, AppSpacing.screen, 40),
           children: [
             Text(
               '${plotted.length} surplus lots within ${_maxKm.toStringAsFixed(0)} km',

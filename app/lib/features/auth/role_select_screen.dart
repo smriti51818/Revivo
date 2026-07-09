@@ -43,7 +43,7 @@ class _RoleSelectScreenState extends State<RoleSelectScreen> {
                       shape: BoxShape.circle,
                     ),
                     child: const HugeIcon(
-                      icon: HugeIcons.strokeRoundedLeaf02,
+                      icon: HugeIcons.strokeRoundedLeaf01,
                       color: Colors.white,
                       size: 18,
                     ),

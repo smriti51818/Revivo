@@ -55,7 +55,8 @@ class _BuyerOrdersScreenState extends ConsumerState<BuyerOrdersScreen> {
             child: RefreshIndicator(
               onRefresh: () => ref.refresh(ordersProvider.future),
               child: ListView(
-                padding: const EdgeInsets.all(AppSpacing.screen),
+                padding: const EdgeInsets.fromLTRB(AppSpacing.screen,
+                    AppSpacing.screen, AppSpacing.screen, 40),
                 children: [
                   if (failed.isNotEmpty) ...[
                     _FailedSection(payments: failed),
@@ -334,7 +335,7 @@ class _OrderCard extends StatelessWidget {
     OrderStatus.confirmed => ChipTone.info,
     OrderStatus.preparing => ChipTone.warning,
     OrderStatus.readyForPickup => ChipTone.success,
-    OrderStatus.completed => ChipTone.neutral,
+    OrderStatus.completed => ChipTone.done,
   };
 
   @override

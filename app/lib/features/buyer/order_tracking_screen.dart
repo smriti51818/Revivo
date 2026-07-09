@@ -99,7 +99,8 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
           _buildGreenHeader(context),
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.all(AppSpacing.screen),
+              padding: const EdgeInsets.fromLTRB(AppSpacing.screen,
+                  AppSpacing.screen, AppSpacing.screen, 40),
               children: [
                 _headline(order),
                 const SizedBox(height: AppSpacing.xl),

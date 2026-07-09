@@ -56,7 +56,7 @@ class ProfileScreen extends ConsumerWidget {
                         color: AppColors.textMuted,
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.lg),
+                    const SizedBox(height: 40),
                   ],
                 ),
               ),
@@ -128,10 +128,6 @@ class _Header extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const Spacer(),
-                  _iconBtn(HugeIcons.strokeRoundedNotification01, context),
-                  const SizedBox(width: 10),
-                  _iconBtn(HugeIcons.strokeRoundedSettings01, context),
                 ],
               ),
             ),
@@ -264,11 +260,6 @@ class _Header extends StatelessWidget {
                     ],
                   ),
                 ),
-                const HugeIcon(
-                  icon: HugeIcons.strokeRoundedArrowRight01,
-                  size: 18,
-                  color: AppColors.textMuted,
-                ),
               ],
             ),
           ),
@@ -280,19 +271,6 @@ class _Header extends StatelessWidget {
     );
   }
 
-  Widget _iconBtn(dynamic icon, BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.3),
-          width: 1,
-        ),
-      ),
-      child: HugeIcon(icon: icon, size: 18, color: Colors.white),
-    );
-  }
 }
 
 // ── Stats row — 3 tiles, content varies by role ────────────────────────────
@@ -318,10 +296,10 @@ class _StatsRow extends StatelessWidget {
   List<_StatTile> _tilesFor(UserRole role, ProfileStats s) => switch (role) {
     UserRole.vendor => [
       _StatTile(
-        icon: HugeIcons.strokeRoundedStore02,
+        icon: HugeIcons.strokeRoundedShoppingBag01,
         iconBg: AppColors.primarySurface,
         iconColor: AppColors.primaryDark,
-        label: 'Listings',
+        label: 'Orders',
         value: '${s.vendorOrders}',
       ),
       _StatTile(
@@ -438,12 +416,6 @@ class _MenuCard extends StatelessWidget {
         title: 'Account Details',
         subtitle: 'Edit name, phone, address',
         route: '/account',
-      ),
-      (
-        icon: HugeIcons.strokeRoundedNote01,
-        title: 'My Documents',
-        subtitle: 'View and manage your documents',
-        route: '/seller/profile/documents',
       ),
       (
         icon: HugeIcons.strokeRoundedStar,

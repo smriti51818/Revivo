@@ -50,7 +50,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             .read(cognitoServiceProvider)
             .signIn(email: email, password: password);
         if (!mounted) return;
-        final role = UserRole.fromValue(result.role) ?? _role;
+        final accountRole = UserRole.fromValue(result.role);
+        // The account is registered under a different persona than the one the
+        // user picked — don't silently switch them, tell them plainly.
+        if (accountRole != null && accountRole != _role) {
+          _toast(
+            _role == UserRole.buyer
+                ? "This email isn't registered for a hotel login. Try the seller login."
+                : "This email isn't registered for a seller login. Try the hotel login.",
+          );
+          return;
+        }
+        final role = accountRole ?? _role;
         ref.read(sessionProvider.notifier).setAuthenticated(
               name: result.name.isEmpty ? role.label : result.name,
               email: result.email.isEmpty ? email : result.email,
@@ -133,7 +144,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       shape: BoxShape.circle,
                     ),
                     child: const HugeIcon(
-                      icon: HugeIcons.strokeRoundedLeaf02,
+                      icon: HugeIcons.strokeRoundedLeaf01,
                       color: Colors.white,
                       size: 34,
                     ),

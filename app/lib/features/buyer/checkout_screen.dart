@@ -174,7 +174,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           children: [
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.all(AppSpacing.screen),
+                padding: const EdgeInsets.fromLTRB(AppSpacing.screen,
+                    AppSpacing.screen, AppSpacing.screen, 40),
                 children: [
                   const SectionHeader(title: 'Pickup slot'),
                   const SizedBox(height: AppSpacing.sm),

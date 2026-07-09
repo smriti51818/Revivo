@@ -131,11 +131,17 @@ class CognitoService {
       );
     } on AuthException catch (e) {
       if (e.code != 'UsernameExistsException') rethrow;
-      // The account may be stuck UNCONFIRMED from an earlier attempt (e.g.
-      // before the auto-confirm trigger was deployed). Resend succeeds only
-      // for an unconfirmed user; if it's already confirmed, surface the
-      // original "already exists" message instead.
-      await resendConfirmationCode(email: email);
+      // Resend succeeds only for an account still UNCONFIRMED from an earlier
+      // attempt — recover it into the code screen. If resend fails, the account
+      // is already registered and confirmed, so tell the user to log in.
+      try {
+        await resendConfirmationCode(email: email);
+      } on AuthException {
+        throw const AuthException(
+          'This email is already registered. Please log in instead.',
+          code: 'UsernameExistsException',
+        );
+      }
       throw NeedsConfirmationException(email.trim().toLowerCase());
     }
   }
@@ -166,14 +172,16 @@ class CognitoService {
   ) async {
     late final http.Response resp;
     try {
-      resp = await _client.post(
-        Uri.parse(_config.cognitoIdpUrl),
-        headers: {
-          'Content-Type': 'application/x-amz-json-1.1',
-          'X-Amz-Target': 'AWSCognitoIdentityProviderService.$action',
-        },
-        body: json.encode(body),
-      );
+      resp = await _client
+          .post(
+            Uri.parse(_config.cognitoIdpUrl),
+            headers: {
+              'Content-Type': 'application/x-amz-json-1.1',
+              'X-Amz-Target': 'AWSCognitoIdentityProviderService.$action',
+            },
+            body: json.encode(body),
+          )
+          .timeout(const Duration(seconds: 20));
     } catch (_) {
       throw const AuthException(
           'Network error. Check your connection and try again.');

@@ -38,6 +38,13 @@ class HttpVendorOrdersRepository implements VendorOrdersRepository {
       band: FreshnessBand.fromValue(j['band']?.toString()),
       status: OrderStatus.fromValue(j['status']?.toString()),
       placedAt: epochToDate(j['createdAt']),
+      // Buyer's post-pickup review, so the seller sees it on past orders.
+      rating: j['rating'] == null ? null : asInt(j['rating']),
+      ratingTags: (j['ratingTags'] as List?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
+      ratingComment: (j['ratingComment'] ?? '').toString(),
     );
   }
 }

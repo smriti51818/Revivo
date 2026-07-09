@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 
-enum ChipTone { neutral, success, warning, danger, info }
+enum ChipTone { neutral, success, warning, danger, info, done }
 
 /// A small labelled status pill (order states, badges, tags).
 class StatusChip extends StatelessWidget {
@@ -27,6 +27,10 @@ class StatusChip extends StatelessWidget {
           (fg: AppColors.warning, bg: AppColors.warningSurface),
         ChipTone.danger => (fg: AppColors.danger, bg: AppColors.dangerSurface),
         ChipTone.info => (fg: AppColors.info, bg: AppColors.infoSurface),
+        // A calm violet for "finished, all good" states — visually distinct
+        // from the green (readyForPickup) and blue (confirmed) tones.
+        ChipTone.done =>
+          (fg: const Color(0xFF6D28D9), bg: const Color(0xFFEDE9FE)),
       };
 
   @override

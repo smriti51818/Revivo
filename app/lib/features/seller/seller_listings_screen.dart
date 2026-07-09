@@ -34,7 +34,7 @@ class SellerListingsScreen extends ConsumerWidget {
           data: (items) => items.isEmpty
               ? _empty(context)
               : ListView.builder(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
                   itemCount: items.length,
                   itemBuilder: (context, index) {
                     final listing = items[index];

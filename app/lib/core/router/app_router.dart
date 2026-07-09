@@ -27,7 +27,6 @@ import '../../features/rescue/rescue_board_screen.dart';
 import '../../features/seller/add_listing_screen.dart';
 import '../../features/seller/domain/listing.dart';
 import '../../features/seller/seller_dashboard_screen.dart';
-import '../../features/seller/seller_documents_screen.dart';
 import '../../features/seller/seller_edit_profile_screen.dart';
 import '../../features/seller/seller_insights_screen.dart';
 import '../../features/seller/seller_listings_screen.dart';
@@ -191,10 +190,6 @@ final routerProvider = Provider<GoRouter>((ref) {
                 builder: (_, _) => const SellerEditProfileScreen(),
               ),
               GoRoute(
-                path: '/seller/profile/documents',
-                builder: (_, _) => const SellerDocumentsScreen(),
-              ),
-              GoRoute(
                 path: '/seller/profile/reviews',
                 builder: (_, _) => const SellerReviewsScreen(),
               ),
@@ -219,8 +214,8 @@ final routerProvider = Provider<GoRouter>((ref) {
               label: 'Orders',
             ),
             NavigationDestination(
-              icon: HugeIcon(icon: HugeIcons.strokeRoundedLeaf02),
-              selectedIcon: HugeIcon(icon: HugeIcons.strokeRoundedLeaf02),
+              icon: HugeIcon(icon: HugeIcons.strokeRoundedHandHelping),
+              selectedIcon: HugeIcon(icon: HugeIcons.strokeRoundedHandHelping),
               label: 'Impact',
             ),
             NavigationDestination(

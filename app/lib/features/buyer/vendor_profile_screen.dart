@@ -40,7 +40,8 @@ class VendorProfileScreen extends ConsumerWidget {
       body: SafeArea(
         bottom: false,
         child: ListView(
-          padding: const EdgeInsets.all(AppSpacing.screen),
+          padding: EdgeInsets.fromLTRB(AppSpacing.screen, AppSpacing.screen,
+              AppSpacing.screen, MediaQuery.of(context).padding.bottom + 90),
           children: [
             _header(info),
             const SizedBox(height: AppSpacing.md),

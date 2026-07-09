@@ -36,7 +36,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 color: AppColors.primary,
                 shape: BoxShape.circle,
               ),
-              child: const HugeIcon(icon: HugeIcons.strokeRoundedLeaf02, color: Colors.white, size: 46),
+              child: const HugeIcon(icon: HugeIcons.strokeRoundedLeaf01, color: Colors.white, size: 46),
             ),
             const SizedBox(height: 24),
             const Text(

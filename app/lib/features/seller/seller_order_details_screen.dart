@@ -73,10 +73,13 @@ class SellerOrderDetailsScreen extends ConsumerWidget {
                 _buildPricingDetailsCard(currentOrder),
                 const SizedBox(height: 16),
                 _buildOrderInformationCard(currentOrder),
+                if (currentOrder.isRated) ...[
+                  const SizedBox(height: 16),
+                  _buildReviewCard(currentOrder),
+                ],
                 const SizedBox(height: 20),
                 _buildRespondSection(context, ref, currentOrder),
-                const SizedBox(height: 16),
-                _buildSalesTipBanner(),
+                const SizedBox(height: 32),
               ],
             ),
           ),
@@ -157,111 +160,142 @@ class SellerOrderDetailsScreen extends ConsumerWidget {
   }
 
   Widget _buildHotelInfoCard(Order currentOrder) {
+    final orderNo = currentOrder.id.length >= 5
+        ? currentOrder.id.substring(currentOrder.id.length - 5).toUpperCase()
+        : currentOrder.id.toUpperCase();
     return AppCard(
       padding: const EdgeInsets.all(16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          // Row 1: avatar + name/order (flexible) + status pill — long hotel
+          // names ellipsis inside the Expanded and never break the layout.
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                width: 44,
+                height: 44,
+                decoration: const BoxDecoration(
+                  color: AppColors.primarySurface,
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  (currentOrder.buyerName?.trim().isNotEmpty ?? false)
+                      ? currentOrder.buyerName!.trim()[0].toUpperCase()
+                      : 'H',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.primaryDark,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            currentOrder.buyerName ?? 'Buyer',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 15.5,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        // Buyer-type glyph (a store, not a tick) — signals this
+                        // is a verified business buyer without the check clutter.
+                        const HugeIcon(
+                          icon: HugeIcons.strokeRoundedStore01,
+                          color: AppColors.primary,
+                          size: 14,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Order #$orderNo',
+                      style: const TextStyle(
+                        fontSize: 11.5,
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
                 decoration: BoxDecoration(
-                  color: _statusColor.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(6),
+                  color: _statusColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
                   currentOrder.status.label.toUpperCase(),
                   style: TextStyle(
-                    fontSize: 10,
+                    fontSize: 9.5,
                     fontWeight: FontWeight.w900,
+                    letterSpacing: 0.3,
                     color: _statusColor,
                   ),
                 ),
               ),
-              const SizedBox(height: 6),
-              Text(
-                _freshnessLabel,
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                  color: _urgencyColor,
-                ),
-              ),
             ],
           ),
-          const SizedBox(width: 16),
-          Container(
-            width: 44,
-            height: 44,
-            decoration: const BoxDecoration(
-              color: AppColors.primarySurface,
-              shape: BoxShape.circle,
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              currentOrder.buyerName?.substring(0, 1) ?? 'H',
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w900,
-                color: AppColors.primaryDark,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        currentOrder.buyerName ?? 'Buyer',
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    const HugeIcon(
-                      icon: HugeIcons.strokeRoundedCheckmarkCircle02,
-                      color: Color(0xFF27AE60),
-                      size: 14,
-                    ),
-                  ],
+          const SizedBox(height: 14),
+          Container(height: 1, color: AppColors.border),
+          const SizedBox(height: 12),
+          // Row 2: freshness chip + placed timing.
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _tint,
+                  borderRadius: BorderRadius.circular(999),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  'Order #${currentOrder.id.length >= 5 ? currentOrder.id.substring(currentOrder.id.length - 5).toUpperCase() : currentOrder.id.toUpperCase()}',
-                  style: const TextStyle(
-                    fontSize: 11.5,
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w500,
+                child: Text(
+                  _freshnessLabel,
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w800,
+                    color: _urgencyColor,
                   ),
                 ),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              const Text(
-                'Placed',
-                style: TextStyle(fontSize: 10, color: AppColors.textMuted, fontWeight: FontWeight.w600),
               ),
-              const SizedBox(height: 2),
-              Text(
-                formatAgo(currentOrder.placedAt),
-                style: const TextStyle(fontSize: 11, color: AppColors.textPrimary, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                formatDateTime(currentOrder.placedAt),
-                style: const TextStyle(fontSize: 9.5, color: AppColors.textMuted, fontWeight: FontWeight.w500),
+              const Spacer(),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    'Placed ${formatAgo(currentOrder.placedAt)}',
+                    style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    formatDateTime(currentOrder.placedAt),
+                    style: const TextStyle(
+                        fontSize: 9.5,
+                        color: AppColors.textMuted,
+                        fontWeight: FontWeight.w500),
+                  ),
+                ],
               ),
             ],
           ),
@@ -518,6 +552,68 @@ class SellerOrderDetailsScreen extends ConsumerWidget {
     );
   }
 
+  Widget _buildReviewCard(Order o) {
+    return AppCard(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text('Buyer review',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800)),
+              const Spacer(),
+              for (var i = 1; i <= 5; i++)
+                HugeIcon(
+                  icon: HugeIcons.strokeRoundedStar,
+                  size: 16,
+                  color: i <= (o.rating ?? 0)
+                      ? const Color(0xFFF2994A)
+                      : AppColors.border,
+                ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text('${o.buyerName ?? 'Buyer'} · ${o.rating}/5',
+              style: const TextStyle(
+                  fontSize: 12, color: AppColors.textMuted)),
+          if (o.ratingTags.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                for (final t in o.ratingTags)
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.primarySurface,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(t,
+                        style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primaryDark)),
+                  ),
+              ],
+            ),
+          ],
+          if (o.ratingComment.trim().isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text('"${o.ratingComment}"',
+                style: const TextStyle(
+                    fontSize: 13,
+                    height: 1.4,
+                    fontStyle: FontStyle.italic,
+                    color: AppColors.textSecondary)),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildRespondSection(BuildContext context, WidgetRef ref, Order currentOrder) {
     if (currentOrder.status == OrderStatus.confirmed) {
       return Column(
@@ -651,56 +747,6 @@ class SellerOrderDetailsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSalesTipBanner() {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFFEDFBF4),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFD3F2E4)),
-      ),
-      padding: const EdgeInsets.all(16),
-      child: const Row(
-        children: [
-          HugeIcon(
-            icon: HugeIcons.strokeRoundedLeaf02,
-            color: Color(0xFF27AE60),
-            size: 20,
-          ),
-          SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Fast Response, More Sales!',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                SizedBox(height: 2),
-                Text(
-                  'Respond within 15 mins to get higher ratings and repeat orders.',
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          HugeIcon(
-            icon: HugeIcons.strokeRoundedArrowRight01,
-            color: AppColors.textMuted,
-            size: 16,
-          ),
-        ],
-      ),
-    );
-  }
-
   Future<void> _confirmReject(
       BuildContext context, WidgetRef ref, Order currentOrder) async {
     final ok = await showDialog<bool>(
@@ -739,7 +785,7 @@ class SellerOrderDetailsScreen extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
-          ..showSnackBar(SnackBar(content: Text('Order updated to $label ✓')));
+          ..showSnackBar(SnackBar(content: Text('Order updated to $label 🎉')));
       }
     } catch (e) {
       if (context.mounted) {

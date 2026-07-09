@@ -25,6 +25,9 @@ class _SellerOrdersScreenState extends ConsumerState<SellerOrdersScreen> {
   Timer? _poll;
   String _activeTab = 'All Orders';
   bool _showTip = true;
+  bool _showSearch = false;
+  String _search = '';
+  bool _newestFirst = true;
 
   @override
   void initState() {
@@ -38,6 +41,43 @@ class _SellerOrdersScreenState extends ConsumerState<SellerOrdersScreen> {
   void dispose() {
     _poll?.cancel();
     super.dispose();
+  }
+
+  void _openStatusFilter() {
+    const tabs = ['All Orders', 'New', 'Accepted', 'Preparing', 'Completed'];
+    showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 18, 20, 8),
+              child: Text('Filter by status',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+            ),
+            for (final t in tabs)
+              ListTile(
+                title: Text(t),
+                trailing: _activeTab == t
+                    ? const HugeIcon(
+                        icon: HugeIcons.strokeRoundedCheckmarkCircle02,
+                        color: AppColors.primary)
+                    : null,
+                onTap: () {
+                  setState(() => _activeTab = t);
+                  Navigator.pop(ctx);
+                },
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -113,9 +153,14 @@ class _SellerOrdersScreenState extends ConsumerState<SellerOrdersScreen> {
               shape: BoxShape.circle,
             ),
             child: IconButton(
-              onPressed: () {},
-              icon: const HugeIcon(
-                icon: HugeIcons.strokeRoundedSearch01,
+              onPressed: () => setState(() {
+                _showSearch = !_showSearch;
+                if (!_showSearch) _search = '';
+              }),
+              icon: HugeIcon(
+                icon: _showSearch
+                    ? HugeIcons.strokeRoundedCancel01
+                    : HugeIcons.strokeRoundedSearch01,
                 color: Colors.white,
                 size: 20,
               ),
@@ -133,7 +178,7 @@ class _SellerOrdersScreenState extends ConsumerState<SellerOrdersScreen> {
                   shape: BoxShape.circle,
                 ),
                 child: IconButton(
-                  onPressed: () {},
+                  onPressed: _openStatusFilter,
                   icon: const HugeIcon(
                     icon: HugeIcons.strokeRoundedSlidersHorizontal,
                     color: Colors.white,
@@ -181,18 +226,51 @@ class _SellerOrdersScreenState extends ConsumerState<SellerOrdersScreen> {
     final countPreparing = items.where((o) => o.status == OrderStatus.readyForPickup).length;
     final countCompleted = items.where((o) => o.status == OrderStatus.completed).length;
 
-    // Filter items based on active tab
+    // Filter by active tab + search query, then sort by placed time.
+    final q = _search.trim().toLowerCase();
     final filtered = items.where((o) {
-      if (_activeTab == 'New') return o.status == OrderStatus.confirmed;
-      if (_activeTab == 'Accepted') return o.status == OrderStatus.preparing;
-      if (_activeTab == 'Preparing') return o.status == OrderStatus.readyForPickup;
-      if (_activeTab == 'Completed') return o.status == OrderStatus.completed;
-      return true;
-    }).toList();
+      final matchesTab = switch (_activeTab) {
+        'New' => o.status == OrderStatus.confirmed,
+        'Accepted' => o.status == OrderStatus.preparing,
+        'Preparing' => o.status == OrderStatus.readyForPickup,
+        'Completed' => o.status == OrderStatus.completed,
+        _ => true,
+      };
+      if (!matchesTab) return false;
+      if (q.isEmpty) return true;
+      return (o.buyerName ?? '').toLowerCase().contains(q) ||
+          o.vegetable.toLowerCase().contains(q);
+    }).toList()
+      ..sort((a, b) => _newestFirst
+          ? b.placedAt.compareTo(a.placedAt)
+          : a.placedAt.compareTo(b.placedAt));
 
     return ListView(
-      padding: const EdgeInsets.symmetric(vertical: 16),
+      padding: const EdgeInsets.fromLTRB(0, 16, 0, 40),
       children: [
+        if (_showSearch) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screen),
+            child: TextField(
+              autofocus: true,
+              onChanged: (v) => setState(() => _search = v),
+              decoration: InputDecoration(
+                hintText: 'Search by buyer or vegetable',
+                prefixIcon: const Padding(
+                  padding: EdgeInsets.all(12),
+                  child: HugeIcon(
+                      icon: HugeIcons.strokeRoundedSearch01,
+                      size: 20,
+                      color: AppColors.textMuted),
+                ),
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
         _buildTabsRow(countAll, countNew, countAccepted, countPreparing, countCompleted),
         const SizedBox(height: 16),
         if (_showTip) ...[
@@ -222,15 +300,20 @@ class _SellerOrdersScreenState extends ConsumerState<SellerOrdersScreen> {
                     style: TextStyle(fontSize: 12, color: AppColors.textMuted, fontWeight: FontWeight.w600),
                   ),
                   GestureDetector(
-                    onTap: () {},
-                    child: const Row(
+                    onTap: () => setState(() => _newestFirst = !_newestFirst),
+                    child: Row(
                       children: [
                         Text(
-                          'Newest',
-                          style: TextStyle(fontSize: 12, color: AppColors.textPrimary, fontWeight: FontWeight.w700),
+                          _newestFirst ? 'Newest' : 'Oldest',
+                          style: const TextStyle(fontSize: 12, color: AppColors.textPrimary, fontWeight: FontWeight.w700),
                         ),
-                        SizedBox(width: 2),
-                        HugeIcon(icon: HugeIcons.strokeRoundedArrowDown01, size: 14, color: AppColors.textPrimary),
+                        const SizedBox(width: 2),
+                        HugeIcon(
+                            icon: _newestFirst
+                                ? HugeIcons.strokeRoundedArrowDown01
+                                : HugeIcons.strokeRoundedArrowUp01,
+                            size: 14,
+                            color: AppColors.textPrimary),
                       ],
                     ),
                   ),
@@ -493,7 +576,9 @@ class _OrderCard extends ConsumerWidget {
                           ),
                           alignment: Alignment.center,
                           child: Text(
-                            order.buyerName?.substring(0, 1) ?? 'H',
+                            (order.buyerName?.trim().isNotEmpty ?? false)
+                                ? order.buyerName!.trim()[0].toUpperCase()
+                                : 'H',
                             style: const TextStyle(
                               fontSize: 9,
                               fontWeight: FontWeight.w900,
@@ -516,8 +601,8 @@ class _OrderCard extends ConsumerWidget {
                         ),
                         const SizedBox(width: 4),
                         const HugeIcon(
-                          icon: HugeIcons.strokeRoundedCheckmarkCircle02,
-                          color: Color(0xFF27AE60),
+                          icon: HugeIcons.strokeRoundedStore01,
+                          color: AppColors.primary,
                           size: 13,
                         ),
                       ],
@@ -782,7 +867,7 @@ class _OrderCard extends ConsumerWidget {
   Future<void> _advance(BuildContext context, WidgetRef ref, OrderStatus target, String label) async {
     try {
       await ref.read(vendorOrdersProvider.notifier).advance(order.id, target);
-      if (context.mounted) _toast(context, 'Order updated to $label ✓');
+      if (context.mounted) _toast(context, 'Order updated to $label 🎉');
     } catch (e) {
       if (context.mounted) _toast(context, 'Could not update: $e');
     }

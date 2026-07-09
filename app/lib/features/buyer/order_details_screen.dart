@@ -62,7 +62,7 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
     OrderStatus.confirmed => ChipTone.info,
     OrderStatus.preparing => ChipTone.warning,
     OrderStatus.readyForPickup => ChipTone.success,
-    OrderStatus.completed => ChipTone.neutral,
+    OrderStatus.completed => ChipTone.done,
   };
 
   Future<void> _open(Uri uri) async {
@@ -90,7 +90,8 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
       appBar: AppBar(title: const Text('Order details')),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(AppSpacing.screen),
+          padding: const EdgeInsets.fromLTRB(
+              AppSpacing.screen, AppSpacing.screen, AppSpacing.screen, 40),
           children: [
             _statusHeader(order),
             const SizedBox(height: AppSpacing.lg),

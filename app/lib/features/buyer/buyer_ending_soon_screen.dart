@@ -54,7 +54,8 @@ class BuyerEndingSoonScreen extends ConsumerWidget {
           return endingSoonOffers.isEmpty
               ? _empty()
               : ListView.separated(
-                  padding: const EdgeInsets.all(AppSpacing.screen),
+                  padding: const EdgeInsets.fromLTRB(AppSpacing.screen,
+                      AppSpacing.screen, AppSpacing.screen, 40),
                   itemCount: endingSoonOffers.length,
                   separatorBuilder: (context, index) =>
                       const SizedBox(height: AppSpacing.md),
