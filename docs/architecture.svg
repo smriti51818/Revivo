@@ -1,0 +1,112 @@
+<svg viewBox="0 0 1180 760" xmlns="http://www.w3.org/2000/svg" font-family="'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#5b6472"/>
+    </marker>
+    <style>
+      .box { fill:#ffffff; stroke:#c9d2dd; stroke-width:1.5; rx:10; }
+      .box-accent { fill:#eaf7ee; stroke:#2e9e5b; stroke-width:1.5; rx:10; }
+      .box-ai { fill:#f2edfb; stroke:#8a63d2; stroke-width:1.5; rx:10; }
+      .title { font-size:20px; font-weight:700; fill:#1c2430; }
+      .sub { font-size:12px; fill:#5b6472; }
+      .label { font-size:13px; font-weight:600; fill:#1c2430; }
+      .label-sm { font-size:11px; fill:#5b6472; }
+      .edge { stroke:#5b6472; stroke-width:1.5; fill:none; marker-end:url(#arrow); }
+      .edge-dashed { stroke:#8a63d2; stroke-width:1.5; fill:none; marker-end:url(#arrow); stroke-dasharray:5,4; }
+      .section { font-size:12px; font-weight:700; fill:#8a94a3; letter-spacing:1px; }
+    </style>
+  </defs>
+
+  <rect width="1180" height="760" fill="#fbfcfe"/>
+  <text x="30" y="36" class="title">Revivo — serverless architecture</text>
+  <text x="30" y="56" class="sub">Flutter (Amplify) → API Gateway (Cognito authorizer) → Lambda → DynamoDB (single table + Streams) → Step Functions / SNS / Bedrock</text>
+
+  <!-- Client layer -->
+  <text x="30" y="96" class="section">CLIENT</text>
+  <rect x="30" y="106" width="230" height="70" class="box"/>
+  <text x="48" y="132" class="label">Flutter app</text>
+  <text x="48" y="150" class="label-sm">Seller · Buyer (Riverpod)</text>
+  <text x="48" y="165" class="label-sm">hosted on AWS Amplify</text>
+
+  <!-- API layer -->
+  <text x="330" y="96" class="section">EDGE</text>
+  <rect x="330" y="106" width="230" height="70" class="box-accent"/>
+  <text x="348" y="132" class="label">API Gateway</text>
+  <text x="348" y="150" class="label-sm">Cognito JWT authorizer</text>
+  <text x="348" y="165" class="label-sm">/health public, rest protected</text>
+
+  <rect x="330" y="196" width="230" height="60" class="box"/>
+  <text x="348" y="220" class="label">Amazon Cognito</text>
+  <text x="348" y="238" class="label-sm">user pool · custom:role</text>
+
+  <!-- Lambda layer -->
+  <text x="630" y="96" class="section">COMPUTE</text>
+  <rect x="630" y="106" width="240" height="150" class="box"/>
+  <text x="648" y="130" class="label">Lambda (Python 3.12)</text>
+  <text x="648" y="150" class="label-sm">create_listing · list_listings</text>
+  <text x="648" y="166" class="label-sm">create_order · advance_order</text>
+  <text x="648" y="182" class="label-sm">create_rescue · transition_rescue</text>
+  <text x="648" y="198" class="label-sm">seller_insights · impact</text>
+  <text x="648" y="214" class="label-sm">identify_vegetable · analyze_listing</text>
+  <text x="648" y="230" class="label-sm">notify · start_order_workflow</text>
+
+  <!-- S3 + Rekognition -->
+  <rect x="900" y="106" width="250" height="70" class="box"/>
+  <text x="918" y="132" class="label">S3 + Rekognition</text>
+  <text x="918" y="150" class="label-sm">presigned upload</text>
+  <text x="918" y="165" class="label-sm">DetectLabels → vegetable ID</text>
+
+  <!-- DynamoDB -->
+  <text x="630" y="300" class="section">DATA</text>
+  <rect x="630" y="310" width="240" height="90" class="box-accent"/>
+  <text x="648" y="335" class="label">DynamoDB</text>
+  <text x="648" y="353" class="label-sm">single table · GSI1/2/3</text>
+  <text x="648" y="369" class="label-sm">Listing · Order · Rescue · Notif</text>
+  <text x="648" y="385" class="label-sm">Streams (2 independent consumers)</text>
+
+  <!-- Step functions -->
+  <rect x="630" y="440" width="240" height="80" class="box"/>
+  <text x="648" y="464" class="label">Step Functions</text>
+  <text x="648" y="482" class="label-sm">order lifecycle: Confirmed →</text>
+  <text x="648" y="498" class="label-sm">Preparing → Ready → Completed</text>
+
+  <!-- SNS + notifications -->
+  <rect x="900" y="440" width="250" height="80" class="box"/>
+  <text x="918" y="464" class="label">SNS + notifier Lambda</text>
+  <text x="918" y="482" class="label-sm">revivo-notifications topic</text>
+  <text x="918" y="498" class="label-sm">in-app feed · unread count</text>
+
+  <!-- Bedrock -->
+  <text x="900" y="300" class="section">AI</text>
+  <rect x="900" y="310" width="250" height="90" class="box-ai"/>
+  <text x="918" y="335" class="label">Amazon Bedrock (Nova)</text>
+  <text x="918" y="353" class="label-sm">seller_insights recommendations</text>
+  <text x="918" y="369" class="label-sm">explain_rescue "why rescue this"</text>
+  <text x="918" y="385" class="label-sm">Converse API · deterministic fallback</text>
+
+  <!-- CloudWatch / CDK footer -->
+  <rect x="330" y="590" width="820" height="60" class="box"/>
+  <text x="348" y="614" class="label">Observability + IaC</text>
+  <text x="348" y="632" class="label-sm">Amazon CloudWatch (logs/metrics) · AWS CDK (Python) — Data / Auth / Api / Workflow / Notify stacks</text>
+
+  <!-- Edges -->
+  <path class="edge" d="M260,141 H330"/>
+  <path class="edge" d="M445,176 V196"/>
+  <path class="edge" d="M560,141 H630"/>
+  <path class="edge" d="M870,141 H900"/>
+  <path class="edge" d="M750,256 V310"/>
+  <path class="edge" d="M750,400 V440"/>
+  <path class="edge" d="M870,470 H900"/>
+  <path class="edge" d="M870,355 H900"/>
+  <path class="edge" d="M750,120 C800,90 850,90 900,120" />
+
+  <!-- Notify SNS to client (dashed = async / in-app poll) -->
+  <path class="edge-dashed" d="M1025,440 C1090,300 1090,180 560,150"/>
+  <text x="1030" y="425" class="label-sm" fill="#8a63d2">async → in-app / SNS</text>
+
+  <!-- Legend -->
+  <rect x="30" y="700" width="14" height="14" class="box-accent"/>
+  <text x="52" y="712" class="label-sm">core data / edge path</text>
+  <rect x="220" y="700" width="14" height="14" class="box-ai"/>
+  <text x="242" y="712" class="label-sm">AI (Bedrock) — degrades gracefully to a fallback, never hard-fails</text>
+</svg>

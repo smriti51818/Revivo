@@ -73,7 +73,12 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
       bottomNavigationBar: const CartBar(),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(AppSpacing.screen),
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.screen,
+            AppSpacing.screen,
+            AppSpacing.screen,
+            MediaQuery.of(context).padding.bottom + 80,
+          ),
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -166,7 +171,7 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
             const SizedBox(height: 4),
             Text(
               offer.vegetable,
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 8),
             Row(
@@ -175,8 +180,8 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                 Text(
                   '${formatMoney(unitPrice)} / kg',
                   style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
                     color: AppColors.primary,
                   ),
                 ),

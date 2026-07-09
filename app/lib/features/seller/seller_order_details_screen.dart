@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hugeicons/hugeicons.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:hugeicons/hugeicons.dart';
+import '../../core/format.dart';
 import '../../core/models/freshness.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
@@ -40,6 +41,14 @@ class SellerOrderDetailsScreen extends ConsumerWidget {
         FreshnessBand.good => order.marketPricePerKg - order.pricePerKg > 15
             ? 'Best price (12-24h)'
             : 'Fresh (24h+)',
+      };
+
+  /// Quality grade derived from the freshness band — Good → A+, Use soon → A,
+  /// Rescue → B. There is no separate grade field on the order.
+  String get _grade => switch (order.band) {
+        FreshnessBand.good => 'Grade A+',
+        FreshnessBand.useSoon => 'Grade A',
+        FreshnessBand.rescue => 'Grade B',
       };
 
   @override
@@ -209,7 +218,7 @@ class SellerOrderDetailsScreen extends ConsumerWidget {
                   children: [
                     Flexible(
                       child: Text(
-                        currentOrder.buyerName ?? 'Grand Hotel',
+                        currentOrder.buyerName ?? 'Buyer',
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w800,
@@ -226,9 +235,9 @@ class SellerOrderDetailsScreen extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: 2),
-                const Text(
-                  'Indiranagar, Bengaluru',
-                  style: TextStyle(
+                Text(
+                  'Order #${currentOrder.id.length >= 5 ? currentOrder.id.substring(currentOrder.id.length - 5).toUpperCase() : currentOrder.id.toUpperCase()}',
+                  style: const TextStyle(
                     fontSize: 11.5,
                     color: AppColors.textSecondary,
                     fontWeight: FontWeight.w500,
@@ -245,14 +254,14 @@ class SellerOrderDetailsScreen extends ConsumerWidget {
                 style: TextStyle(fontSize: 10, color: AppColors.textMuted, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 2),
-              const Text(
-                '5 mins ago',
-                style: TextStyle(fontSize: 11, color: AppColors.textPrimary, fontWeight: FontWeight.w700),
+              Text(
+                formatAgo(currentOrder.placedAt),
+                style: const TextStyle(fontSize: 11, color: AppColors.textPrimary, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 2),
               Text(
-                '10 May, 9:36 AM',
-                style: TextStyle(fontSize: 9.5, color: AppColors.textMuted, fontWeight: FontWeight.w500),
+                formatDateTime(currentOrder.placedAt),
+                style: const TextStyle(fontSize: 9.5, color: AppColors.textMuted, fontWeight: FontWeight.w500),
               ),
             ],
           ),
@@ -271,18 +280,18 @@ class SellerOrderDetailsScreen extends ConsumerWidget {
         border: Border.all(color: const Color(0xFFD3F2E4)),
         borderRadius: BorderRadius.circular(10),
       ),
-      child: const Row(
+      child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          HugeIcon(
+          const HugeIcon(
             icon: HugeIcons.strokeRoundedClock01,
             color: Color(0xFF27AE60),
             size: 15,
           ),
-          SizedBox(width: 6),
+          const SizedBox(width: 6),
           Text(
-            'Respond within 14:48',
-            style: TextStyle(
+            'New order · placed ${formatAgo(currentOrder.placedAt)}',
+            style: const TextStyle(
               color: Color(0xFF27AE60),
               fontSize: 12,
               fontWeight: FontWeight.w700,
@@ -335,9 +344,9 @@ class SellerOrderDetailsScreen extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    const Text(
-                      'Grade A   •   Fresh',
-                      style: TextStyle(
+                    Text(
+                      '$_grade   •   ${currentOrder.band.label}',
+                      style: const TextStyle(
                         fontSize: 11.5,
                         color: AppColors.textSecondary,
                         fontWeight: FontWeight.w600,
@@ -460,11 +469,15 @@ class SellerOrderDetailsScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
           _infoRow(HugeIcons.strokeRoundedInvoice01, 'Order ID', '#RV${currentOrder.id.substring(0, 5).toUpperCase()}'),
-          _infoRow(HugeIcons.strokeRoundedStore01, 'Business Type', 'Hotel'),
-          _infoRow(HugeIcons.strokeRoundedClock01, 'Preferred Pickup', 'Today, 12:00 – 2:00 PM'),
-          _infoRow(HugeIcons.strokeRoundedUserCircle, 'Contact Person', 'Rahul Sharma'),
-          _infoRow(HugeIcons.strokeRoundedCall, 'Phone Number', '+91 98765 43210'),
-          _infoRow(HugeIcons.strokeRoundedNote01, 'Additional Note', 'Please ensure fresh and firm tomatoes.'),
+          if (currentOrder.buyerName != null)
+            _infoRow(HugeIcons.strokeRoundedUserCircle, 'Buyer', currentOrder.buyerName!),
+          _infoRow(HugeIcons.strokeRoundedCalendar01, 'Placed', formatDateTime(currentOrder.placedAt)),
+          _infoRow(
+            HugeIcons.strokeRoundedClock01,
+            'Preferred Pickup',
+            currentOrder.pickupSlot.isEmpty ? 'Anytime today' : currentOrder.pickupSlot,
+          ),
+          _infoRow(HugeIcons.strokeRoundedMoney01, 'Payment', currentOrder.paymentStatus.label),
         ],
       ),
     );
@@ -519,7 +532,7 @@ class SellerOrderDetailsScreen extends ConsumerWidget {
             children: [
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () {},
+                  onPressed: () => _confirmReject(context, ref, currentOrder),
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: Color(0xFFF2D3D3)),
                     backgroundColor: const Color(0xFFFFF5F5),
@@ -688,6 +701,38 @@ class SellerOrderDetailsScreen extends ConsumerWidget {
     );
   }
 
+  Future<void> _confirmReject(
+      BuildContext context, WidgetRef ref, Order currentOrder) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Decline this order?'),
+        content: Text(
+          'Decline ${currentOrder.buyerName ?? 'this buyer'}\'s order for '
+          '${currentOrder.vegetable}? It will be removed from your queue.',
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Keep')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: const Color(0xFFF23E3E)),
+            child: const Text('Decline'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    ref.read(vendorOrdersProvider.notifier).reject(currentOrder.id);
+    if (context.mounted) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(content: Text('Order declined')));
+      context.pop();
+    }
+  }
+
   Future<void> _advance(BuildContext context, WidgetRef ref, Order currentOrder, OrderStatus target, String label) async {
     try {
       await ref.read(vendorOrdersProvider.notifier).advance(currentOrder.id, target);
@@ -705,14 +750,15 @@ class SellerOrderDetailsScreen extends ConsumerWidget {
     }
   }
 
-  Future<void> _call(BuildContext context) async {
-    final uri = Uri.parse('tel:+919000000000');
+  void _call(BuildContext context) async {
+    final uri = Uri.parse('tel:+919876543210');
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else if (context.mounted) {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
-        ..showSnackBar(const SnackBar(content: Text('Could not start call')));
+        ..showSnackBar(
+            const SnackBar(content: Text('Could not open dialer')));
     }
   }
 }

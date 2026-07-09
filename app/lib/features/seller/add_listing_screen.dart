@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:hugeicons/hugeicons.dart';
+import 'package:intl/intl.dart';
 
 import '../../core/models/freshness.dart';
 import '../../core/theme/app_colors.dart';
@@ -51,7 +52,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
   final _description = TextEditingController(
       text: 'Fresh, firm and juicy tomatoes. Handpicked and sorted for best quality. Ideal for cooking, salads and sauces.');
   final _pickupInstructions = TextEditingController(
-      text: 'Please call before arriving. Gate number: 12. Contact: Rahul - 98765 43210');
+      text: 'Please call before arriving at the stall.');
 
   XFile? _photo;
   String _imageKey = '';
@@ -67,7 +68,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
   String _availFromTime = '09:00 AM';
   String _availUntilDate = '14 May 2025';
   String _availUntilTime = '06:00 PM';
-  String _location = 'Indiranagar, Bengaluru, Karnataka 560038';
+  String _location = 'R.S. Puram, Coimbatore, Tamil Nadu 641002';
   bool _stockVisibility = true;
 
   FreshnessAnalysis? _analysis;
@@ -131,6 +132,63 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
       });
     }
     _scheduleAnalyze();
+  }
+
+  bool _isGeneratingDesc = false;
+
+  Future<void> _generateAiDescription() async {
+    setState(() => _isGeneratingDesc = true);
+    
+    // Simulate network delay for AI generation
+    await Future.delayed(const Duration(milliseconds: 800));
+    
+    if (!mounted) return;
+    
+    final veg = _vegetable ?? 'produce';
+    final desc = 'Fresh, high-quality $veg sourced directly from our local farm. Carefully handled and sorted to maintain optimal freshness. Perfect for both commercial kitchens and home use. Available for immediate pickup while supplies last.';
+    
+    setState(() {
+      _description.text = desc;
+      _isGeneratingDesc = false;
+    });
+  }
+
+  Future<void> _pickDate(bool isFrom) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (picked != null && mounted) {
+      final formatter = DateFormat('dd MMM yyyy');
+      setState(() {
+        if (isFrom) {
+          _availFromDate = formatter.format(picked);
+        } else {
+          _availUntilDate = formatter.format(picked);
+        }
+      });
+    }
+  }
+
+  Future<void> _pickTime(bool isFrom) async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+    if (picked != null && mounted) {
+      final now = DateTime.now();
+      final dt = DateTime(now.year, now.month, now.day, picked.hour, picked.minute);
+      final formatter = DateFormat('hh:mm a');
+      setState(() {
+        if (isFrom) {
+          _availFromTime = formatter.format(dt);
+        } else {
+          _availUntilTime = formatter.format(dt);
+        }
+      });
+    }
   }
 
   Future<void> _pickVegetable() async {
@@ -500,17 +558,37 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
               controller: _description,
               maxLines: 3,
               maxLength: 300,
-              style: const TextStyle(fontSize: 11),
+              style: const TextStyle(fontSize: 14),
               decoration: const InputDecoration(
                 hintText: 'Enter description...',
                 counterText: '',
               ),
               onChanged: (_) => setState(() {}),
             ),
-            const SizedBox(height: 4),
-            Text(
-              '${_description.text.length}/300',
-              style: const TextStyle(fontSize: 10.5, color: AppColors.textMuted),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _isGeneratingDesc 
+                    ? const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 12),
+                        child: SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2)),
+                      )
+                    : TextButton.icon(
+                        onPressed: _generateAiDescription,
+                        icon: const HugeIcon(icon: HugeIcons.strokeRoundedMagicWand01, size: 14, color: AppColors.primary),
+                        label: const Text('Auto-generate with AI', style: TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.w700)),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                      ),
+                Text(
+                  '${_description.text.length}/300',
+                  style: const TextStyle(fontSize: 10.5, color: AppColors.textMuted),
+                ),
+              ],
             ),
           ],
         ),
@@ -574,9 +652,15 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
                   children: [
                     _photo != null
                         ? Image.file(File(_photo!.path), fit: BoxFit.cover, width: 90, height: 90)
-                        : Image.asset('assets/images/tomato.png', fit: BoxFit.cover, errorBuilder: (_, __, ___) {
-                            return Container(color: AppColors.primarySurface);
-                          }),
+                        : Container(
+                            color: AppColors.primarySurface,
+                            alignment: Alignment.center,
+                            child: HugeIcon(
+                              icon: HugeIcons.strokeRoundedLeaf02,
+                              size: 40,
+                              color: AppColors.primary.withValues(alpha: 0.55),
+                            ),
+                          ),
                     Container(
                       width: 32,
                       height: 32,
@@ -842,9 +926,15 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
               height: 44,
               child: _photo != null
                   ? Image.file(File(_photo!.path), fit: BoxFit.cover)
-                  : Image.asset('assets/images/tomato.png', fit: BoxFit.cover, errorBuilder: (_, __, ___) {
-                      return Container(color: AppColors.primarySurface);
-                    }),
+                  : Container(
+                      color: AppColors.primarySurface,
+                      alignment: Alignment.center,
+                      child: HugeIcon(
+                        icon: HugeIcons.strokeRoundedLeaf02,
+                        size: 24,
+                        color: AppColors.primary.withValues(alpha: 0.55),
+                      ),
+                    ),
             ),
           ),
           const SizedBox(width: 12),
@@ -956,9 +1046,9 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      _analysis == null ? 'Grade A' :
-                      _analysis!.band == FreshnessBand.good ? 'Grade A' :
-                      _analysis!.band == FreshnessBand.useSoon ? 'Grade B' : 'Grade C',
+                      _analysis == null ? 'Grade A+' :
+                      _analysis!.band == FreshnessBand.good ? 'Grade A+' :
+                      _analysis!.band == FreshnessBand.useSoon ? 'Grade A' : 'Grade B/Rescue',
                       style: const TextStyle(fontSize: 11, color: AppColors.textPrimary, fontWeight: FontWeight.w800),
                     ),
                     const SizedBox(height: 4),
@@ -1181,8 +1271,8 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
         _buildDateTimeRow(
           _availFromDate,
           _availFromTime,
-          () {},
-          () {},
+          () => _pickDate(true),
+          () => _pickTime(true),
         ),
       ),
       const SizedBox(height: 12),
@@ -1192,8 +1282,8 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
         _buildDateTimeRow(
           _availUntilDate,
           _availUntilTime,
-          () {},
-          () {},
+          () => _pickDate(false),
+          () => _pickTime(false),
         ),
       ),
       const SizedBox(height: 16),
@@ -1204,7 +1294,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
           controller: _pickupInstructions,
           maxLines: 2,
           maxLength: 150,
-          style: const TextStyle(fontSize: 11.5),
+          style: const TextStyle(fontSize: 14),
           decoration: const InputDecoration(
             counterText: '',
             hintText: 'e.g. gate code, phone contact...',
@@ -1491,9 +1581,15 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
               height: 56,
               child: _photo != null
                   ? Image.file(File(_photo!.path), fit: BoxFit.cover)
-                  : Image.asset('assets/images/tomato.png', fit: BoxFit.cover, errorBuilder: (_, __, ___) {
-                      return Container(color: AppColors.primarySurface);
-                    }),
+                  : Container(
+                      color: AppColors.primarySurface,
+                      alignment: Alignment.center,
+                      child: HugeIcon(
+                        icon: HugeIcons.strokeRoundedLeaf02,
+                        size: 24,
+                        color: AppColors.primary.withValues(alpha: 0.55),
+                      ),
+                    ),
             ),
           ),
           const SizedBox(width: 12),
@@ -1620,7 +1716,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
                 }
               },
               style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF0F8A5F),
+                backgroundColor: AppColors.primary,
                 minimumSize: const Size.fromHeight(48),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),

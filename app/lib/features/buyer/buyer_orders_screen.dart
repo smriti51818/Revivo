@@ -47,50 +47,94 @@ class _BuyerOrdersScreenState extends ConsumerState<BuyerOrdersScreen> {
     final failed = ref.watch(failedPaymentsProvider);
 
     return Scaffold(
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: () => ref.refresh(ordersProvider.future),
-          child: ListView(
-            padding: const EdgeInsets.all(AppSpacing.screen),
+      backgroundColor: const Color(0xFFF7F9FB),
+      body: Column(
+        children: [
+          _buildGreenHeader(context),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () => ref.refresh(ordersProvider.future),
+              child: ListView(
+                padding: const EdgeInsets.all(AppSpacing.screen),
+                children: [
+                  if (failed.isNotEmpty) ...[
+                    _FailedSection(payments: failed),
+                    const SizedBox(height: AppSpacing.lg),
+                  ],
+                  orders.when(
+                    loading: () => const Padding(
+                      padding: EdgeInsets.only(top: 48),
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                    error: (e, _) => Padding(
+                      padding: const EdgeInsets.only(top: 32),
+                      child: Center(child: Text('Could not load orders: $e')),
+                    ),
+                    data: (items) =>
+                        _orders(items, hasFailed: failed.isNotEmpty),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGreenHeader(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.only(
+        top: MediaQuery.of(context).padding.top + 16,
+        bottom: 24,
+        left: AppSpacing.screen,
+        right: AppSpacing.screen,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
               const Text(
                 'My orders',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                'Track your surplus rescues',
-                style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              if (failed.isNotEmpty) ...[
-                _FailedSection(payments: failed),
-                const SizedBox(height: AppSpacing.lg),
-              ],
-              orders.when(
-                loading: () => const Padding(
-                  padding: EdgeInsets.only(top: 48),
-                  child: Center(child: CircularProgressIndicator()),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
                 ),
-                error: (e, _) => Padding(
-                  padding: const EdgeInsets.only(top: 32),
-                  child: Center(child: Text('Could not load orders: $e')),
-                ),
-                data: (items) => _orders(items, hasFailed: failed.isNotEmpty),
               ),
             ],
           ),
-        ),
+          const SizedBox(height: 8),
+          const Padding(
+            padding: EdgeInsets.only(left: 48),
+            child: Text(
+              'Track your surplus rescues',
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _orders(List<Order> items, {required bool hasFailed}) {
     if (items.isEmpty) return hasFailed ? const SizedBox.shrink() : _empty();
-    final active =
-        items.where((o) => o.status != OrderStatus.completed).toList();
-    final completed =
-        items.where((o) => o.status == OrderStatus.completed).toList();
+    final active = items
+        .where((o) => o.status != OrderStatus.completed)
+        .toList();
+    final completed = items
+        .where((o) => o.status == OrderStatus.completed)
+        .toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -117,28 +161,32 @@ class _BuyerOrdersScreenState extends ConsumerState<BuyerOrdersScreen> {
   }
 
   Widget _empty() => Padding(
-        padding: const EdgeInsets.only(top: 64),
-        child: Center(
-          child: Column(
-            children: [
-              HugeIcon(icon: HugeIcons.strokeRoundedInvoice01,
-                  size: 40, color: AppColors.textMuted),
-              const SizedBox(height: AppSpacing.md),
-              const Text(
-                'No orders yet',
-                style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textSecondary),
-              ),
-              const SizedBox(height: 2),
-              const Text(
-                'Browse the market to rescue surplus produce',
-                style: TextStyle(fontSize: 12.5, color: AppColors.textMuted),
-              ),
-            ],
+    padding: const EdgeInsets.only(top: 64),
+    child: Center(
+      child: Column(
+        children: [
+          HugeIcon(
+            icon: HugeIcons.strokeRoundedInvoice01,
+            size: 40,
+            color: AppColors.textMuted,
           ),
-        ),
-      );
+          const SizedBox(height: AppSpacing.md),
+          const Text(
+            'No orders yet',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 2),
+          const Text(
+            'Browse the market to rescue surplus produce',
+            style: TextStyle(fontSize: 12.5, color: AppColors.textMuted),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 /// The "Payment failed" section — checkout attempts that never completed.
@@ -153,13 +201,20 @@ class _FailedSection extends ConsumerWidget {
       children: [
         Row(
           children: [
-            const HugeIcon(icon: HugeIcons.strokeRoundedAlert01, size: 18, color: AppColors.danger),
+            const HugeIcon(
+              icon: HugeIcons.strokeRoundedAlert01,
+              size: 18,
+              color: AppColors.danger,
+            ),
             const SizedBox(width: 6),
-            Text('Payment failed · ${payments.length}',
-                style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.danger)),
+            Text(
+              'Payment failed · ${payments.length}',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppColors.danger,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: AppSpacing.sm),
@@ -200,19 +255,31 @@ class _FailedCard extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(summary,
-                        style: const TextStyle(
-                            fontSize: 14.5, fontWeight: FontWeight.w700)),
+                    Text(
+                      summary,
+                      style: const TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                     const SizedBox(height: 2),
-                    Text('${payment.reason} · ${formatAgo(payment.attemptedAt)}',
-                        style: const TextStyle(
-                            fontSize: 12, color: AppColors.textSecondary)),
+                    Text(
+                      '${payment.reason} · ${formatAgo(payment.attemptedAt)}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
                   ],
                 ),
               ),
-              Text(formatMoney(payment.amount),
-                  style: const TextStyle(
-                      fontSize: 15, fontWeight: FontWeight.w800)),
+              Text(
+                formatMoney(payment.amount),
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: AppSpacing.md),
@@ -230,20 +297,26 @@ class _FailedCard extends ConsumerWidget {
                     backgroundColor: AppColors.danger,
                     minimumSize: const Size.fromHeight(40),
                   ),
-                  icon: const HugeIcon(icon: HugeIcons.strokeRoundedRefresh01, size: 18),
+                  icon: const HugeIcon(
+                    icon: HugeIcons.strokeRoundedRefresh01,
+                    size: 18,
+                  ),
                   label: const Text('Retry payment'),
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
               OutlinedButton(
-                onPressed: () =>
-                    ref.read(failedPaymentsProvider.notifier).remove(payment.id),
+                onPressed: () => ref
+                    .read(failedPaymentsProvider.notifier)
+                    .remove(payment.id),
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size(0, 40),
                   side: const BorderSide(color: AppColors.border),
                 ),
-                child: const Text('Dismiss',
-                    style: TextStyle(color: AppColors.textSecondary)),
+                child: const Text(
+                  'Dismiss',
+                  style: TextStyle(color: AppColors.textSecondary),
+                ),
               ),
             ],
           ),
@@ -258,15 +331,17 @@ class _OrderCard extends StatelessWidget {
   final Order order;
 
   ChipTone get _tone => switch (order.status) {
-        OrderStatus.confirmed => ChipTone.info,
-        OrderStatus.preparing => ChipTone.warning,
-        OrderStatus.readyForPickup => ChipTone.success,
-        OrderStatus.completed => ChipTone.neutral,
-      };
+    OrderStatus.confirmed => ChipTone.info,
+    OrderStatus.preparing => ChipTone.warning,
+    OrderStatus.readyForPickup => ChipTone.success,
+    OrderStatus.completed => ChipTone.neutral,
+  };
 
   @override
   Widget build(BuildContext context) {
+    final done = order.status == OrderStatus.completed;
     return AppCard(
+      color: done ? Colors.white : const Color(0xFFF2FBF6),
       onTap: () => context.push('/buyer/order', extra: order),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -280,13 +355,17 @@ class _OrderCard extends StatelessWidget {
                     Text(
                       order.vegetable,
                       style: const TextStyle(
-                          fontSize: 15.5, fontWeight: FontWeight.w700),
+                        fontSize: 15.5,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       '${order.vendorName} · ${formatAgo(order.placedAt)}',
                       style: const TextStyle(
-                          fontSize: 12, color: AppColors.textMuted),
+                        fontSize: 12,
+                        color: AppColors.textMuted,
+                      ),
                     ),
                   ],
                 ),
@@ -308,35 +387,54 @@ class _OrderCard extends StatelessWidget {
           const SizedBox(height: AppSpacing.md),
           Row(
             children: [
-              const HugeIcon(icon: HugeIcons.strokeRoundedClock01, size: 13, color: AppColors.textMuted),
+              const HugeIcon(
+                icon: HugeIcons.strokeRoundedClock01,
+                size: 13,
+                color: AppColors.textMuted,
+              ),
               const SizedBox(width: 4),
               Text(
                 order.pickupSlot.isEmpty
                     ? 'Pickup anytime today'
                     : 'Pickup · ${order.pickupSlot}',
                 style: const TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textMuted),
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textMuted,
+                ),
               ),
               const Spacer(),
               if (order.status != OrderStatus.completed)
                 TextButton.icon(
                   onPressed: () => context.push('/buyer/track', extra: order),
-                  icon: const HugeIcon(icon: HugeIcons.strokeRoundedLocation01, size: 16, color: AppColors.primary),
-                  label: const Text('Track Order',
-                      style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.primary)),
+                  icon: const HugeIcon(
+                    icon: HugeIcons.strokeRoundedLocation01,
+                    size: 16,
+                    color: AppColors.primary,
+                  ),
+                  label: const Text(
+                    'Track Order',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primary,
+                    ),
+                  ),
                 )
               else ...[
-                const Text('View details',
-                    style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primary)),
-                const HugeIcon(icon: HugeIcons.strokeRoundedArrowRight01, size: 16, color: AppColors.primary),
+                const Text(
+                  'View details',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary,
+                  ),
+                ),
+                const HugeIcon(
+                  icon: HugeIcons.strokeRoundedArrowRight01,
+                  size: 16,
+                  color: AppColors.primary,
+                ),
               ],
             ],
           ),

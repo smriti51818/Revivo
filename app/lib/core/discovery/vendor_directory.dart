@@ -98,14 +98,11 @@ class VendorReview {
 }
 
 const List<String> _reviewers = [
-  'Hotel Annapoorna',
+  'Hotel Ashok',
   'Sri Krishna Mess',
-  'Green Chef Kitchen',
-  'Vaibhav Restaurant',
   'Junior Kuppanna',
   'Adyar Ananda Bhavan',
-  'Shiva Temple Kitchen',
-  'Kovai Caterers',
+  'Vaibhav Restaurant',
 ];
 
 const List<String> _reviewText = [

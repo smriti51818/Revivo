@@ -38,12 +38,12 @@ typedef _Spec = ({
 
 class InMemoryMarketplaceRepository implements MarketplaceRepository {
   static const List<_Spec> _specs = [
-    (id: 'off_tomato', vendor: 'GreenLeaf Farms', veg: 'Roma Tomatoes', kg: 12, market: 40, remainingH: 16, totalH: 30, distance: 1.2, organic: true),
-    (id: 'off_pepper', vendor: 'Anna Vegetable Stall', veg: 'Bell Pepper Mix', kg: 6, market: 60, remainingH: 9, totalH: 30, distance: 2.1, organic: false),
-    (id: 'off_spinach', vendor: 'Kovai Fresh Mart', veg: 'Baby Spinach', kg: 4, market: 30, remainingH: 2.5, totalH: 24, distance: 0.8, organic: false),
-    (id: 'off_carrot', vendor: 'Sunrise Organics', veg: 'Garden Carrots', kg: 20, market: 45, remainingH: 108, totalH: 200, distance: 3.4, organic: true),
-    (id: 'off_cauliflower', vendor: 'RS Traders', veg: 'Cauliflower', kg: 9, market: 35, remainingH: 11, totalH: 36, distance: 1.7, organic: false),
-    (id: 'off_beans', vendor: 'Daily Greens', veg: 'French Beans', kg: 5, market: 50, remainingH: 3.5, totalH: 30, distance: 2.9, organic: false),
+    (id: 'off_tomato', vendor: 'GreenLeaf Farms', veg: 'Tomato', kg: 12, market: 40, remainingH: 16, totalH: 30, distance: 1.2, organic: false),
+    (id: 'off_pepper', vendor: 'Anna Vegetable Stall', veg: 'Bell Pepper', kg: 6, market: 80, remainingH: 9, totalH: 30, distance: 2.1, organic: false),
+    (id: 'off_spinach', vendor: 'Kovai Fresh Mart', veg: 'Spinach', kg: 4, market: 30, remainingH: 2.5, totalH: 24, distance: 0.8, organic: false),
+    (id: 'off_carrot', vendor: 'Sunrise Organics', veg: 'Carrot', kg: 20, market: 45, remainingH: 108, totalH: 200, distance: 3.4, organic: true),
+    (id: 'off_cauliflower', vendor: 'RS Traders', veg: 'Cauliflower', kg: 9, market: 40, remainingH: 11, totalH: 36, distance: 1.7, organic: false),
+    (id: 'off_beans', vendor: 'Daily Greens', veg: 'Beans', kg: 5, market: 60, remainingH: 3.5, totalH: 30, distance: 2.9, organic: false),
   ];
 
   List<Offer> _buildOffers() {
@@ -80,7 +80,7 @@ class InMemoryMarketplaceRepository implements MarketplaceRepository {
     Order(
       id: 'ord_seed_tomato',
       vendorName: 'GreenLeaf Farms',
-      vegetable: 'Roma Tomatoes',
+      vegetable: 'Tomato',
       quantityKg: 10,
       pricePerKg: 34,
       marketPricePerKg: 40,

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:hugeicons/hugeicons.dart';
+import '../../core/format.dart';
 import '../../core/models/freshness.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
@@ -42,11 +43,15 @@ class _SellerOrdersScreenState extends ConsumerState<SellerOrdersScreen> {
   @override
   Widget build(BuildContext context) {
     final orders = ref.watch(vendorOrdersProvider);
+    final newCount = orders.valueOrNull
+            ?.where((o) => o.status == OrderStatus.confirmed)
+            .length ??
+        0;
 
     return Scaffold(
       body: Column(
         children: [
-          _buildGreenHeader(),
+          _buildGreenHeader(newCount),
           Expanded(
             child: RefreshIndicator(
               onRefresh: () => ref.refresh(vendorOrdersProvider.future),
@@ -63,7 +68,7 @@ class _SellerOrdersScreenState extends ConsumerState<SellerOrdersScreen> {
     );
   }
 
-  Widget _buildGreenHeader() {
+  Widget _buildGreenHeader(int newCount) {
     return Container(
       width: double.infinity,
       decoration: const BoxDecoration(
@@ -78,17 +83,6 @@ class _SellerOrdersScreenState extends ConsumerState<SellerOrdersScreen> {
       ),
       child: Row(
         children: [
-          IconButton(
-            onPressed: () => context.pop(),
-            icon: const HugeIcon(
-              icon: HugeIcons.strokeRoundedArrowLeft01,
-              color: Colors.white,
-              size: 24,
-            ),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-          ),
-          const SizedBox(width: 12),
           const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -149,25 +143,29 @@ class _SellerOrdersScreenState extends ConsumerState<SellerOrdersScreen> {
                   padding: EdgeInsets.zero,
                 ),
               ),
-              Positioned(
-                right: -2,
-                top: -2,
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFF23E3E),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Text(
-                    '2',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 8,
-                      fontWeight: FontWeight.w800,
+              if (newCount > 0)
+                Positioned(
+                  right: -2,
+                  top: -2,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    constraints:
+                        const BoxConstraints(minWidth: 16, minHeight: 16),
+                    alignment: Alignment.center,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFF23E3E),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Text(
+                      '$newCount',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 8,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
                 ),
-              ),
             ],
           ),
         ],
@@ -445,6 +443,14 @@ class _OrderCard extends ConsumerWidget {
             : 'Fresh (24h+)',
       };
 
+  /// Quality grade derived from the live freshness band (no separate grade
+  /// field exists) — Good → A+, Use soon → A, Rescue → B.
+  String get _grade => switch (order.band) {
+        FreshnessBand.good => 'Grade A+',
+        FreshnessBand.useSoon => 'Grade A',
+        FreshnessBand.rescue => 'Grade B',
+      };
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return AppCard(
@@ -498,7 +504,7 @@ class _OrderCard extends ConsumerWidget {
                         const SizedBox(width: 6),
                         Flexible(
                           child: Text(
-                            order.buyerName ?? 'Grand Hotel',
+                            order.buyerName ?? 'Buyer',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
@@ -516,29 +522,6 @@ class _OrderCard extends ConsumerWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const HugeIcon(
-                          icon: HugeIcons.strokeRoundedLocation01,
-                          color: AppColors.textMuted,
-                          size: 12,
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            'Indiranagar, Bengaluru',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 11.5,
-                              color: AppColors.textSecondary,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
                     const SizedBox(height: 8),
                     Text(
                       order.vegetable,
@@ -550,7 +533,7 @@ class _OrderCard extends ConsumerWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Grade A   •   ${order.quantityKg.toInt()} kg',
+                      '$_grade   •   ${order.quantityKg.toInt()} kg',
                       style: const TextStyle(
                         fontSize: 12,
                         color: AppColors.textSecondary,
@@ -598,8 +581,8 @@ class _OrderCard extends ConsumerWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '5 mins ago',
-                    style: TextStyle(
+                    formatAgo(order.placedAt),
+                    style: const TextStyle(
                       fontSize: 11,
                       color: AppColors.textMuted,
                       fontWeight: FontWeight.w500,
@@ -651,7 +634,7 @@ class _OrderCard extends ConsumerWidget {
       return Row(
         children: [
           TextButton.icon(
-            onPressed: () {},
+            onPressed: () => _confirmReject(context, ref),
             icon: const HugeIcon(icon: HugeIcons.strokeRoundedCancel01, color: AppColors.textSecondary, size: 14),
             label: const Text(
               'Reject',
@@ -665,17 +648,17 @@ class _OrderCard extends ConsumerWidget {
               border: Border.all(color: const Color(0xFF27AE60).withOpacity(0.3)),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Row(
+            child: Row(
               children: [
-                HugeIcon(
+                const HugeIcon(
                   icon: HugeIcons.strokeRoundedClock01,
                   color: Color(0xFF27AE60),
                   size: 14,
                 ),
-                SizedBox(width: 6),
+                const SizedBox(width: 6),
                 Text(
-                  'Respond in 14:48',
-                  style: TextStyle(
+                  'Placed ${formatAgo(order.placedAt)}',
+                  style: const TextStyle(
                     color: Color(0xFF27AE60),
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
@@ -728,12 +711,18 @@ class _OrderCard extends ConsumerWidget {
         children: [
           const HugeIcon(icon: HugeIcons.strokeRoundedDeliveryTruck02, color: AppColors.textSecondary, size: 15),
           const SizedBox(width: 6),
-          const Text(
-            'Pickup today, 12:00 – 2:00 PM',
-            style: TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
+          Expanded(
+            child: Text(
+              order.pickupSlot.isEmpty
+                  ? 'Pickup: anytime today'
+                  : 'Pickup: ${order.pickupSlot}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
           const Spacer(),
@@ -755,7 +744,7 @@ class _OrderCard extends ConsumerWidget {
         const HugeIcon(icon: HugeIcons.strokeRoundedCheckmarkCircle02, color: Color(0xFF27AE60), size: 16),
         const SizedBox(width: 6),
         const Text(
-          'Delivered on 10 May, 10:30 AM',
+          'Order completed',
           style: TextStyle(
             color: Color(0xFF27AE60),
             fontSize: 12,
@@ -799,12 +788,39 @@ class _OrderCard extends ConsumerWidget {
     }
   }
 
-  Future<void> _call(BuildContext context) async {
-    final uri = Uri.parse('tel:+919000000000');
+  Future<void> _confirmReject(BuildContext context, WidgetRef ref) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Decline this order?'),
+        content: Text(
+          'Decline ${order.buyerName ?? 'this buyer'}\'s order for '
+          '${order.vegetable}? It will be removed from your queue.',
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Keep')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: const Color(0xFFF23E3E)),
+            child: const Text('Decline'),
+          ),
+        ],
+      ),
+    );
+    if (ok == true) {
+      ref.read(vendorOrdersProvider.notifier).reject(order.id);
+      if (context.mounted) _toast(context, 'Order declined');
+    }
+  }
+
+  void _call(BuildContext context) async {
+    final uri = Uri.parse('tel:+919876543210');
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else if (context.mounted) {
-      _toast(context, 'Could not start the call');
+      _toast(context, 'Could not open dialer');
     }
   }
 

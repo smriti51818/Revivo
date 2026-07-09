@@ -10,6 +10,7 @@ import '../../features/auth/role_select_screen.dart';
 import '../../features/auth/splash_screen.dart';
 import '../../features/buyer/buyer_market_screen.dart';
 import '../../features/buyer/buyer_orders_screen.dart';
+import '../../features/buyer/buyer_ending_soon_screen.dart';
 import '../../features/buyer/cart_screen.dart';
 import '../../features/buyer/checkout_screen.dart';
 import '../../features/buyer/domain/offer.dart';
@@ -22,6 +23,7 @@ import '../../features/buyer/rescue_map_screen.dart';
 import '../../features/buyer/vendor_profile_screen.dart';
 import '../../features/impact/impact_screen.dart';
 import '../../features/notifications/notification_center_screen.dart';
+import '../../features/rescue/rescue_board_screen.dart';
 import '../../features/seller/add_listing_screen.dart';
 import '../../features/seller/domain/listing.dart';
 import '../../features/seller/seller_dashboard_screen.dart';
@@ -75,14 +77,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, state) =>
             VendorProfileScreen(vendorName: state.extra as String),
       ),
-      GoRoute(
-        path: '/buyer/map',
-        builder: (_, _) => const RescueMapScreen(),
-      ),
-      GoRoute(
-        path: '/buyer/cart',
-        builder: (_, _) => const CartScreen(),
-      ),
+      GoRoute(path: '/buyer/map', builder: (_, _) => const RescueMapScreen()),
+      GoRoute(path: '/buyer/cart', builder: (_, _) => const CartScreen()),
       GoRoute(
         path: '/account',
         builder: (_, _) => const AccountDetailsScreen(),
@@ -91,14 +87,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/notifications',
         builder: (_, _) => const NotificationCenterScreen(),
       ),
-      GoRoute(
-        path: '/help',
-        builder: (_, _) => const HelpScreen(),
-      ),
-      GoRoute(
-        path: '/refer',
-        builder: (_, _) => const ReferScreen(),
-      ),
+      GoRoute(path: '/help', builder: (_, _) => const HelpScreen()),
+      GoRoute(path: '/refer', builder: (_, _) => const ReferScreen()),
+      GoRoute(path: '/rescues', builder: (_, _) => const RescueBoardScreen()),
       GoRoute(
         path: '/seller/order',
         builder: (_, state) =>
@@ -115,13 +106,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/buyer/order',
-        builder: (_, state) =>
-            OrderDetailsScreen(order: state.extra as Order),
+        builder: (_, state) => OrderDetailsScreen(order: state.extra as Order),
       ),
       GoRoute(
         path: '/buyer/track',
-        builder: (_, state) =>
-            OrderTrackingScreen(order: state.extra as Order),
+        builder: (_, state) => OrderTrackingScreen(order: state.extra as Order),
+      ),
+      GoRoute(
+        path: '/buyer/ending-soon',
+        builder: (_, _) => const BuyerEndingSoonScreen(),
       ),
 
       // ─── Seller shell ───────────────────────────────────────────
@@ -130,25 +123,32 @@ final routerProvider = Provider<GoRouter>((ref) {
           navigationShell: shell,
           destinations: const [
             NavigationDestination(
-                icon: HugeIcon(icon: HugeIcons.strokeRoundedStore02),
-                selectedIcon: HugeIcon(icon: HugeIcons.strokeRoundedStore02),
-                label: 'Dashboard'),
+              icon: HugeIcon(icon: HugeIcons.strokeRoundedHome11),
+              selectedIcon: HugeIcon(icon: HugeIcons.strokeRoundedHome11),
+              label: 'Home',
+            ),
             NavigationDestination(
-                icon: HugeIcon(icon: HugeIcons.strokeRoundedInvoice01),
-                selectedIcon: HugeIcon(icon: HugeIcons.strokeRoundedInvoice01),
-                label: 'Orders'),
+              icon: HugeIcon(icon: HugeIcons.strokeRoundedInvoice01),
+              selectedIcon: HugeIcon(icon: HugeIcons.strokeRoundedInvoice01),
+              label: 'Orders',
+            ),
             NavigationDestination(
-                icon: HugeIcon(icon: HugeIcons.strokeRoundedPlusSign),
-                selectedIcon: HugeIcon(icon: HugeIcons.strokeRoundedPlusSign),
-                label: 'List'),
+              icon: HugeIcon(icon: HugeIcons.strokeRoundedPlusSign),
+              selectedIcon: HugeIcon(icon: HugeIcons.strokeRoundedPlusSign),
+              label: 'List',
+            ),
             NavigationDestination(
-                icon: HugeIcon(icon: HugeIcons.strokeRoundedChartLineData01),
-                selectedIcon: HugeIcon(icon: HugeIcons.strokeRoundedChartLineData01),
-                label: 'Insights'),
+              icon: HugeIcon(icon: HugeIcons.strokeRoundedChartLineData01),
+              selectedIcon: HugeIcon(
+                icon: HugeIcons.strokeRoundedChartLineData01,
+              ),
+              label: 'Insights',
+            ),
             NavigationDestination(
-                icon: HugeIcon(icon: HugeIcons.strokeRoundedUserCircle),
-                selectedIcon: HugeIcon(icon: HugeIcons.strokeRoundedUserCircle),
-                label: 'Profile'),
+              icon: HugeIcon(icon: HugeIcons.strokeRoundedUserCircle),
+              selectedIcon: HugeIcon(icon: HugeIcons.strokeRoundedUserCircle),
+              label: 'Profile',
+            ),
           ],
         ),
         branches: [
@@ -174,7 +174,8 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
               GoRoute(
                 path: '/seller/update-stock',
-                builder: (_, state) => UpdateStockScreen(listing: state.extra as Listing),
+                builder: (_, state) =>
+                    UpdateStockScreen(listing: state.extra as Listing),
               ),
             ],
           ),
@@ -208,21 +209,25 @@ final routerProvider = Provider<GoRouter>((ref) {
           navigationShell: shell,
           destinations: const [
             NavigationDestination(
-                icon: HugeIcon(icon: HugeIcons.strokeRoundedStore01),
-                selectedIcon: HugeIcon(icon: HugeIcons.strokeRoundedStore01),
-                label: 'Market'),
+              icon: HugeIcon(icon: HugeIcons.strokeRoundedStore01),
+              selectedIcon: HugeIcon(icon: HugeIcons.strokeRoundedStore01),
+              label: 'Market',
+            ),
             NavigationDestination(
-                icon: HugeIcon(icon: HugeIcons.strokeRoundedInvoice01),
-                selectedIcon: HugeIcon(icon: HugeIcons.strokeRoundedInvoice01),
-                label: 'Orders'),
+              icon: HugeIcon(icon: HugeIcons.strokeRoundedInvoice01),
+              selectedIcon: HugeIcon(icon: HugeIcons.strokeRoundedInvoice01),
+              label: 'Orders',
+            ),
             NavigationDestination(
-                icon: HugeIcon(icon: HugeIcons.strokeRoundedLeaf02),
-                selectedIcon: HugeIcon(icon: HugeIcons.strokeRoundedLeaf02),
-                label: 'Impact'),
+              icon: HugeIcon(icon: HugeIcons.strokeRoundedLeaf02),
+              selectedIcon: HugeIcon(icon: HugeIcons.strokeRoundedLeaf02),
+              label: 'Impact',
+            ),
             NavigationDestination(
-                icon: HugeIcon(icon: HugeIcons.strokeRoundedUser),
-                selectedIcon: HugeIcon(icon: HugeIcons.strokeRoundedUser),
-                label: 'Profile'),
+              icon: HugeIcon(icon: HugeIcons.strokeRoundedUser),
+              selectedIcon: HugeIcon(icon: HugeIcons.strokeRoundedUser),
+              label: 'Profile',
+            ),
           ],
         ),
         branches: [
@@ -232,8 +237,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           _branch('/buyer/profile', const ProfileScreen()),
         ],
       ),
-
-
     ],
   );
 });

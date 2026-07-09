@@ -59,11 +59,11 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
   }
 
   ChipTone get _tone => switch (_order.status) {
-        OrderStatus.confirmed => ChipTone.info,
-        OrderStatus.preparing => ChipTone.warning,
-        OrderStatus.readyForPickup => ChipTone.success,
-        OrderStatus.completed => ChipTone.neutral,
-      };
+    OrderStatus.confirmed => ChipTone.info,
+    OrderStatus.preparing => ChipTone.warning,
+    OrderStatus.readyForPickup => ChipTone.success,
+    OrderStatus.completed => ChipTone.neutral,
+  };
 
   Future<void> _open(Uri uri) async {
     if (await canLaunchUrl(uri)) {
@@ -73,6 +73,12 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
         ..hideCurrentSnackBar()
         ..showSnackBar(const SnackBar(content: Text('Could not open that')));
     }
+  }
+
+  void _callVendor() {
+    // In a real app, we'd use the vendor's actual phone number
+    final uri = Uri.parse('tel:+919876543210');
+    _open(uri);
   }
 
   @override
@@ -116,7 +122,9 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
   Widget _statusHeader(Order order) {
     final done = order.status == OrderStatus.completed;
     return AppCard(
+      color: done ? Colors.white : const Color(0xFFF2FBF6),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             width: 48,
@@ -126,22 +134,33 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
               borderRadius: BorderRadius.circular(AppRadius.md),
             ),
             child: HugeIcon(
-                icon: done ? HugeIcons.strokeRoundedCheckmarkCircle02 : HugeIcons.strokeRoundedDeliveryTruck02,
-                color: done ? AppColors.primary : AppColors.info,
-                size: 24),
+              icon: done
+                  ? HugeIcons.strokeRoundedCheckmarkCircle02
+                  : HugeIcons.strokeRoundedDeliveryTruck02,
+              color: done ? AppColors.primary : AppColors.info,
+              size: 24,
+            ),
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('${order.vegetable} · ${formatKg(order.quantityKg)}',
-                    style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.w800)),
+                Text(
+                  '${order.vegetable} · ${formatKg(order.quantityKg)}',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
                 const SizedBox(height: 2),
-                Text('Order #${_shortId(order.id)}',
-                    style: const TextStyle(
-                        fontSize: 12, color: AppColors.textMuted)),
+                Text(
+                  'Order #${_shortId(order.id)}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textMuted,
+                  ),
+                ),
               ],
             ),
           ),
@@ -166,29 +185,48 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
                     context.push('/buyer/vendor', extra: order.vendorName),
                 child: Row(
                   children: [
-                    const HugeIcon(icon: HugeIcons.strokeRoundedStore01,
-                        size: 18, color: AppColors.textSecondary),
+                    const HugeIcon(
+                      icon: HugeIcons.strokeRoundedStore01,
+                      size: 18,
+                      color: AppColors.textSecondary,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: Text(order.vendorName,
-                          style: const TextStyle(
-                              fontSize: 14.5, fontWeight: FontWeight.w800)),
+                      child: Text(
+                        order.vendorName,
+                        style: const TextStyle(
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
                     ),
-                    const HugeIcon(icon: HugeIcons.strokeRoundedArrowRight01,
-                        size: 18, color: AppColors.textMuted),
+                    const HugeIcon(
+                      icon: HugeIcons.strokeRoundedArrowRight01,
+                      size: 18,
+                      color: AppColors.textMuted,
+                    ),
                     BandChip(band: order.band),
                   ],
                 ),
               ),
               const Divider(height: AppSpacing.xl),
-              _detailRow(HugeIcons.strokeRoundedCalendar01, 'Ordered',
-                  formatDateTime(order.placedAt)),
+              _detailRow(
+                HugeIcons.strokeRoundedCalendar01,
+                'Ordered',
+                formatDateTime(order.placedAt),
+              ),
               const SizedBox(height: 10),
-              _detailRow(HugeIcons.strokeRoundedClock01, 'Placed',
-                  formatAgo(order.placedAt)),
+              _detailRow(
+                HugeIcons.strokeRoundedClock01,
+                'Placed',
+                formatAgo(order.placedAt),
+              ),
               const SizedBox(height: 10),
-              _detailRow(HugeIcons.strokeRoundedLeaf02, 'Freshness when bought',
-                  '${order.band.label} · ${order.band.meaning.toLowerCase()}'),
+              _detailRow(
+                HugeIcons.strokeRoundedLeaf02,
+                'Freshness when bought',
+                '${order.band.label} · ${order.band.meaning.toLowerCase()}',
+              ),
             ],
           ),
         ),
@@ -211,25 +249,35 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
                     child: Text(
                       '${order.vegetable} · ${formatKg(order.quantityKg)}',
                       style: const TextStyle(
-                          fontSize: 13.5, fontWeight: FontWeight.w600),
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
-                  Text('${formatKg(order.quantityKg)} × ${formatMoney(order.pricePerKg)}',
-                      style: const TextStyle(
-                          fontSize: 12, color: AppColors.textMuted)),
+                  Text(
+                    '${formatKg(order.quantityKg)} × ${formatMoney(order.pricePerKg)}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textMuted,
+                    ),
+                  ),
                 ],
               ),
               const Divider(height: AppSpacing.xl),
               _billRow('Item total', formatMoney(order.total)),
               if (order.saved > 0) ...[
                 const SizedBox(height: 8),
-                _billRow('Rescue saving vs market',
-                    '− ${formatMoney(order.saved)}',
-                    highlight: true),
+                _billRow(
+                  'Rescue saving vs market',
+                  '− ${formatMoney(order.saved)}',
+                  highlight: true,
+                ),
               ],
               const SizedBox(height: 8),
-              _billRow('Payment',
-                  '${_payLabel(order.paymentMethod)} · ${order.paymentStatus.label}'),
+              _billRow(
+                'Payment',
+                '${_payLabel(order.paymentMethod)} · ${order.paymentStatus.label}',
+              ),
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
                 child: Divider(height: 1),
@@ -244,7 +292,8 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
 
   Widget _delivery(Order order) {
     final mapsUri = Uri.parse(
-        'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent('${order.vendorName}, Coimbatore')}');
+      'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent('${order.vendorName}, Coimbatore')}',
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -254,29 +303,44 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _detailRow(HugeIcons.strokeRoundedWalking, 'Method',
-                  'Self-pickup from vendor'),
+              _detailRow(
+                HugeIcons.strokeRoundedWalking,
+                'Method',
+                'Self-pickup from vendor',
+              ),
               const SizedBox(height: 10),
-              _detailRow(HugeIcons.strokeRoundedClock01, 'Pickup slot',
-                  order.pickupSlot.isEmpty ? 'Anytime today' : order.pickupSlot),
+              _detailRow(
+                HugeIcons.strokeRoundedClock01,
+                'Pickup slot',
+                order.pickupSlot.isEmpty ? 'Anytime today' : order.pickupSlot,
+              ),
               const SizedBox(height: 10),
-              _detailRow(HugeIcons.strokeRoundedLocation01, 'Address',
-                  '${order.vendorName}, Coimbatore'),
+              _detailRow(
+                HugeIcons.strokeRoundedLocation01,
+                'Address',
+                '${order.vendorName}, Coimbatore',
+              ),
               const SizedBox(height: AppSpacing.md),
               Row(
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () => _open(mapsUri),
-                      icon: const HugeIcon(icon: HugeIcons.strokeRoundedDirections01, size: 18),
+                      icon: const HugeIcon(
+                        icon: HugeIcons.strokeRoundedDirections01,
+                        size: 18,
+                      ),
                       label: const Text('Directions'),
                     ),
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () => _open(Uri.parse('tel:+919000000000')),
-                      icon: const HugeIcon(icon: HugeIcons.strokeRoundedCall, size: 18),
+                      onPressed: _callVendor,
+                      icon: const HugeIcon(
+                        icon: HugeIcons.strokeRoundedCall,
+                        size: 18,
+                      ),
                       label: const Text('Call vendor'),
                     ),
                   ),
@@ -294,11 +358,15 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Did your items arrive correctly?',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+          const Text(
+            'Did your items arrive correctly?',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+          ),
           const SizedBox(height: 2),
-          const Text('Confirm the surplus matched what you rescued',
-              style: TextStyle(fontSize: 12.5, color: AppColors.textSecondary)),
+          const Text(
+            'Confirm the surplus matched what you rescued',
+            style: TextStyle(fontSize: 12.5, color: AppColors.textSecondary),
+          ),
           const SizedBox(height: AppSpacing.md),
           if (_arrivedOk == null)
             Row(
@@ -306,7 +374,10 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () => setState(() => _arrivedOk = true),
-                    icon: const HugeIcon(icon: HugeIcons.strokeRoundedCheckmarkCircle01, size: 18),
+                    icon: const HugeIcon(
+                      icon: HugeIcons.strokeRoundedCheckmarkCircle01,
+                      size: 18,
+                    ),
                     label: const Text('Yes, all good'),
                   ),
                 ),
@@ -315,9 +386,13 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
                   child: OutlinedButton.icon(
                     onPressed: () => setState(() => _arrivedOk = false),
                     style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.danger,
-                        side: const BorderSide(color: AppColors.border)),
-                    icon: const HugeIcon(icon: HugeIcons.strokeRoundedAlert01, size: 18),
+                      foregroundColor: AppColors.danger,
+                      side: const BorderSide(color: AppColors.border),
+                    ),
+                    icon: const HugeIcon(
+                      icon: HugeIcons.strokeRoundedAlert01,
+                      size: 18,
+                    ),
                     label: const Text('Report issue'),
                   ),
                 ),
@@ -327,7 +402,9 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md, vertical: 10),
+                horizontal: AppSpacing.md,
+                vertical: 10,
+              ),
               decoration: BoxDecoration(
                 color: _arrivedOk!
                     ? AppColors.primarySurface
@@ -337,7 +414,9 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
               child: Row(
                 children: [
                   HugeIcon(
-                    icon: _arrivedOk! ? HugeIcons.strokeRoundedCheckmarkBadge01 : HugeIcons.strokeRoundedCustomerSupport,
+                    icon: _arrivedOk!
+                        ? HugeIcons.strokeRoundedCheckmarkBadge01
+                        : HugeIcons.strokeRoundedCustomerSupport,
                     size: 18,
                     color: _arrivedOk! ? AppColors.primary : AppColors.warning,
                   ),
@@ -348,7 +427,9 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
                           ? 'Thanks for confirming — it counts toward the vendor\'s trust score.'
                           : 'We\'ve logged this. Our team will follow up on the mismatch.',
                       style: const TextStyle(
-                          fontSize: 12.5, fontWeight: FontWeight.w600),
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ],
@@ -364,14 +445,18 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
       return AppCard(
         child: Row(
           children: [
-            const Text('Your rating',
-                style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700)),
+            const Text(
+              'Your rating',
+              style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700),
+            ),
             const Spacer(),
             for (var i = 1; i <= 5; i++)
               HugeIcon(
                 icon: HugeIcons.strokeRoundedStar,
                 size: 18,
-                color: i <= order.rating! ? AppColors.warning : AppColors.border,
+                color: i <= order.rating!
+                    ? AppColors.warning
+                    : AppColors.border,
               ),
           ],
         ),
@@ -381,11 +466,15 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Rate your experience',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+          const Text(
+            'Rate your experience',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+          ),
           const SizedBox(height: 2),
-          const Text('Your feedback builds the vendor\'s trust score',
-              style: TextStyle(fontSize: 12.5, color: AppColors.textSecondary)),
+          const Text(
+            'Your feedback builds the vendor\'s trust score',
+            style: TextStyle(fontSize: 12.5, color: AppColors.textSecondary),
+          ),
           const SizedBox(height: AppSpacing.md),
           PrimaryButton(
             label: 'Rate this rescue',
@@ -402,45 +491,56 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
       children: [
         HugeIcon(icon: icon, size: 17, color: AppColors.textSecondary),
         const SizedBox(width: 10),
-        Text('$label  ',
-            style: const TextStyle(
-                fontSize: 12.5, color: AppColors.textMuted)),
+        Text(
+          '$label  ',
+          style: const TextStyle(fontSize: 12.5, color: AppColors.textMuted),
+        ),
         Expanded(
-          child: Text(value,
-              textAlign: TextAlign.right,
-              style: const TextStyle(
-                  fontSize: 13, fontWeight: FontWeight.w700)),
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+          ),
         ),
       ],
     );
   }
 
-  Widget _billRow(String label, String value,
-      {bool highlight = false, bool bold = false}) {
+  Widget _billRow(
+    String label,
+    String value, {
+    bool highlight = false,
+    bool bold = false,
+  }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label,
-            style: TextStyle(
-                fontSize: bold ? 15 : 13,
-                fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
-                color:
-                    highlight ? AppColors.primary : AppColors.textSecondary)),
-        Text(value,
-            style: TextStyle(
-                fontSize: bold ? 16 : 13.5,
-                fontWeight: FontWeight.w800,
-                color: highlight ? AppColors.primary : AppColors.textPrimary)),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: bold ? 15 : 13,
+            fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
+            color: highlight ? AppColors.primary : AppColors.textSecondary,
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: bold ? 16 : 13.5,
+            fontWeight: FontWeight.w800,
+            color: highlight ? AppColors.primary : AppColors.textPrimary,
+          ),
+        ),
       ],
     );
   }
 
   String _payLabel(String m) => switch (m.toUpperCase()) {
-        'UPI' => 'UPI',
-        'CARD' => 'Card',
-        'WALLET' => 'Revivo Wallet',
-        _ => 'Pay on pickup',
-      };
+    'UPI' => 'UPI',
+    'CARD' => 'Card',
+    'WALLET' => 'Revivo Wallet',
+    _ => 'Pay on pickup',
+  };
 
   String _shortId(String id) {
     final cleaned = id.replaceAll(RegExp(r'[^A-Za-z0-9]'), '');

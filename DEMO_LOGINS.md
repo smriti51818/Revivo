@@ -1,43 +1,40 @@
 # Demo Login Credentials
 
-Use these accounts to test the app quickly after redeploying the infrastructure.
+The app ships pointed at the live AWS backend (`useLiveApi: true`), so log in
+with the seeded demo accounts below. Login is instant — the `pre_signup`
+Lambda auto-confirms, so no email code is needed.
 
-## Create the accounts
+## Accounts
 
-After running `cdk deploy --all`, set a password and seed:
+| Email | Role | Display name | What to test |
+|-------|------|--------------|--------------|
+| `seller@revivo.demo` | Seller | **GreenLeaf Farms** | Dashboard inventory, waste-risk insight, incoming orders (accept / advance / reject), AI insights, publish a listing (Rekognition auto-identify) |
+| `hotel@revivo.demo` | Buyer (Hotel) | **Hotel Ashok** | Browse the marketplace, place an order, watch the Step Functions status advance, rate & review, Impact + Rescue network |
+
+Password for both: **`TestPass123`**
+
+## (Re)create the accounts + data
+
+After `cdk deploy --all` (or to reset the demo), from `backend/` with `.venv` active:
 
 ```bash
-cd /Users/smriti/Documents/Projects/Revivo/backend
-source .venv/bin/activate
-
-# Choose your own password (must be 8+ chars with uppercase + number)
-DEMO_PASSWORD="YourPassword123" python scripts/seed_users.py
+DEMO_PASSWORD='TestPass123' python scripts/seed_users.py   # 2 accounts, friendly names
+python scripts/seed_listings.py                            # 6-vendor marketplace
+python scripts/seed_rescues.py                             # rescue board + delivered history
+python scripts/seed_orders.py                              # order history + live incoming
 ```
 
-If it succeeds, you'll see:
-```
-✓ seller@revivo.demo       role=seller    password=YourPassword123
-✓ hotel@revivo.demo        role=buyer     password=YourPassword123
-✓ cook@revivo.demo         role=cook      password=YourPassword123
-✓ volunteer@revivo.demo    role=volunteer password=YourPassword123
-```
+## Golden path (for the demo)
 
-## Quick test flow
+1. **Seller (GreenLeaf Farms)** — open Insights: see the **waste-risk projection**
+   ("N kg reaches Rescue within 24h") and **Bedrock-generated recommendations**.
+2. **Buyer (Hotel Ashok)** — the marketplace shows 6 vendors with live freshness
+   bands + auto-decayed prices. Place an order on a Rescue-band deal.
+3. Back on **Seller** — the new order appears in Incoming; Accept → the
+   **Step Functions** lifecycle advances it (Preparing → Ready → Completed).
+4. **Buyer** — track the order, then rate it; see the **Impact** dashboard and
+   the **Rescue network** (surplus → NGO, with a live "why rescue this?" from
+   Bedrock).
 
-1. **Start app:** `flutter run`
-2. **At role select:** Pick a role
-3. **At login:** Enter the email + password you set above
-4. **Instant login** (no email code needed — pre_signup trigger auto-confirms)
-5. **Explore** — create/order, see live data
-
-## Accounts at a glance
-
-| Email | Role | What to test |
-|-------|------|---|
-| `seller@revivo.demo` | Seller | Publish listings, view orders, upload photos |
-| `hotel@revivo.demo` | Buyer (Hotel) | Browse market, place orders, watch status advance |
-| `cook@revivo.demo` | Cook/NGO | Accept rescues, pickup, mark delivered |
-
-## Reset if needed
-
-If something breaks, you can re-run the seed script with the same password to overwrite them with fresh accounts.
+> Note: the cook/NGO login was removed — the rescue lifecycle is shown read-only
+> in-app. Only the two accounts above exist.

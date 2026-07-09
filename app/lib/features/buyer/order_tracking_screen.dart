@@ -25,11 +25,11 @@ const _steps = <({String title, String sub})>[
 ];
 
 int _statusIndex(OrderStatus s) => switch (s) {
-      OrderStatus.confirmed => 0,
-      OrderStatus.preparing => 1,
-      OrderStatus.readyForPickup => 2,
-      OrderStatus.completed => 3,
-    };
+  OrderStatus.confirmed => 0,
+  OrderStatus.preparing => 1,
+  OrderStatus.readyForPickup => 2,
+  OrderStatus.completed => 3,
+};
 
 /// Live tracking for a single order: a status timeline that advances with the
 /// Step Functions lifecycle, plus pickup + bill details.
@@ -81,32 +81,87 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
     }
   }
 
+  void _callVendor() {
+    // In a real app, we'd use the vendor's actual phone number
+    final uri = Uri.parse('tel:+919876543210');
+    _open(uri);
+  }
+
   @override
   Widget build(BuildContext context) {
     final order = _order;
     final current = _statusIndex(order.status);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Track order')),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(AppSpacing.screen),
-          children: [
-            _headline(order),
-            const SizedBox(height: AppSpacing.xl),
-            _timeline(current),
-            if (order.status == OrderStatus.completed) ...[
-              const SizedBox(height: AppSpacing.xl),
-              ImpactReceipt(order: order),
-              const SizedBox(height: AppSpacing.lg),
-              _ratingSection(order),
+      backgroundColor: const Color(0xFFF7F9FB),
+      body: Column(
+        children: [
+          _buildGreenHeader(context),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(AppSpacing.screen),
+              children: [
+                _headline(order),
+                const SizedBox(height: AppSpacing.xl),
+                _timeline(current),
+                if (order.status == OrderStatus.completed) ...[
+                  const SizedBox(height: AppSpacing.xl),
+                  ImpactReceipt(order: order),
+                  const SizedBox(height: AppSpacing.lg),
+                  _ratingSection(order),
+                ],
+                const SizedBox(height: AppSpacing.xl),
+                _pickupCard(order),
+                const SizedBox(height: AppSpacing.lg),
+                _billCard(order),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGreenHeader(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.only(
+        top: MediaQuery.of(context).padding.top + 16,
+        bottom: 24,
+        left: AppSpacing.screen,
+        right: AppSpacing.screen,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const HugeIcon(
+                  icon: HugeIcons.strokeRoundedArrowLeft01,
+                  color: Colors.white,
+                  size: 24,
+                ),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Track order',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
             ],
-            const SizedBox(height: AppSpacing.xl),
-            _pickupCard(order),
-            const SizedBox(height: AppSpacing.lg),
-            _billCard(order),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -116,27 +171,19 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Zomato style small map
+        // Stylised pickup map (schematic grid — no external tiles/key needed).
         Container(
           height: 160,
           width: double.infinity,
           decoration: BoxDecoration(
             color: AppColors.surfaceAlt,
             borderRadius: BorderRadius.circular(AppRadius.lg),
-            image: const DecorationImage(
-              image: NetworkImage('https://maps.googleapis.com/maps/api/staticmap?center=Coimbatore&zoom=14&size=600x300&maptype=roadmap&markers=color:green%7Clabel:V%7C11.0168,76.9558&key=YOUR_API_KEY'),
-              fit: BoxFit.cover,
-            ),
             border: Border.all(color: AppColors.border),
           ),
+          clipBehavior: Clip.antiAlias,
           child: Stack(
             children: [
-              // Fallback placeholder map (grid) if image fails or no key
-              Positioned.fill(
-                child: CustomPaint(
-                  painter: _MapGridPainter(),
-                ),
-              ),
+              Positioned.fill(child: CustomPaint(painter: _MapGridPainter())),
               Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -154,19 +201,36 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
                           ),
                         ],
                       ),
-                      child: const HugeIcon(icon: HugeIcons.strokeRoundedDeliveryTruck01, color: Colors.white, size: 28),
+                      child: const HugeIcon(
+                        icon: HugeIcons.strokeRoundedDeliveryTruck01,
+                        color: Colors.white,
+                        size: 28,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(20),
-                        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
+                        boxShadow: const [
+                          BoxShadow(color: Colors.black12, blurRadius: 4),
+                        ],
                       ),
                       child: Text(
-                        done ? 'Delivered' : 'On the way',
-                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                        switch (order.status) {
+                          OrderStatus.confirmed => 'Order confirmed',
+                          OrderStatus.preparing => 'Being prepared',
+                          OrderStatus.readyForPickup => 'Ready for pickup',
+                          OrderStatus.completed => 'Picked up',
+                        },
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
                   ],
@@ -186,7 +250,9 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
                 borderRadius: BorderRadius.circular(AppRadius.lg),
               ),
               child: HugeIcon(
-                icon: done ? HugeIcons.strokeRoundedCheckmarkCircle02 : HugeIcons.strokeRoundedDeliveryTruck02,
+                icon: done
+                    ? HugeIcons.strokeRoundedCheckmarkCircle02
+                    : HugeIcons.strokeRoundedDeliveryTruck02,
                 color: done ? AppColors.primary : AppColors.info,
                 size: 24,
               ),
@@ -196,13 +262,22 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('${order.vegetable} · ${formatKg(order.quantityKg)}',
-                      style: const TextStyle(
-                          fontSize: 17, fontWeight: FontWeight.w800)),
+                  Text(
+                    '${order.vegetable} · ${formatKg(order.quantityKg)}',
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
                   const SizedBox(height: 2),
-                  Text(order.vendorName,
-                      style: const TextStyle(
-                          fontSize: 13, color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
+                  Text(
+                    order.vendorName,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -223,8 +298,8 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
               state: i < current
                   ? _StepState.done
                   : i == current
-                      ? _StepState.active
-                      : _StepState.todo,
+                  ? _StepState.active
+                  : _StepState.todo,
               isLast: i == _steps.length - 1,
             ),
         ],
@@ -240,15 +315,20 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
           children: [
             Row(
               children: [
-                const Text('Your rating',
-                    style:
-                        TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700)),
+                const Text(
+                  'Your rating',
+                  style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700),
+                ),
                 const Spacer(),
                 for (var i = 1; i <= 5; i++)
                   HugeIcon(
-                    icon: i <= order.rating! ? HugeIcons.strokeRoundedStar : HugeIcons.strokeRoundedStar,
+                    icon: i <= order.rating!
+                        ? HugeIcons.strokeRoundedStar
+                        : HugeIcons.strokeRoundedStar,
                     size: 18,
-                    color: i <= order.rating! ? AppColors.warning : AppColors.border,
+                    color: i <= order.rating!
+                        ? AppColors.warning
+                        : AppColors.border,
                   ),
               ],
             ),
@@ -261,16 +341,21 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
                   for (final t in order.ratingTags)
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.surfaceAlt,
                         borderRadius: BorderRadius.circular(AppRadius.pill),
                       ),
-                      child: Text(t,
-                          style: const TextStyle(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textSecondary)),
+                      child: Text(
+                        t,
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
                     ),
                 ],
               ),
@@ -283,11 +368,15 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('How was this rescue?',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+          const Text(
+            'How was this rescue?',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+          ),
           const SizedBox(height: 2),
-          const Text('Your feedback builds the vendor\'s trust score',
-              style: TextStyle(fontSize: 12.5, color: AppColors.textSecondary)),
+          const Text(
+            'Your feedback builds the vendor\'s trust score',
+            style: TextStyle(fontSize: 12.5, color: AppColors.textSecondary),
+          ),
           const SizedBox(height: AppSpacing.md),
           PrimaryButton(
             label: 'Rate this rescue',
@@ -300,7 +389,8 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
 
   Widget _pickupCard(Order order) {
     final mapsUri = Uri.parse(
-        'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent('${order.vendorName}, Coimbatore')}');
+      'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent('${order.vendorName}, Coimbatore')}',
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -312,28 +402,40 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
             children: [
               Row(
                 children: [
-                  const HugeIcon(icon: HugeIcons.strokeRoundedClock01,
-                      size: 18, color: AppColors.textSecondary),
+                  const HugeIcon(
+                    icon: HugeIcons.strokeRoundedClock01,
+                    size: 18,
+                    color: AppColors.textSecondary,
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     order.pickupSlot.isEmpty
                         ? 'Anytime today'
                         : 'Slot · ${order.pickupSlot}',
                     style: const TextStyle(
-                        fontSize: 13.5, fontWeight: FontWeight.w700),
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ],
               ),
               const SizedBox(height: 10),
               Row(
                 children: [
-                  const HugeIcon(icon: HugeIcons.strokeRoundedLocation01,
-                      size: 18, color: AppColors.textSecondary),
+                  const HugeIcon(
+                    icon: HugeIcons.strokeRoundedLocation01,
+                    size: 18,
+                    color: AppColors.textSecondary,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text('${order.vendorName} · Coimbatore',
-                        style: const TextStyle(
-                            fontSize: 13, color: AppColors.textSecondary)),
+                    child: Text(
+                      '${order.vendorName} · Coimbatore',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -342,30 +444,40 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md, vertical: 10),
+                    horizontal: AppSpacing.md,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.primarySurface,
                     borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   child: Row(
                     children: [
-                      const HugeIcon(icon: HugeIcons.strokeRoundedKey01,
-                          size: 16, color: AppColors.primaryDark),
+                      const HugeIcon(
+                        icon: HugeIcons.strokeRoundedKey01,
+                        size: 16,
+                        color: AppColors.primaryDark,
+                      ),
                       const SizedBox(width: 8),
                       const Expanded(
-                        child: Text('Show this code at pickup',
-                            style: TextStyle(
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.primaryDark)),
-                      ),
-                      Text(order.handoverCode,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 3,
+                        child: Text(
+                          'Show this code at pickup',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
                             color: AppColors.primaryDark,
-                          )),
+                          ),
+                        ),
+                      ),
+                      Text(
+                        order.handoverCode,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 3,
+                          color: AppColors.primaryDark,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -376,15 +488,21 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () => _open(mapsUri),
-                      icon: const HugeIcon(icon: HugeIcons.strokeRoundedDirections01, size: 18),
+                      icon: const HugeIcon(
+                        icon: HugeIcons.strokeRoundedDirections01,
+                        size: 18,
+                      ),
                       label: const Text('Directions'),
                     ),
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () => _open(Uri.parse('tel:+919000000000')),
-                      icon: const HugeIcon(icon: HugeIcons.strokeRoundedCall, size: 18),
+                      onPressed: _callVendor,
+                      icon: const HugeIcon(
+                        icon: HugeIcons.strokeRoundedCall,
+                        size: 18,
+                      ),
                       label: const Text('Call vendor'),
                     ),
                   ),
@@ -406,12 +524,17 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
         AppCard(
           child: Column(
             children: [
-              _row('${formatKg(order.quantityKg)} × ${formatMoney(order.pricePerKg)}/kg',
-                  formatMoney(order.total)),
+              _row(
+                '${formatKg(order.quantityKg)} × ${formatMoney(order.pricePerKg)}/kg',
+                formatMoney(order.total),
+              ),
               if (order.saved > 0) ...[
                 const SizedBox(height: 8),
-                _row('Saved vs market', '− ${formatMoney(order.saved)}',
-                    highlight: true),
+                _row(
+                  'Saved vs market',
+                  '− ${formatMoney(order.saved)}',
+                  highlight: true,
+                ),
               ],
               const SizedBox(height: 8),
               _row('Payment', _payLabel(order.paymentMethod)),
@@ -423,25 +546,28 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
   }
 
   String _payLabel(String m) => switch (m) {
-        'UPI' => 'UPI',
-        'CARD' => 'Card',
-        'WALLET' => 'Revivo Wallet',
-        _ => 'Pay on pickup',
-      };
+    'UPI' => 'UPI',
+    'CARD' => 'Card',
+    'WALLET' => 'Revivo Wallet',
+    _ => 'Pay on pickup',
+  };
 
   Widget _row(String label, String value, {bool highlight = false}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label,
-            style: const TextStyle(
-                fontSize: 13, color: AppColors.textSecondary)),
-        Text(value,
-            style: TextStyle(
-              fontSize: 13.5,
-              fontWeight: FontWeight.w800,
-              color: highlight ? AppColors.primary : AppColors.textPrimary,
-            )),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 13.5,
+            fontWeight: FontWeight.w800,
+            color: highlight ? AppColors.primary : AppColors.textPrimary,
+          ),
+        ),
       ],
     );
   }
@@ -483,19 +609,23 @@ class _TimelineRow extends StatelessWidget {
                   border: Border.all(color: color, width: 2),
                 ),
                 child: state == _StepState.done
-                    ? const HugeIcon(icon: HugeIcons.strokeRoundedTick01, size: 14, color: Colors.white)
+                    ? const HugeIcon(
+                        icon: HugeIcons.strokeRoundedTick01,
+                        size: 14,
+                        color: Colors.white,
+                      )
                     : state == _StepState.active
-                        ? Center(
-                            child: Container(
-                              width: 8,
-                              height: 8,
-                              decoration: const BoxDecoration(
-                                color: AppColors.primary,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                          )
-                        : null,
+                    ? Center(
+                        child: Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            color: AppColors.primary,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      )
+                    : null,
               ),
               if (!isLast)
                 Expanded(
@@ -529,7 +659,9 @@ class _TimelineRow extends StatelessWidget {
                   Text(
                     sub,
                     style: const TextStyle(
-                        fontSize: 12, color: AppColors.textMuted),
+                      fontSize: 12,
+                      color: AppColors.textMuted,
+                    ),
                   ),
                 ],
               ),

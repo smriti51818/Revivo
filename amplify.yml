@@ -1,0 +1,29 @@
+# AWS Amplify Hosting build spec for the Revivo Flutter web app.
+#
+# The Flutter project lives in app/, so this is a monorepo config with
+# appRoot: app. Amplify's build image has no Flutter SDK, so preBuild clones
+# the stable channel and puts it on PATH. Output is app/build/web.
+version: 1
+applications:
+  - appRoot: app
+    frontend:
+      phases:
+        preBuild:
+          commands:
+            - git clone https://github.com/flutter/flutter.git -b stable --depth 1 $HOME/flutter
+            - export PATH="$PATH:$HOME/flutter/bin"
+            - flutter --version
+            - flutter config --enable-web
+            - flutter pub get
+        build:
+          commands:
+            - export PATH="$PATH:$HOME/flutter/bin"
+            - flutter build web --release
+      artifacts:
+        baseDirectory: build/web
+        files:
+          - '**/*'
+      cache:
+        paths:
+          - $HOME/flutter/**/*
+          - .dart_tool/**/*

@@ -24,15 +24,15 @@ class UpdateStockScreen extends ConsumerStatefulWidget {
 class _UpdateStockScreenState extends ConsumerState<UpdateStockScreen> {
   late final TextEditingController _qty =
       TextEditingController(text: _fmt(widget.listing.quantityKg));
-  late final TextEditingController _description =
-      TextEditingController(text: 'Fresh, firm and juicy tomatoes. Handpicked and sorted for best quality. Ideal for cooking, salads and sauces.');
+  late final TextEditingController _description = TextEditingController();
 
   String _unitType = 'Kilogram (kg)';
   String _packagingType = 'Loose/Unpacked';
-  StorageCondition _storageCondition = StorageCondition.refrigerated;
+  // Preloaded from the actual listing so the form reflects real stored state.
+  late StorageCondition _storageCondition = widget.listing.storage;
   String _qualityFreshness = 'Excellent (90-100%)';
   String _harvestedTime = 'Just now';
-  String _organic = 'Yes';
+  late String _organic = widget.listing.organic ? 'Yes' : 'No';
   bool _stockVisibility = true;
 
   static String _fmt(double v) =>
@@ -59,10 +59,14 @@ class _UpdateStockScreenState extends ConsumerState<UpdateStockScreen> {
   ];
 
   Widget _fallbackImage() {
-    return Image.asset(
-      'assets/images/tomato.png',
-      fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) => Container(color: AppColors.primarySurface),
+    return Container(
+      color: AppColors.primarySurface,
+      alignment: Alignment.center,
+      child: HugeIcon(
+        icon: HugeIcons.strokeRoundedLeaf02,
+        size: 32,
+        color: AppColors.primary.withValues(alpha: 0.55),
+      ),
     );
   }
 
@@ -373,7 +377,11 @@ class _UpdateStockScreenState extends ConsumerState<UpdateStockScreen> {
                       style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
                       decoration: const InputDecoration(
                         contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                        prefixIcon: HugeIcon(icon: HugeIcons.strokeRoundedNote01, size: 12, color: AppColors.textSecondary),
+                        prefixIcon: Padding(
+                          padding: EdgeInsets.only(left: 8, right: 6),
+                          child: HugeIcon(icon: HugeIcons.strokeRoundedNote01, size: 14, color: AppColors.textSecondary),
+                        ),
+                        prefixIconConstraints: BoxConstraints(minWidth: 32, minHeight: 32),
                         isDense: true,
                       ),
                       items: ['Kilogram (kg)', 'Gram (g)'].map((u) => DropdownMenuItem(value: u, child: Text(u, style: const TextStyle(fontSize: 11)))).toList(),
@@ -411,7 +419,11 @@ class _UpdateStockScreenState extends ConsumerState<UpdateStockScreen> {
                       style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
                       decoration: const InputDecoration(
                         contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                        prefixIcon: HugeIcon(icon: HugeIcons.strokeRoundedPackage, size: 12, color: AppColors.textSecondary),
+                        prefixIcon: Padding(
+                          padding: EdgeInsets.only(left: 8, right: 6),
+                          child: HugeIcon(icon: HugeIcons.strokeRoundedPackage, size: 14, color: AppColors.textSecondary),
+                        ),
+                        prefixIconConstraints: BoxConstraints(minWidth: 32, minHeight: 32),
                         isDense: true,
                       ),
                       items: ['Loose/Unpacked', 'Crates', 'Bags'].map((p) => DropdownMenuItem(value: p, child: Text(p, style: const TextStyle(fontSize: 11)))).toList(),
@@ -433,7 +445,11 @@ class _UpdateStockScreenState extends ConsumerState<UpdateStockScreen> {
                       style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
                       decoration: const InputDecoration(
                         contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                        prefixIcon: HugeIcon(icon: HugeIcons.strokeRoundedTemperature, size: 12, color: AppColors.textSecondary),
+                        prefixIcon: Padding(
+                          padding: EdgeInsets.only(left: 8, right: 6),
+                          child: HugeIcon(icon: HugeIcons.strokeRoundedTemperature, size: 14, color: AppColors.textSecondary),
+                        ),
+                        prefixIconConstraints: BoxConstraints(minWidth: 32, minHeight: 32),
                         isDense: true,
                       ),
                       items: StorageCondition.values.map((s) => DropdownMenuItem(value: s, child: Text(s.label, style: const TextStyle(fontSize: 10.5)))).toList(),
@@ -459,7 +475,11 @@ class _UpdateStockScreenState extends ConsumerState<UpdateStockScreen> {
                       style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
                       decoration: const InputDecoration(
                         contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                        prefixIcon: HugeIcon(icon: HugeIcons.strokeRoundedChartLineData01, size: 12, color: AppColors.textSecondary),
+                        prefixIcon: Padding(
+                          padding: EdgeInsets.only(left: 8, right: 6),
+                          child: HugeIcon(icon: HugeIcons.strokeRoundedChartLineData01, size: 14, color: AppColors.textSecondary),
+                        ),
+                        prefixIconConstraints: BoxConstraints(minWidth: 32, minHeight: 32),
                         isDense: true,
                       ),
                       items: ['Excellent (90-100%)', 'Good (70-89%)', 'Average (50-69%)', 'Fair (30-49%)'].map((q) => DropdownMenuItem(value: q, child: Text(q, style: const TextStyle(fontSize: 11)))).toList(),
@@ -481,7 +501,11 @@ class _UpdateStockScreenState extends ConsumerState<UpdateStockScreen> {
                       style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
                       decoration: const InputDecoration(
                         contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                        prefixIcon: HugeIcon(icon: HugeIcons.strokeRoundedCalendar01, size: 12, color: AppColors.textSecondary),
+                        prefixIcon: Padding(
+                          padding: EdgeInsets.only(left: 8, right: 6),
+                          child: HugeIcon(icon: HugeIcons.strokeRoundedCalendar01, size: 14, color: AppColors.textSecondary),
+                        ),
+                        prefixIconConstraints: BoxConstraints(minWidth: 32, minHeight: 32),
                         isDense: true,
                       ),
                       items: ['Just now', '1 day ago', '2-3 days ago', '3-5 days ago', 'A week ago'].map((h) => DropdownMenuItem(value: h, child: Text(h, style: const TextStyle(fontSize: 11)))).toList(),
@@ -507,7 +531,11 @@ class _UpdateStockScreenState extends ConsumerState<UpdateStockScreen> {
                       style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
                       decoration: const InputDecoration(
                         contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                        prefixIcon: HugeIcon(icon: HugeIcons.strokeRoundedLeaf02, size: 12, color: AppColors.textSecondary),
+                        prefixIcon: Padding(
+                          padding: EdgeInsets.only(left: 8, right: 6),
+                          child: HugeIcon(icon: HugeIcons.strokeRoundedLeaf02, size: 14, color: AppColors.textSecondary),
+                        ),
+                        prefixIconConstraints: BoxConstraints(minWidth: 32, minHeight: 32),
                         isDense: true,
                       ),
                       items: ['Yes', 'No'].map((o) => DropdownMenuItem(value: o, child: Text(o, style: const TextStyle(fontSize: 11)))).toList(),

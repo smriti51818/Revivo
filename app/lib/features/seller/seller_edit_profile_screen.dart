@@ -1,12 +1,65 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hugeicons/hugeicons.dart';
-import '../../core/theme/app_colors.dart';
 
-class SellerEditProfileScreen extends StatelessWidget {
+import '../../core/session/session_controller.dart';
+import '../../core/theme/app_colors.dart';
+import '../shared/application/profile_providers.dart';
+
+/// Edit the vendor's display name and contact. Name/email come from the Cognito
+/// session; the editable name + phone persist to [profileDetailsProvider]. Email
+/// is read-only (changing a Cognito email is out of pilot scope).
+class SellerEditProfileScreen extends ConsumerStatefulWidget {
   const SellerEditProfileScreen({super.key});
 
   @override
+  ConsumerState<SellerEditProfileScreen> createState() =>
+      _SellerEditProfileScreenState();
+}
+
+class _SellerEditProfileScreenState
+    extends ConsumerState<SellerEditProfileScreen> {
+  late final TextEditingController _name;
+  late final TextEditingController _phone;
+
+  @override
+  void initState() {
+    super.initState();
+    final details = ref.read(profileDetailsProvider);
+    final session = ref.read(sessionProvider);
+    _name = TextEditingController(text: session?.name ?? details.name);
+    _phone = TextEditingController(text: details.phone);
+  }
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _phone.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    final current = ref.read(profileDetailsProvider);
+    ref.read(profileDetailsProvider.notifier).update(
+          current.copyWith(
+            name: _name.text.trim(),
+            phone: _phone.text.trim(),
+          ),
+        );
+    FocusScope.of(context).unfocus();
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(const SnackBar(content: Text('Profile updated')));
+    Navigator.pop(context);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final session = ref.watch(sessionProvider);
+    final email = session?.email ?? '';
+    final initial =
+        _name.text.isNotEmpty ? _name.text[0].toUpperCase() : '?';
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Edit Profile'),
@@ -24,19 +77,17 @@ class SellerEditProfileScreen extends StatelessWidget {
                   Container(
                     width: 100,
                     height: 100,
+                    alignment: Alignment.center,
                     decoration: const BoxDecoration(
                       shape: BoxShape.circle,
                       color: Color(0xFFE8F5E9),
                     ),
-                    child: ClipOval(
-                      child: Image.asset(
-                        'assets/images/farmer_avatar.png',
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return const Center(
-                            child: HugeIcon(icon: HugeIcons.strokeRoundedUserCircle, size: 50, color: Color(0xFF81C784)),
-                          );
-                        },
+                    child: Text(
+                      initial,
+                      style: const TextStyle(
+                        fontSize: 40,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF2E7D32),
                       ),
                     ),
                   ),
@@ -61,16 +112,15 @@ class SellerEditProfileScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 32),
-            _buildTextField('Business Name', 'Fresh Harvest Farms'),
+            _buildTextField('Vendor Name', _name),
             const SizedBox(height: 16),
-            _buildTextField('Owner Name', 'Ramesh Kumar'),
+            _buildReadOnly('Email', email.isEmpty ? '—' : email),
             const SizedBox(height: 16),
-            _buildTextField('Email', 'ramesh@freshharvest.in'),
-            const SizedBox(height: 16),
-            _buildTextField('Phone', '+91 98765 43210'),
+            _buildTextField('Phone', _phone,
+                keyboardType: TextInputType.phone, hint: 'Add a phone number'),
             const SizedBox(height: 32),
             ElevatedButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: _save,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF27AE60),
                 foregroundColor: Colors.white,
@@ -84,7 +134,8 @@ class SellerEditProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTextField(String label, String placeholder) {
+  Widget _buildTextField(String label, TextEditingController controller,
+      {TextInputType? keyboardType, String? hint}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -98,8 +149,10 @@ class SellerEditProfileScreen extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         TextField(
+          controller: controller,
+          keyboardType: keyboardType,
           decoration: InputDecoration(
-            hintText: placeholder,
+            hintText: hint,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: const BorderSide(color: AppColors.border),
@@ -108,6 +161,39 @@ class SellerEditProfileScreen extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
               borderSide: const BorderSide(color: AppColors.border),
             ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildReadOnly(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceAlt,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Text(
+            value,
+            style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary),
           ),
         ),
       ],

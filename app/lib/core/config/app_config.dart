@@ -30,6 +30,8 @@ class AppConfig {
     userPoolId: 'ap-south-1_4GFtB35OS',
     userPoolClientId: '4hi9r9pue4h1qpeuc9enp60553',
     apiBaseUrl: 'https://j5aq1g1vbd.execute-api.ap-south-1.amazonaws.com/prod',
+    // Live for the submission: real Cognito login + Bedrock/Rekognition/Step
+    // Functions all fire. Flip to false for a fully offline demo on mock data.
     useLiveApi: true,
   );
 }

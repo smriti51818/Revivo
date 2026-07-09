@@ -1,13 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hugeicons/hugeicons.dart';
+
+import '../../core/discovery/vendor_directory.dart';
+import '../../core/session/session_controller.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_card.dart';
 
-class SellerReviewsScreen extends StatelessWidget {
+/// Seller reputation — the aggregate rating/count and recent reviews come from
+/// the shared vendor directory (deterministic per vendor name), the same source
+/// the buyer storefront uses, so both sides show the same numbers. Swapped for a
+/// real reviews query once the backend aggregates them.
+class SellerReviewsScreen extends ConsumerWidget {
   const SellerReviewsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final name = ref.watch(sessionProvider)?.name ?? 'Vendor';
+    final info = vendorInfo(name);
+    final reviews = vendorReviews(name);
+    final filled = info.rating.round();
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Reviews'),
@@ -24,9 +37,9 @@ class SellerReviewsScreen extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
-                  const Text(
-                    '4.8',
-                    style: TextStyle(
+                  Text(
+                    info.rating.toStringAsFixed(1),
+                    style: const TextStyle(
                       fontSize: 36,
                       fontWeight: FontWeight.w800,
                       color: AppColors.textPrimary,
@@ -43,15 +56,38 @@ class SellerReviewsScreen extends StatelessWidget {
                             (index) => HugeIcon(
                               icon: HugeIcons.strokeRoundedStar,
                               size: 16,
-                              color: index < 4 ? AppColors.warning : AppColors.border,
+                              color: index < filled
+                                  ? AppColors.warning
+                                  : AppColors.border,
                             ),
                           ),
                         ),
                         const SizedBox(height: 4),
-                        const Text(
-                          'Based on 128 reviews',
-                          style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                        Text(
+                          'Based on ${info.reviews} reviews',
+                          style: const TextStyle(
+                              fontSize: 13, color: AppColors.textSecondary),
                         ),
+                        if (info.trusted) ...[
+                          const SizedBox(height: 6),
+                          Row(
+                            children: const [
+                              HugeIcon(
+                                icon: HugeIcons.strokeRoundedCheckmarkBadge01,
+                                size: 14,
+                                color: Color(0xFF27AE60),
+                              ),
+                              SizedBox(width: 4),
+                              Text(
+                                'Trusted Vendor',
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF27AE60)),
+                              ),
+                            ],
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -60,7 +96,7 @@ class SellerReviewsScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             const Text(
-              'Recent Reviews from Hotel Owners',
+              'Recent Reviews from Buyers',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
@@ -68,42 +104,17 @@ class SellerReviewsScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            _buildReviewCard(
-              hotelName: 'Taj West End',
-              ownerName: 'Vikram Singh',
-              rating: 5,
-              date: '2 days ago',
-              review: 'Excellent quality tomatoes! Fresh Harvest Farms never disappoints. The grade A produce is perfect for our salads.',
-            ),
-            const SizedBox(height: 16),
-            _buildReviewCard(
-              hotelName: 'ITC Gardenia',
-              ownerName: 'Priya Sharma',
-              rating: 4,
-              date: '1 week ago',
-              review: 'Good quality and prompt delivery. We have been sourcing onions and potatoes from Ramesh for a few months now.',
-            ),
-            const SizedBox(height: 16),
-            _buildReviewCard(
-              hotelName: 'The Leela Palace',
-              ownerName: 'Chef Rahul',
-              rating: 5,
-              date: '2 weeks ago',
-              review: 'The best organic carrots we have received this season. Highly recommend this seller for premium quality produce.',
-            ),
+            for (final r in reviews) ...[
+              _buildReviewCard(r),
+              const SizedBox(height: 16),
+            ],
           ],
         ),
       ),
     );
   }
 
-  Widget _buildReviewCard({
-    required String hotelName,
-    required String ownerName,
-    required int rating,
-    required String date,
-    required String review,
-  }) {
+  Widget _buildReviewCard(VendorReview r) {
     return AppCard(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -120,7 +131,7 @@ class SellerReviewsScreen extends StatelessWidget {
                 ),
                 child: Center(
                   child: Text(
-                    hotelName[0],
+                    r.author[0],
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
@@ -131,30 +142,17 @@ class SellerReviewsScreen extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      hotelName,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      ownerName,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  r.author,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
               ),
               Text(
-                date,
+                r.ago,
                 style: const TextStyle(
                   fontSize: 11,
                   color: AppColors.textMuted,
@@ -169,13 +167,13 @@ class SellerReviewsScreen extends StatelessWidget {
               (index) => HugeIcon(
                 icon: HugeIcons.strokeRoundedStar,
                 size: 14,
-                color: index < rating ? AppColors.warning : AppColors.border,
+                color: index < r.stars ? AppColors.warning : AppColors.border,
               ),
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            review,
+            r.text,
             style: const TextStyle(
               fontSize: 13,
               height: 1.4,

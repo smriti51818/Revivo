@@ -22,8 +22,8 @@ class ProfileScreen extends ConsumerWidget {
     final role = session?.role ?? UserRole.vendor;
     final name = session?.name ?? details.name;
     final email = session?.email ?? '';
-    final stats = ref.watch(profileStatsProvider).valueOrNull ??
-        ProfileStats.empty;
+    final stats =
+        ref.watch(profileStatsProvider).valueOrNull ?? ProfileStats.empty;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -36,10 +36,11 @@ class ProfileScreen extends ConsumerWidget {
               _Header(name: name, email: email, role: role),
               Padding(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.screen, vertical: AppSpacing.md),
+                  horizontal: AppSpacing.screen,
+                  vertical: AppSpacing.md,
+                ),
                 child: Column(
                   children: [
-                    const SizedBox(height: AppSpacing.sm),
                     _StatsRow(role: role, stats: stats),
                     const SizedBox(height: AppSpacing.md),
                     _MenuCard(role: role),
@@ -51,7 +52,9 @@ class ProfileScreen extends ConsumerWidget {
                     Text(
                       'Revivo · Time-Aware Food Recovery',
                       style: TextStyle(
-                          fontSize: 11, color: AppColors.textMuted),
+                        fontSize: 11,
+                        color: AppColors.textMuted,
+                      ),
                     ),
                     const SizedBox(height: AppSpacing.lg),
                   ],
@@ -68,26 +71,25 @@ class ProfileScreen extends ConsumerWidget {
 // ── Header with dark green banner + identity card ──────────────────────────
 
 class _Header extends StatelessWidget {
-  const _Header(
-      {required this.name, required this.email, required this.role});
+  const _Header({required this.name, required this.email, required this.role});
   final String name;
   final String email;
   final UserRole role;
 
   String get _roleLabel => switch (role) {
-        UserRole.vendor => 'Surplus Vendor',
-        UserRole.buyer => 'Hotel Kitchen',
-      };
+    UserRole.vendor => 'Surplus Vendor',
+    UserRole.buyer => 'Hotel Kitchen',
+  };
 
   String get _verifiedLabel => switch (role) {
-        UserRole.vendor => 'Verified Seller',
-        UserRole.buyer => 'Verified Buyer',
-      };
+    UserRole.vendor => 'Verified Seller',
+    UserRole.buyer => 'Verified Buyer',
+  };
 
   dynamic get _roleIcon => switch (role) {
-        UserRole.vendor => HugeIcons.strokeRoundedStore02,
-        UserRole.buyer => HugeIcons.strokeRoundedRestaurant02,
-      };
+    UserRole.vendor => HugeIcons.strokeRoundedStore02,
+    UserRole.buyer => HugeIcons.strokeRoundedRestaurant02,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -99,17 +101,16 @@ class _Header extends StatelessWidget {
           height: 160,
           width: double.infinity,
           decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF1B5E20), AppColors.primaryDark],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+            color: AppColors.primary,
+            borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
           ),
           child: SafeArea(
             bottom: false,
             child: Padding(
               padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.screen, vertical: 14),
+                horizontal: AppSpacing.screen,
+                vertical: 14,
+              ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -158,9 +159,7 @@ class _Header extends StatelessWidget {
                       ),
                       child: Center(
                         child: Text(
-                          name.isNotEmpty
-                              ? name[0].toUpperCase()
-                              : '?',
+                          name.isNotEmpty ? name[0].toUpperCase() : '?',
                           style: const TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.w800,
@@ -178,8 +177,7 @@ class _Header extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: AppColors.primary,
                           shape: BoxShape.circle,
-                          border:
-                              Border.all(color: Colors.white, width: 2),
+                          border: Border.all(color: Colors.white, width: 2),
                         ),
                         child: HugeIcon(
                           icon: _roleIcon,
@@ -212,7 +210,9 @@ class _Header extends StatelessWidget {
                           const SizedBox(width: 6),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 7, vertical: 2),
+                              horizontal: 7,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
                               color: AppColors.primarySurface,
                               borderRadius: BorderRadius.circular(6),
@@ -221,8 +221,8 @@ class _Header extends StatelessWidget {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 const HugeIcon(
-                                  icon: HugeIcons
-                                      .strokeRoundedCheckmarkCircle02,
+                                  icon:
+                                      HugeIcons.strokeRoundedCheckmarkCircle02,
                                   size: 11,
                                   color: AppColors.primaryDark,
                                 ),
@@ -256,8 +256,9 @@ class _Header extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                              fontSize: 11.5,
-                              color: AppColors.textMuted),
+                            fontSize: 11.5,
+                            color: AppColors.textMuted,
+                          ),
                         ),
                       ],
                     ],
@@ -274,7 +275,7 @@ class _Header extends StatelessWidget {
         ),
 
         // Spacer so Stack has room for the card
-        const SizedBox(height: 272, width: double.infinity),
+        const SizedBox(height: 210, width: double.infinity),
       ],
     );
   }
@@ -284,8 +285,10 @@ class _Header extends StatelessWidget {
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border:
-            Border.all(color: Colors.white.withValues(alpha: 0.3), width: 1),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.3),
+          width: 1,
+        ),
       ),
       child: HugeIcon(icon: icon, size: 18, color: Colors.white),
     );
@@ -312,55 +315,54 @@ class _StatsRow extends StatelessWidget {
     );
   }
 
-  List<_StatTile> _tilesFor(UserRole role, ProfileStats s) =>
-      switch (role) {
-        UserRole.vendor => [
-            _StatTile(
-              icon: HugeIcons.strokeRoundedStore02,
-              iconBg: AppColors.primarySurface,
-              iconColor: AppColors.primaryDark,
-              label: 'Listings',
-              value: '${s.vendorOrders}',
-            ),
-            _StatTile(
-              icon: HugeIcons.strokeRoundedPackageOpen,
-              iconBg: const Color(0xFFE3F2FD),
-              iconColor: const Color(0xFF2F80ED),
-              label: 'Qty Sold',
-              value: formatKg(s.vendorSoldKg),
-            ),
-            _StatTile(
-              icon: HugeIcons.strokeRoundedMoney01,
-              iconBg: const Color(0xFFFFF3E0),
-              iconColor: const Color(0xFFF2994A),
-              label: 'Earnings',
-              value: formatMoney(s.vendorRevenue),
-            ),
-          ],
-        UserRole.buyer => [
-            _StatTile(
-              icon: HugeIcons.strokeRoundedShoppingBag01,
-              iconBg: AppColors.primarySurface,
-              iconColor: AppColors.primaryDark,
-              label: 'Orders',
-              value: '${s.buyerOrders}',
-            ),
-            _StatTile(
-              icon: HugeIcons.strokeRoundedMoney01,
-              iconBg: const Color(0xFFFFF3E0),
-              iconColor: const Color(0xFFF2994A),
-              label: 'Saved',
-              value: formatMoney(s.buyerSaved),
-            ),
-            _StatTile(
-              icon: HugeIcons.strokeRoundedLeaf02,
-              iconBg: AppColors.primarySurface,
-              iconColor: AppColors.primaryDark,
-              label: 'Rescued',
-              value: formatKg(s.buyerKg),
-            ),
-          ],
-      };
+  List<_StatTile> _tilesFor(UserRole role, ProfileStats s) => switch (role) {
+    UserRole.vendor => [
+      _StatTile(
+        icon: HugeIcons.strokeRoundedStore02,
+        iconBg: AppColors.primarySurface,
+        iconColor: AppColors.primaryDark,
+        label: 'Listings',
+        value: '${s.vendorOrders}',
+      ),
+      _StatTile(
+        icon: HugeIcons.strokeRoundedPackageOpen,
+        iconBg: const Color(0xFFE3F2FD),
+        iconColor: const Color(0xFF2F80ED),
+        label: 'Qty Sold',
+        value: formatKg(s.vendorSoldKg),
+      ),
+      _StatTile(
+        icon: HugeIcons.strokeRoundedMoney01,
+        iconBg: const Color(0xFFFFF3E0),
+        iconColor: const Color(0xFFF2994A),
+        label: 'Earnings',
+        value: formatMoney(s.vendorRevenue),
+      ),
+    ],
+    UserRole.buyer => [
+      _StatTile(
+        icon: HugeIcons.strokeRoundedShoppingBag01,
+        iconBg: AppColors.primarySurface,
+        iconColor: AppColors.primaryDark,
+        label: 'Orders',
+        value: '${s.buyerOrders}',
+      ),
+      _StatTile(
+        icon: HugeIcons.strokeRoundedMoney01,
+        iconBg: const Color(0xFFFFF3E0),
+        iconColor: const Color(0xFFF2994A),
+        label: 'Saved',
+        value: formatMoney(s.buyerSaved),
+      ),
+      _StatTile(
+        icon: HugeIcons.strokeRoundedLeaf02,
+        iconBg: AppColors.primarySurface,
+        iconColor: AppColors.primaryDark,
+        label: 'Rescued',
+        value: formatKg(s.buyerKg),
+      ),
+    ],
+  };
 }
 
 class _StatTile extends StatelessWidget {
@@ -384,7 +386,10 @@ class _StatTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.lg),
         boxShadow: const [
           BoxShadow(
-              color: Color(0x08000000), blurRadius: 12, offset: Offset(0, 4))
+            color: Color(0x08000000),
+            blurRadius: 12,
+            offset: Offset(0, 4),
+          ),
         ],
       ),
       child: Column(
@@ -392,23 +397,26 @@ class _StatTile extends StatelessWidget {
         children: [
           Container(
             padding: const EdgeInsets.all(7),
-            decoration: BoxDecoration(
-                color: iconBg, shape: BoxShape.circle),
+            decoration: BoxDecoration(color: iconBg, shape: BoxShape.circle),
             child: HugeIcon(icon: icon, size: 14, color: iconColor),
           ),
           const SizedBox(height: 8),
           Text(
             value,
             style: const TextStyle(
-                fontSize: 17, fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary),
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary,
+            ),
           ),
           const SizedBox(height: 2),
           Text(
             label,
             style: const TextStyle(
-                fontSize: 10, color: AppColors.textMuted,
-                fontWeight: FontWeight.w600),
+              fontSize: 10,
+              color: AppColors.textMuted,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),
@@ -423,72 +431,72 @@ class _MenuCard extends StatelessWidget {
   final UserRole role;
 
   List<({dynamic icon, String title, String subtitle, String? route})>
-      get _items => switch (role) {
-            UserRole.vendor => [
-                (
-                  icon: HugeIcons.strokeRoundedUserCircle,
-                  title: 'Account Details',
-                  subtitle: 'Edit name, phone, address',
-                  route: '/account',
-                ),
-                (
-                  icon: HugeIcons.strokeRoundedNote01,
-                  title: 'My Documents',
-                  subtitle: 'View and manage your documents',
-                  route: '/seller/profile/documents',
-                ),
-                (
-                  icon: HugeIcons.strokeRoundedStar,
-                  title: 'Reviews',
-                  subtitle: 'See what buyers say about you',
-                  route: '/seller/profile/reviews',
-                ),
-                (
-                  icon: HugeIcons.strokeRoundedNotification01,
-                  title: 'Notifications',
-                  subtitle: 'Manage alerts and reminders',
-                  route: '/notifications',
-                ),
-                (
-                  icon: HugeIcons.strokeRoundedHelpCircle,
-                  title: 'Help & Safety',
-                  subtitle: 'FAQs and support',
-                  route: '/help',
-                ),
-              ],
-            UserRole.buyer => [
-                (
-                  icon: HugeIcons.strokeRoundedUserCircle,
-                  title: 'Account Details',
-                  subtitle: 'Edit name, phone, address',
-                  route: '/account',
-                ),
-                (
-                  icon: HugeIcons.strokeRoundedReceiptText,
-                  title: 'My Orders',
-                  subtitle: 'Track and manage your orders',
-                  route: '/buyer/orders',
-                ),
-                (
-                  icon: HugeIcons.strokeRoundedWallet01,
-                  title: 'Revivo Wallet',
-                  subtitle: 'Credits, savings, and redemptions',
-                  route: null,
-                ),
-                (
-                  icon: HugeIcons.strokeRoundedNotification01,
-                  title: 'Notifications',
-                  subtitle: 'Manage alerts and reminders',
-                  route: '/notifications',
-                ),
-                (
-                  icon: HugeIcons.strokeRoundedHelpCircle,
-                  title: 'Help & Safety',
-                  subtitle: 'FAQs and support',
-                  route: '/help',
-                ),
-              ],
-          };
+  get _items => switch (role) {
+    UserRole.vendor => [
+      (
+        icon: HugeIcons.strokeRoundedUserCircle,
+        title: 'Account Details',
+        subtitle: 'Edit name, phone, address',
+        route: '/account',
+      ),
+      (
+        icon: HugeIcons.strokeRoundedNote01,
+        title: 'My Documents',
+        subtitle: 'View and manage your documents',
+        route: '/seller/profile/documents',
+      ),
+      (
+        icon: HugeIcons.strokeRoundedStar,
+        title: 'Reviews',
+        subtitle: 'See what buyers say about you',
+        route: '/seller/profile/reviews',
+      ),
+      (
+        icon: HugeIcons.strokeRoundedNotification01,
+        title: 'Notifications',
+        subtitle: 'Manage alerts and reminders',
+        route: '/notifications',
+      ),
+      (
+        icon: HugeIcons.strokeRoundedHelpCircle,
+        title: 'Help & Safety',
+        subtitle: 'FAQs and support',
+        route: '/help',
+      ),
+    ],
+    UserRole.buyer => [
+      (
+        icon: HugeIcons.strokeRoundedUserCircle,
+        title: 'Account Details',
+        subtitle: 'Edit name, phone, address',
+        route: '/account',
+      ),
+      (
+        icon: HugeIcons.strokeRoundedReceiptText,
+        title: 'My Orders',
+        subtitle: 'Track and manage your orders',
+        route: '/buyer/orders',
+      ),
+      (
+        icon: HugeIcons.strokeRoundedGift,
+        title: 'Refer & earn',
+        subtitle: 'Give ₹50, get ₹50 in credits',
+        route: '/refer',
+      ),
+      (
+        icon: HugeIcons.strokeRoundedNotification01,
+        title: 'Notifications',
+        subtitle: 'Manage alerts and reminders',
+        route: '/notifications',
+      ),
+      (
+        icon: HugeIcons.strokeRoundedHelpCircle,
+        title: 'Help & Safety',
+        subtitle: 'FAQs and support',
+        route: '/help',
+      ),
+    ],
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -500,7 +508,9 @@ class _MenuCard extends StatelessWidget {
           for (var i = 0; i < items.length; i++) ...[
             ListTile(
               contentPadding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md, vertical: 4),
+                horizontal: AppSpacing.md,
+                vertical: 4,
+              ),
               leading: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: const BoxDecoration(
@@ -516,14 +526,17 @@ class _MenuCard extends StatelessWidget {
               title: Text(
                 items[i].title,
                 style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
               ),
               subtitle: Text(
                 items[i].subtitle,
                 style: const TextStyle(
-                    fontSize: 11, color: AppColors.textSecondary),
+                  fontSize: 11,
+                  color: AppColors.textSecondary,
+                ),
               ),
               trailing: const HugeIcon(
                 icon: HugeIcons.strokeRoundedArrowRight01,
@@ -536,8 +549,7 @@ class _MenuCard extends StatelessWidget {
               },
             ),
             if (i < items.length - 1)
-              const Divider(
-                  height: 1, indent: 64, color: AppColors.border),
+              const Divider(height: 1, indent: 64, color: AppColors.border),
           ],
         ],
       ),
@@ -551,23 +563,21 @@ class _InsightsBanner extends StatelessWidget {
   const _InsightsBanner({required this.role});
   final UserRole role;
 
-  ({String title, String sub, String btnLabel, String? route})
-      get _copy => switch (role) {
-            UserRole.vendor => (
-                title: 'Grow your impact with Revivo',
-                sub:
-                    'Keep listing surplus to reduce waste and earn more revenue.',
-                btnLabel: 'View insights',
-                route: '/seller/insights',
-              ),
-            UserRole.buyer => (
-                title: 'Your rescue impact',
-                sub:
-                    'Every order saves food from going to waste. Track your story.',
-                btnLabel: 'View impact',
-                route: '/buyer/impact',
-              ),
-          };
+  ({String title, String sub, String btnLabel, String? route}) get _copy =>
+      switch (role) {
+        UserRole.vendor => (
+          title: 'Grow your impact with Revivo',
+          sub: 'Keep listing surplus to reduce waste and earn more revenue.',
+          btnLabel: 'View insights',
+          route: '/seller/insights',
+        ),
+        UserRole.buyer => (
+          title: 'Your rescue impact',
+          sub: 'Every order saves food from going to waste. Track your story.',
+          btnLabel: 'View impact',
+          route: '/buyer/impact',
+        ),
+      };
 
   @override
   Widget build(BuildContext context) {
@@ -596,37 +606,40 @@ class _InsightsBanner extends StatelessWidget {
                 Text(
                   c.title,
                   style: const TextStyle(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimary),
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   c.sub,
                   style: const TextStyle(
-                      fontSize: 11, color: AppColors.textSecondary),
+                    fontSize: 11,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ],
             ),
           ),
           const SizedBox(width: 10),
           OutlinedButton(
-            onPressed:
-                c.route != null ? () => context.push(c.route!) : null,
+            onPressed: c.route != null ? () => context.push(c.route!) : null,
             style: OutlinedButton.styleFrom(
               minimumSize: Size.zero,
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               side: const BorderSide(color: AppColors.primary),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.button)),
+                borderRadius: BorderRadius.circular(AppRadius.button),
+              ),
             ),
             child: Text(
               c.btnLabel,
               style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.primary),
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primary,
+              ),
             ),
           ),
         ],
@@ -647,7 +660,9 @@ class _LogoutButton extends StatelessWidget {
       padding: EdgeInsets.zero,
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md, vertical: 8),
+          horizontal: AppSpacing.md,
+          vertical: 8,
+        ),
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
@@ -663,14 +678,14 @@ class _LogoutButton extends StatelessWidget {
         title: const Text(
           'Sign out',
           style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary),
+            fontSize: 14,
+            fontWeight: FontWeight.w800,
+            color: AppColors.textPrimary,
+          ),
         ),
         subtitle: const Text(
           'You can log back in anytime',
-          style:
-              TextStyle(fontSize: 11, color: AppColors.textSecondary),
+          style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
         ),
         trailing: const HugeIcon(
           icon: HugeIcons.strokeRoundedArrowRight01,

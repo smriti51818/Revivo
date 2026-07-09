@@ -15,19 +15,40 @@ final vendorOrdersRepositoryProvider =
 /// Live incoming orders for this seller. Polled so the Step Functions
 /// lifecycle (Confirmed → Preparing → Ready → Completed) shows up live.
 class VendorOrdersController extends AsyncNotifier<List<Order>> {
+  /// Orders the seller declined. Kept client-side (the pilot has no reject
+  /// endpoint) and filtered out of every fetch so a rejected order stays gone
+  /// across the 8s poll instead of reappearing.
+  final Set<String> _rejected = {};
+
+  List<Order> _visible(List<Order> orders) =>
+      orders.where((o) => !_rejected.contains(o.id)).toList();
+
   @override
-  Future<List<Order>> build() {
-    return ref.read(vendorOrdersRepositoryProvider).fetchIncoming();
+  Future<List<Order>> build() async {
+    final orders =
+        await ref.read(vendorOrdersRepositoryProvider).fetchIncoming();
+    return _visible(orders);
   }
 
   Future<void> reload() async {
     try {
       final orders =
           await ref.read(vendorOrdersRepositoryProvider).fetchIncoming();
-      state = AsyncData(orders);
+      state = AsyncData(_visible(orders));
     } catch (_) {
       // Keep current data on a transient poll failure.
     }
+  }
+
+  /// Seller declines an incoming order — it's removed from the queue and stays
+  /// out across polls.
+  void reject(String orderId) {
+    _rejected.add(orderId);
+    final current = state.valueOrNull ?? const <Order>[];
+    state = AsyncData([
+      for (final o in current)
+        if (o.id != orderId) o,
+    ]);
   }
 
   /// Vendor marks an order ready for pickup or handed over.

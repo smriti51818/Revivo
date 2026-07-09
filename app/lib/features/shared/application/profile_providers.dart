@@ -41,14 +41,17 @@ class ProfileDetails {
 class ProfileDetailsController extends Notifier<ProfileDetails> {
   @override
   ProfileDetails build() {
-    // Seed once from the session; edits below persist for the app session.
+    // Seed the name from the Cognito session; phone/address are left blank for
+    // the user to fill (the pilot has no profile endpoint) so we never present a
+    // fabricated phone/address as their saved details. City defaults to the
+    // pilot city and stays editable.
     final session = ref.read(sessionProvider);
     return ProfileDetails(
       name: session?.name ?? 'Guest',
-      phone: '+91 90000 00000',
-      addressLine: 'Gandhipuram Main Rd',
+      phone: '',
+      addressLine: '',
       city: 'Coimbatore',
-      pincode: '641012',
+      pincode: '',
     );
   }
 

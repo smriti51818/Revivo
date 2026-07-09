@@ -7,7 +7,9 @@ import '../../core/discovery/produce_category.dart';
 import '../../core/models/freshness.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/widgets/location_picker_sheet.dart';
 import '../../core/widgets/motion.dart';
+import '../shared/application/profile_providers.dart';
 import 'application/favorites_providers.dart';
 import 'application/marketplace_providers.dart';
 import 'domain/offer.dart';
@@ -36,37 +38,101 @@ class _BuyerMarketScreenState extends ConsumerState<BuyerMarketScreen> {
   String _query = '';
   _MarketFilter _filter = _MarketFilter.all;
   ProduceCategory _category = ProduceCategory.all;
-  bool _isGridView = false;
 
   List<Offer> _apply(List<Offer> offers) {
     var list = offers;
     if (_query.trim().isNotEmpty) {
       final q = _query.toLowerCase();
       list = list
-          .where((o) =>
-              o.vegetable.toLowerCase().contains(q) ||
-              o.vendorName.toLowerCase().contains(q))
+          .where(
+            (o) =>
+                o.vegetable.toLowerCase().contains(q) ||
+                o.vendorName.toLowerCase().contains(q),
+          )
           .toList();
     }
     if (_category != ProduceCategory.all) {
-      list = list.where((o) => matchesCategory(_category, o.vegetable)).toList();
+      list = list
+          .where((o) => matchesCategory(_category, o.vegetable))
+          .toList();
     }
     list = switch (_filter) {
       _MarketFilter.all => list,
       _MarketFilter.rescue =>
         list.where((o) => o.liveBand() == FreshnessBand.rescue).toList(),
       _MarketFilter.saved => () {
-          final favs = ref.read(favoritesProvider);
-          return list.where((o) => favs.contains(o.id)).toList();
-        }(),
+        final favs = ref.read(favoritesProvider);
+        return list.where((o) => favs.contains(o.id)).toList();
+      }(),
       _MarketFilter.organic => list.where((o) => o.organic).toList(),
-      _MarketFilter.nearby => [...list]
-        ..sort((a, b) => a.distanceKm.compareTo(b.distanceKm)),
+      _MarketFilter.nearby => [
+        ...list,
+      ]..sort((a, b) => a.distanceKm.compareTo(b.distanceKm)),
     };
     return list;
   }
 
-
+  void _showFiltersModal() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Filters',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Sort & Filter',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 8),
+              ListTile(
+                title: const Text('Ending soon (Default)'),
+                onTap: () {
+                  setState(() => _filter = _MarketFilter.all);
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                title: const Text('Nearby (Sort by distance)'),
+                onTap: () {
+                  setState(() => _filter = _MarketFilter.nearby);
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                title: const Text('Rescue deals only'),
+                onTap: () {
+                  setState(() => _filter = _MarketFilter.rescue);
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                title: const Text('Organic only'),
+                onTap: () {
+                  setState(() => _filter = _MarketFilter.organic);
+                  Navigator.pop(context);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   static const _hpad = EdgeInsets.symmetric(horizontal: AppSpacing.screen);
 
@@ -74,18 +140,24 @@ class _BuyerMarketScreenState extends ConsumerState<BuyerMarketScreen> {
   Widget build(BuildContext context) {
     final offers = ref.watch(offersProvider);
     ref.watch(favoritesProvider);
+    final details = ref.watch(profileDetailsProvider);
+    final location = details.addressLine.trim().isEmpty
+        ? (details.city.trim().isEmpty ? 'Set your location' : details.city)
+        : '${details.addressLine}, ${details.city}';
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       bottomNavigationBar: const CartBar(),
       body: Column(
         children: [
-          _buildGreenHeader(),
+          _buildGreenHeader(details.name, location),
           Expanded(
             child: RefreshIndicator(
               onRefresh: () => ref.refresh(offersProvider.future),
               color: AppColors.primary,
               child: ListView(
-                padding: const EdgeInsets.only(bottom: AppSpacing.xl),
+                padding: EdgeInsets.only(
+                    bottom: MediaQuery.of(context).padding.bottom + 80),
                 children: [
                   offers.when(
                     loading: () => const Padding(
@@ -94,7 +166,11 @@ class _BuyerMarketScreenState extends ConsumerState<BuyerMarketScreen> {
                     ),
                     error: (e, _) => Padding(
                       padding: const EdgeInsets.fromLTRB(
-                          AppSpacing.screen, 32, AppSpacing.screen, 0),
+                        AppSpacing.screen,
+                        32,
+                        AppSpacing.screen,
+                        0,
+                      ),
                       child: Center(child: Text('Could not load offers: $e')),
                     ),
                     data: (all) => _loaded(context, all),
@@ -108,7 +184,7 @@ class _BuyerMarketScreenState extends ConsumerState<BuyerMarketScreen> {
     );
   }
 
-  Widget _buildGreenHeader() {
+  Widget _buildGreenHeader(String name, String location) {
     return Container(
       width: double.infinity,
       decoration: const BoxDecoration(
@@ -125,51 +201,45 @@ class _BuyerMarketScreenState extends ConsumerState<BuyerMarketScreen> {
         children: [
           Row(
             children: [
-              IconButton(
-                onPressed: () => context.pop(),
-                icon: const HugeIcon(
-                  icon: HugeIcons.strokeRoundedArrowLeft01,
-                  color: Colors.white,
-                  size: 24,
-                ),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-              ),
-              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Market',
-                      style: TextStyle(
+                    Text(
+                      'Good morning, $name 👋',
+                      style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 20,
+                        fontSize: 18,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
                     const SizedBox(height: 2),
                     GestureDetector(
-                      onTap: () {},
-                      child: const Row(
+                      onTap: () => showLocationPicker(context, ref),
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          HugeIcon(
+                          const HugeIcon(
                             icon: HugeIcons.strokeRoundedLocation01,
                             color: Colors.white,
                             size: 14,
                           ),
-                          SizedBox(width: 4),
-                          Text(
-                            'Indiranagar, Bengaluru',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
+                          const SizedBox(width: 4),
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 220),
+                            child: Text(
+                              location,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
-                          SizedBox(width: 2),
-                          HugeIcon(
+                          const SizedBox(width: 2),
+                          const HugeIcon(
                             icon: HugeIcons.strokeRoundedArrowDown01,
                             color: Colors.white,
                             size: 12,
@@ -178,39 +248,6 @@ class _BuyerMarketScreenState extends ConsumerState<BuyerMarketScreen> {
                       ),
                     ),
                   ],
-                ),
-              ),
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.12),
-                  shape: BoxShape.circle,
-                ),
-                child: IconButton(
-                  onPressed: () {},
-                  icon: const HugeIcon(
-                    icon: HugeIcons.strokeRoundedSearch01,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                  constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
-                  padding: EdgeInsets.zero,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.12),
-                  shape: BoxShape.circle,
-                ),
-                child: IconButton(
-                  onPressed: () {},
-                  icon: const HugeIcon(
-                    icon: HugeIcons.strokeRoundedSlidersHorizontal,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                  constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
-                  padding: EdgeInsets.zero,
                 ),
               ),
             ],
@@ -259,31 +296,34 @@ class _BuyerMarketScreenState extends ConsumerState<BuyerMarketScreen> {
                 ),
               ),
               const SizedBox(width: 10),
-              Container(
-                height: 48,
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0F8A5F),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.white.withOpacity(0.15)),
-                ),
-                child: const Row(
-                  children: [
-                    HugeIcon(
-                      icon: HugeIcons.strokeRoundedSlidersHorizontal,
-                      color: Colors.white,
-                      size: 16,
-                    ),
-                    SizedBox(width: 6),
-                    Text(
-                      'Filters',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
+              GestureDetector(
+                onTap: _showFiltersModal,
+                child: Container(
+                  height: 48,
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: const Row(
+                    children: [
+                      HugeIcon(
+                        icon: HugeIcons.strokeRoundedSlidersHorizontal,
+                        color: AppColors.textPrimary,
+                        size: 18,
                       ),
-                    ),
-                  ],
+                      SizedBox(width: 6),
+                      Text(
+                        'Filters',
+                        style: TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -303,13 +343,8 @@ class _BuyerMarketScreenState extends ConsumerState<BuyerMarketScreen> {
         const SizedBox(height: AppSpacing.md),
         _categoryRow(),
         const SizedBox(height: AppSpacing.md),
-        _sortAndFilterRow(),
-        const SizedBox(height: AppSpacing.md),
         if (!searching) ...[
-          Padding(
-            padding: _hpad,
-            child: _buildEndingSoonPromo(),
-          ),
+          Padding(padding: _hpad, child: _buildEndingSoonPromo()),
           const SizedBox(height: AppSpacing.lg),
         ],
         Padding(
@@ -375,10 +410,18 @@ class _BuyerMarketScreenState extends ConsumerState<BuyerMarketScreen> {
   Widget _categoryRow() {
     final categories = [
       (ProduceCategory.all, 'All', HugeIcons.strokeRoundedGridView),
-      (ProduceCategory.leafy, 'Leafy', HugeIcons.strokeRoundedLeaf02),
-      (ProduceCategory.roots, 'Roots', HugeIcons.strokeRoundedPackage),
-      (ProduceCategory.fruiting, 'Gourd', HugeIcons.strokeRoundedApple),
-      (ProduceCategory.herbs, 'Others', HugeIcons.strokeRoundedMoreHorizontal),
+      (ProduceCategory.leafy, 'Leafy Greens', HugeIcons.strokeRoundedLeaf02),
+      (ProduceCategory.roots, 'Root Veggies', HugeIcons.strokeRoundedTree02),
+      (
+        ProduceCategory.fruiting,
+        'Fruits & Gourds',
+        HugeIcons.strokeRoundedApple,
+      ),
+      (
+        ProduceCategory.herbs,
+        'Herbs & Others',
+        HugeIcons.strokeRoundedMoreHorizontal,
+      ),
     ];
 
     return SingleChildScrollView(
@@ -390,11 +433,12 @@ class _BuyerMarketScreenState extends ConsumerState<BuyerMarketScreen> {
             GestureDetector(
               onTap: () => setState(() => _category = cat.$1),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
-                  color: _category == cat.$1
-                      ? AppColors.primary
-                      : Colors.white,
+                  color: _category == cat.$1 ? AppColors.primary : Colors.white,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: _category == cat.$1
@@ -433,197 +477,88 @@ class _BuyerMarketScreenState extends ConsumerState<BuyerMarketScreen> {
     );
   }
 
-  Widget _sortAndFilterRow() {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: _hpad,
-      child: Row(
-        children: [
-          Text(
-            'Sort by ',
-            style: TextStyle(
-              fontSize: 13,
-              color: AppColors.textMuted,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          GestureDetector(
-            onTap: () {},
-            child: Row(
-              children: [
-                Text(
-                  'Ending soon',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: AppColors.primaryDark,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(width: 2),
-                HugeIcon(
-                  icon: HugeIcons.strokeRoundedArrowDown01,
-                  color: AppColors.primaryDark,
-                  size: 14,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 16),
-          Text(
-            'Distance ',
-            style: TextStyle(
-              fontSize: 13,
-              color: AppColors.textMuted,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          GestureDetector(
-            onTap: () {},
-            child: Row(
-              children: [
-                Text(
-                  'Nearby',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: AppColors.primaryDark,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(width: 2),
-                HugeIcon(
-                  icon: HugeIcons.strokeRoundedArrowDown01,
-                  color: AppColors.primaryDark,
-                  size: 14,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 24),
-          Text(
-            'View ',
-            style: TextStyle(
-              fontSize: 13,
-              color: AppColors.textMuted,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: AppColors.surfaceAlt,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                GestureDetector(
-                  onTap: () => setState(() => _isGridView = true),
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: _isGridView ? Colors.white : Colors.transparent,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: HugeIcon(
-                      icon: HugeIcons.strokeRoundedGridView,
-                      color: _isGridView ? AppColors.primary : AppColors.textMuted,
-                      size: 16,
-                    ),
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () => setState(() => _isGridView = false),
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: !_isGridView ? Colors.white : Colors.transparent,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: HugeIcon(
-                      icon: HugeIcons.strokeRoundedListView,
-                      color: !_isGridView ? AppColors.primary : AppColors.textMuted,
-                      size: 16,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildEndingSoonPromo() {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFFEDFBF4),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFD3F2E4)),
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppColors.primary,
-              shape: BoxShape.circle,
+    return GestureDetector(
+      onTap: () => context.push('/buyer/ending-soon'),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFFEDFBF4),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFD3F2E4)),
+        ),
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                shape: BoxShape.circle,
+              ),
+              child: HugeIcon(
+                icon: HugeIcons.strokeRoundedFlash,
+                color: Colors.white,
+                size: 18,
+              ),
             ),
-            child: HugeIcon(
-              icon: HugeIcons.strokeRoundedFlash,
-              color: Colors.white,
+            SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Ending soon',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    'Grab the best deals before time runs out!',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            HugeIcon(
+              icon: HugeIcons.strokeRoundedArrowRight01,
+              color: AppColors.textMuted,
               size: 18,
             ),
-          ),
-          SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Ending soon',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                SizedBox(height: 2),
-                Text(
-                  'Grab the best deals before time runs out!',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          HugeIcon(
-            icon: HugeIcons.strokeRoundedArrowRight01,
-            color: AppColors.textMuted,
-            size: 18,
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _empty() => Padding(
-        padding: const EdgeInsets.only(top: 40),
-        child: Center(
-          child: Column(
-            children: [
-              const HugeIcon(icon: HugeIcons.strokeRoundedStore01, size: 48, color: AppColors.borderStrong),
-              const SizedBox(height: AppSpacing.md),
-              const Text(
-                'No surplus matches your filter',
-                style: TextStyle(
-                    fontWeight: FontWeight.w600, color: AppColors.textSecondary, fontSize: 15),
-              ),
-            ],
+    padding: const EdgeInsets.only(top: 40),
+    child: Center(
+      child: Column(
+        children: [
+          const HugeIcon(
+            icon: HugeIcons.strokeRoundedStore01,
+            size: 48,
+            color: AppColors.borderStrong,
           ),
-        ),
-      );
+          const SizedBox(height: AppSpacing.md),
+          const Text(
+            'No surplus matches your filter',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary,
+              fontSize: 15,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 
+import '../../../core/discovery/vendor_directory.dart';
 import '../../../core/models/freshness.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_card.dart';
@@ -44,16 +45,16 @@ class OfferCard extends StatelessWidget {
     return Pressable(
       onTap: onTap,
       child: AppCard(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(10),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image with Overlays on the left
+            // Left Image
             ClipRRect(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
               child: SizedBox(
-                width: 104,
-                height: 104,
+                width: 88,
+                height: 88,
                 child: Stack(
                   children: [
                     Positioned.fill(
@@ -68,7 +69,7 @@ class OfferCard extends StatelessWidget {
                     Positioned(
                       top: 6,
                       left: 6,
-                      child: FavoriteHeart(offerId: offer.id),
+                      child: FavoriteHeart(offerId: offer.id, onSurface: false),
                     ),
                     if (offer.liveSavingsPct() > 30 || offer.organic)
                       Positioned(
@@ -119,27 +120,28 @@ class OfferCard extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                            fontSize: 16,
+                            fontSize: 15,
                             fontWeight: FontWeight.w800,
                             color: AppColors.textPrimary,
                           ),
                         ),
                       ),
                       const SizedBox(width: 4),
-                      const HugeIcon(
-                        icon: HugeIcons.strokeRoundedCheckmarkCircle02,
-                        color: Color(0xFF27AE60),
-                        size: 14,
-                      ),
+                      if (vendorInfo(offer.vendorName).trusted)
+                        const HugeIcon(
+                          icon: HugeIcons.strokeRoundedCheckmarkCircle02,
+                          color: Color(0xFF27AE60),
+                          size: 13,
+                        ),
                     ],
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   Row(
                     children: [
                       const HugeIcon(
-                        icon: HugeIcons.strokeRoundedStore01,
+                        icon: HugeIcons.strokeRoundedStore02,
                         color: AppColors.textMuted,
-                        size: 13,
+                        size: 12,
                       ),
                       const SizedBox(width: 4),
                       Expanded(
@@ -148,7 +150,7 @@ class OfferCard extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                            fontSize: 12,
+                            fontSize: 11,
                             fontWeight: FontWeight.w600,
                             color: AppColors.textSecondary,
                           ),
@@ -247,7 +249,7 @@ class OfferCard extends StatelessWidget {
                     Text(
                       '₹${price.toInt()}',
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: 18,
                         fontWeight: FontWeight.w900,
                         color: _urgencyColor,
                       ),
@@ -255,7 +257,7 @@ class OfferCard extends StatelessWidget {
                     Text(
                       '/kg',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 11,
                         fontWeight: FontWeight.w700,
                         color: _urgencyColor,
                       ),

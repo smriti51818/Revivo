@@ -1,41 +1,60 @@
 # Revivo — Demo script (90 seconds)
 
-> Goal: show the full **Sell → Rescue → Transform** loop with the AWS Step Functions
-> console visible and an SMS arriving on a physical phone.
+> Goal: show the full **Sell → live marketplace → Order → Step Functions
+> lifecycle → Impact** loop on the live AWS backend, with the Step Functions
+> console visible for the order advancing in real time.
 
 ## Setup before demo
-- [ ] Backend deployed (`make infra-deploy`) and seeded (`make seed`).
-- [ ] Step Functions console open on the listing state machine.
-- [ ] Impact dashboard open on a second screen.
-- [ ] A real phone ready to receive the rescue SMS.
-- [ ] Logged in as **Rajesh (vendor)**, **Hotel Annapoorna (buyer)**, **Shiva Temple (cook)**.
+- [ ] Backend deployed (`make infra-deploy`) — already live at
+      `https://j5aq1g1vbd.execute-api.ap-south-1.amazonaws.com/prod`.
+- [ ] Demo data seeded (see [`DEMO_LOGINS.md`](../DEMO_LOGINS.md)).
+- [ ] Step Functions console open on `revivo-order-lifecycle`.
+- [ ] Two devices/windows: **GreenLeaf Farms** (seller) and **Hotel Ashok**
+      (buyer), both logged in with password `TestPass123`.
 
 ## Narrative
 
-1. **6:30 PM — Sell.** Rajesh finishes his day at Gandhipuram Market with 15 kg unsold tomatoes.
-   He opens Revivo, snaps a photo. The app timestamps + GPS-tags + compresses + uploads to S3 in
-   under a second. Rekognition: *tomatoes, no visible defects* → green trust badge. Freshness band:
-   **Good (~14–18h)**. Price: ₹25/kg. **Listing live.**
+1. **Seller — Insights.** Open GreenLeaf Farms' Insights tab. Point out the
+   **waste-risk projection** ("N kg reaches Rescue within 24h") computed live
+   from the seller's actual listings, and the **3 Bedrock-generated
+   recommendations** (Amazon Nova, grounded in this seller's real revenue,
+   top movers, and freshness mix — not canned copy).
 
-2. **Watch Step Functions.** The listing enters **ACTIVE**. DynamoDB Streams trigger the matching
-   Lambda. Within 3 seconds, Hotel Annapoorna (1.2 km, bought tomatoes yesterday, rated 4.8) gets a
-   push notification. One tap → 10 kg ordered → kitchen helper dispatched.
+2. **Buyer — Marketplace.** Switch to Hotel Ashok. The marketplace shows 6
+   vendors with **live freshness bands and prices that are decaying in real
+   time** (same formula, computed independently on the client and re-verified
+   server-side at order time — the price you see is the price you pay).
+   Place an order on a listing in the Use Soon or Rescue band.
 
-3. **Escalation.** Listing moves to **DISCOUNTED** — 5 kg remaining, Use Soon band, price drops to
-   ₹18. Notification radius expands. No buyer bites.
+3. **Watch Step Functions.** Switch to the AWS console. The new `ORDER` item
+   triggers `start_order_workflow` off DynamoDB Streams — a fresh execution
+   appears in `revivo-order-lifecycle` and advances **Confirmed → Preparing →
+   Ready for Pickup → Completed** over ~45 seconds, no polling or manual
+   trigger. Back in the buyer app, **My Orders** reflects each stage live
+   (8s poll).
 
-4. **9 PM — Rescue.** Band shifts to **Rescue**; sale probability 8%. Step Functions transitions to
-   **RESCUE**. The rescue engine matches Shiva Temple kitchen (1.5 km, morning annadanam prep,
-   reliability 4.9). Bedrock writes the explanation. **An SMS lands on the phone on stage.**
+4. **Rate & Impact.** Once Completed, rate the order. Open **Impact** — kg
+   rescued, meals, CO₂ avoided, ₹ saved, and the leaderboard update from real
+   aggregated order + rescue data.
 
-5. **Transform.** Cook replies *YES*. NSS volunteer picks up by 9:30 PM. Next morning the tomatoes
-   are sambar for 60 people. Rajesh's impact card updates: **₹250 recovered · 15 kg saved · 60 meals
-   enabled**, and he climbs to #3 on the Gandhipuram leaderboard.
+5. **Rescue network (read-only).** Open the Rescue board — surplus routed to
+   an NGO kitchen, each card carrying a **Bedrock-written explanation** of why
+   it should be rescued now (quantity, freshness window, meal estimate), with
+   a deterministic fallback if Bedrock is momentarily unavailable.
 
-> *One vendor. One evening. One vegetable. From cart to plate in three hours.*
+> *One seller. One order. Cart to Step-Functions-tracked completion in under
+> a minute — every number on screen is real.*
 
 ## Talking points for judges
-- **Why AWS:** the vegetable's lifecycle *is* an event-driven state machine — Streams, Step
-  Functions, EventBridge, Bedrock, presigned S3, Cognito. Remove AWS and you lose the architecture.
-- **Honesty:** Rekognition screens visible defects, it does **not** assess freshness — that's why we
-  show bands, not fake percentages.
+- **Why AWS:** DynamoDB Streams is the single source of truth for "something
+  changed" — it fans out to two independent consumers (order-workflow starter,
+  notifier) with no polling anywhere in the backend. Step Functions makes the
+  order lifecycle durable and visible, not a hidden state field. Bedrock
+  (Amazon Nova via the Converse API) grounds every AI response in that
+  specific seller's or rescue's real numbers, and degrades to a deterministic,
+  still-useful fallback if the model call fails — the feature never breaks
+  the demo.
+- **Honesty:** Rekognition identifies the vegetable from the photo; it does
+  not claim to assess freshness. Freshness bands come from a validated
+  shelf-life + storage-condition model, recomputed live from wall-clock time,
+  not a fabricated percentage.

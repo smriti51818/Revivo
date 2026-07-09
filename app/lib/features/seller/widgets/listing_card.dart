@@ -5,6 +5,8 @@ import 'package:hugeicons/hugeicons.dart';
 import '../../../core/models/freshness.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_card.dart';
+import '../../../core/widgets/freshness_countdown.dart';
+import '../../../core/widgets/motion.dart';
 import '../domain/listing.dart';
 
 class ListingCard extends StatelessWidget {
@@ -19,205 +21,274 @@ class ListingCard extends StatelessWidget {
   final VoidCallback? onUpdateStock;
   final VoidCallback? onEdit;
 
+  Color get _tint => switch (listing.liveBand()) {
+    FreshnessBand.good => AppColors.successSurface,
+    FreshnessBand.useSoon => AppColors.warningSurface,
+    FreshnessBand.rescue => AppColors.dangerSurface,
+  };
+
+  Color get _urgencyColor => switch (listing.liveBand()) {
+    FreshnessBand.rescue => const Color(0xFFF23E3E),
+    FreshnessBand.useSoon => const Color(0xFFF2994A),
+    FreshnessBand.good => const Color(0xFF27AE60),
+  };
+
+  String get _freshnessLabel => switch (listing.liveBand()) {
+    FreshnessBand.rescue => 'Rescue\n(0-6h)',
+    FreshnessBand.useSoon => 'Use soon\n(6-12h)',
+    FreshnessBand.good => listing.totalHours != null && listing.totalHours! > 24
+        ? 'Fresh\n(24h+)'
+        : 'Best price\n(12-24h)',
+  };
+
   @override
   Widget build(BuildContext context) {
-    // Determine band styling
-    final band = listing.liveBand();
-    final Color bandColor;
-    final Color bandBg;
-    final String bandLabel;
-    
-    switch (band) {
-      case FreshnessBand.rescue:
-        bandColor = const Color(0xFFD32F2F);
-        bandBg = const Color(0xFFFFEBEE);
-        bandLabel = 'Rescue';
-        break;
-      case FreshnessBand.useSoon:
-        bandColor = const Color(0xFFE65100);
-        bandBg = const Color(0xFFFFF3E0);
-        bandLabel = 'Use soon';
-        break;
-      case FreshnessBand.good:
-        bandColor = const Color(0xFF2E7D32);
-        bandBg = const Color(0xFFE8F5E9);
-        bandLabel = 'Fresh';
-        break;
-    }
+    final price = listing.livePricePerKg();
 
-    final diff = listing.expiresAt != null ? listing.expiresAt!.difference(DateTime.now()) : null;
-    final timerText = diff != null && diff.inSeconds > 0
-        ? '${diff.inHours.toString().padLeft(2, '0')}h ${(diff.inMinutes % 60).toString().padLeft(2, '0')}m left'
-        : '0h 18m left'; // Fallback mockup time
-
-    return GestureDetector(
-      onTap: onUpdateStock,
+    return Pressable(
+      onTap: onUpdateStock ?? onEdit,
       child: AppCard(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        padding: const EdgeInsets.all(10),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-          // Left: Image with Stack
-          SizedBox(
-            width: 88,
-            height: 88,
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: listing.imagePath != null && listing.imagePath!.isNotEmpty
-                        ? Image.file(File(listing.imagePath!), fit: BoxFit.cover, errorBuilder: (_, __, ___) => _fallbackImage())
-                        : listing.imageUrl != null && listing.imageUrl!.isNotEmpty
-                            ? Image.network(listing.imageUrl!, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _fallbackImage())
-                            : _fallbackImage(),
-                  ),
-                ),
-                // ACTIVE Tag
-                Positioned(
-                  top: 6,
-                  left: 6,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2.5),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF27AE60),
-                      borderRadius: BorderRadius.circular(4),
+            // Left Image
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: SizedBox(
+                width: 88,
+                height: 88,
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: listing.imagePath != null && listing.imagePath!.isNotEmpty
+                          ? Image.file(File(listing.imagePath!), fit: BoxFit.cover, errorBuilder: (_, __, ___) => _fallbackImage())
+                          : listing.imageUrl != null && listing.imageUrl!.isNotEmpty
+                              ? Image.network(listing.imageUrl!, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _fallbackImage())
+                              : _fallbackImage(),
                     ),
-                    child: const Text(
-                      'ACTIVE',
-                      style: TextStyle(color: Colors.white, fontSize: 7.5, fontWeight: FontWeight.w900, letterSpacing: 0.2),
+                    Positioned(
+                      top: 6,
+                      left: 6,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF27AE60),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Text(
+                          'ACTIVE',
+                          style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.w900, letterSpacing: 0.2),
+                        ),
+                      ),
                     ),
-                  ),
+                    if (listing.organic)
+                      Positioned(
+                        bottom: 6,
+                        left: 6,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF27AE60),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Row(
+                            children: [
+                              HugeIcon(
+                                icon: HugeIcons.strokeRoundedStar,
+                                color: Colors.white,
+                                size: 8,
+                              ),
+                              SizedBox(width: 2),
+                              Text(
+                                'ORGANIC',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 0.2,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
-              ],
+              ),
             ),
-          ),
-          const SizedBox(width: 10),
-          // Middle: Details
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            const SizedBox(width: 12),
+            // Middle Details
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          listing.vegetable,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const HugeIcon(
+                        icon: HugeIcons.strokeRoundedCheckmarkCircle02,
+                        color: Color(0xFF27AE60),
+                        size: 13,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const HugeIcon(
+                        icon: HugeIcons.strokeRoundedLocation01,
+                        color: AppColors.textMuted,
+                        size: 12,
+                      ),
+                      const SizedBox(width: 4),
+                      const Expanded(
+                        child: Text(
+                          'K.R. Market, Bengaluru',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: AppColors.textMuted,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: [
+                      _tag(
+                        icon: HugeIcons.strokeRoundedShoppingBag01,
+                        label: '${listing.quantityKg.toInt()} kg left',
+                      ),
+                      _tag(
+                        icon: HugeIcons.strokeRoundedCheckmarkBadge01,
+                        label: listing.liveBand() == FreshnessBand.good ? 'Grade A+' : listing.liveBand() == FreshnessBand.useSoon ? 'Grade A' : 'Grade B',
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Right Pricing / Countdown Column
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                const SizedBox(height: 2),
-                Row(
-                  children: [
-                    Text(
-                      listing.vegetable,
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: AppColors.textPrimary),
+                if (listing.hasClock)
+                  FreshnessCountdownPill(
+                    expiresAt: listing.expiresAt!,
+                    totalHours: listing.totalHours!,
+                  )
+                else
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: _tint,
+                      borderRadius: BorderRadius.circular(6),
                     ),
-                    const SizedBox(width: 4),
-                    const HugeIcon(icon: HugeIcons.strokeRoundedCheckmarkCircle02, size: 12, color: Color(0xFF27AE60)),
-                  ],
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  '$bandLabel • ${band == FreshnessBand.good ? 'Grade A' : band == FreshnessBand.useSoon ? 'Grade B' : 'Grade C'}',
-                  style: TextStyle(fontSize: 10, color: bandColor, fontWeight: FontWeight.w500),
-                ),
+                    child: Text(
+                      listing.timeRange,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        color: _urgencyColor,
+                      ),
+                    ),
+                  ),
                 const SizedBox(height: 6),
-                Row(
-                  children: [
-                    const HugeIcon(icon: HugeIcons.strokeRoundedPackage, size: 11, color: AppColors.textMuted),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${listing.quantityKg.toInt()} kg available',
-                      style: const TextStyle(fontSize: 10, color: AppColors.textSecondary, fontWeight: FontWeight.w600),
-                    ),
-                  ],
+                Text(
+                  _freshnessLabel,
+                  textAlign: TextAlign.end,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: _urgencyColor,
+                    height: 1.2,
+                  ),
                 ),
-                const SizedBox(height: 3),
-                const Row(
+                const SizedBox(height: 10),
+
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
                   children: [
-                    HugeIcon(icon: HugeIcons.strokeRoundedLocation01, size: 11, color: AppColors.textMuted),
-                    SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        'K.R. Market, Bengaluru',
-                        style: TextStyle(fontSize: 10, color: AppColors.textSecondary, fontWeight: FontWeight.w500, overflow: TextOverflow.ellipsis),
+                    Text(
+                      '₹${price.toInt()}',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                        color: _urgencyColor,
+                      ),
+                    ),
+                    Text(
+                      '/kg',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: _urgencyColor,
                       ),
                     ),
                   ],
                 ),
               ],
             ),
-          ),
-          const SizedBox(width: 8),
-          // Right: Pricing / Timer
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              // Freshness container
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                decoration: BoxDecoration(
-                  color: bandBg,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      bandLabel,
-                      style: TextStyle(color: bandColor, fontSize: 9.5, fontWeight: FontWeight.w800),
-                    ),
-                    const SizedBox(height: 2),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        HugeIcon(icon: HugeIcons.strokeRoundedClock01, size: 10, color: bandColor),
-                        const SizedBox(width: 2),
-                        Text(
-                          timerText,
-                          style: TextStyle(color: bandColor, fontSize: 9, fontWeight: FontWeight.w600),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          '₹${listing.basePrice.toInt()}/kg',
-                          style: const TextStyle(
-                            fontSize: 9,
-                            color: AppColors.textMuted,
-                            decoration: TextDecoration.lineThrough,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '₹${listing.recommendedPrice.toInt()}',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w900,
-                            color: bandColor,
-                          ),
-                        ),
-                        Text(
-                          '/kg',
-                          style: TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w600,
-                            color: bandColor,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _tag({required dynamic icon, required String label}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceAlt,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          HugeIcon(icon: icon, color: AppColors.textSecondary, size: 11),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
           ),
         ],
       ),
-    ));
+    );
   }
 
   Widget _fallbackImage() {
-    return Image.asset(
-      'assets/images/tomato.png',
-      fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) => Container(color: AppColors.primarySurface),
+    return Container(
+      color: AppColors.primarySurface,
+      alignment: Alignment.center,
+      child: HugeIcon(
+        icon: HugeIcons.strokeRoundedLeaf02,
+        size: 32,
+        color: AppColors.primary.withValues(alpha: 0.55),
+      ),
     );
   }
 }

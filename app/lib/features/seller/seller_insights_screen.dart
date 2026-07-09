@@ -1,12 +1,18 @@
 import 'dart:math';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hugeicons/hugeicons.dart';
 
+import '../../core/format.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_card.dart';
 import 'application/insights_providers.dart';
+import 'application/listings_providers.dart';
+import 'domain/listing.dart';
 import 'domain/seller_insights.dart';
+import 'domain/waste_risk.dart';
 
 const _vegEmoji = <String, String>{
   'Tomato': '🍅', 'Potato': '🥔', 'Onion': '🧅', 'Spinach': '🥬',
@@ -32,74 +38,65 @@ class _SellerInsightsScreenState extends ConsumerState<SellerInsightsScreen> {
     final insightsAsync = ref.watch(sellerInsightsProvider(_period));
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0E692D),
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            _buildHeader(),
-            Expanded(
-              child: Container(
-                width: double.infinity,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFF8F9FA),
-                  borderRadius:
-                      BorderRadius.vertical(top: Radius.circular(16)),
-                ),
-                child: ClipRRect(
-                  borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(16)),
-                  child: insightsAsync.when(
-                    loading: () =>
-                        const Center(child: CircularProgressIndicator()),
-                    error: (e, _) =>
-                        Center(child: Text('Could not load insights: $e')),
-                    data: (insights) => ListView(
-                      padding: const EdgeInsets.all(16),
-                      children: [
-                        _buildPeriodFilter(),
-                        const SizedBox(height: 12),
-                        _buildTopRow(insights),
-                        const SizedBox(height: 16),
-                        _buildEarningsOverview(insights.earnings),
-                        const SizedBox(height: 16),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                                child: _buildListingsPerformance(insights)),
-                            const SizedBox(width: 12),
-                            Expanded(
-                                child: _buildTopPerformingProduce(insights)),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        _buildImpact(insights.impact),
-                        const SizedBox(height: 16),
-                        _buildRecentInsights(insights),
-                        const SizedBox(height: 80),
-                      ],
-                    ),
+      backgroundColor: const Color(0xFFF7F9FB),
+      body: Column(
+        children: [
+          _buildHeader(context),
+          Expanded(
+            child: insightsAsync.when(
+              loading: () =>
+                  const Center(child: CircularProgressIndicator()),
+              error: (e, _) =>
+                  Center(child: Text('Could not load insights: $e')),
+              data: (insights) => ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                children: [
+                  _buildPeriodFilter(),
+                  const SizedBox(height: 12),
+                  _buildTopRow(insights),
+                  const SizedBox(height: 16),
+                  _buildWasteRisk(),
+                  _buildEarningsOverview(insights.earnings),
+                  const SizedBox(height: 16),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                          child: _buildListingsPerformance(insights)),
+                      const SizedBox(width: 12),
+                      Expanded(
+                          child: _buildTopPerformingProduce(insights)),
+                    ],
                   ),
-                ),
+                  const SizedBox(height: 16),
+                  _buildImpact(insights.impact),
+                  const SizedBox(height: 16),
+                  _buildRecentInsights(insights),
+                  const SizedBox(height: 80),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+  Widget _buildHeader(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.only(
+        top: MediaQuery.of(context).padding.top + 8,
+        bottom: 20,
+        left: 16,
+        right: 16,
+      ),
       child: Row(
         children: [
-          const HugeIcon(
-              icon: HugeIcons.strokeRoundedArrowLeft01,
-              color: Colors.white,
-              size: 22),
-          const SizedBox(width: 12),
           const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -107,10 +104,15 @@ class _SellerInsightsScreenState extends ConsumerState<SellerInsightsScreen> {
                 Text('Insights',
                     style: TextStyle(
                         color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold)),
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800)),
+                SizedBox(height: 2),
                 Text('Track your impact, performance and growth',
-                    style: TextStyle(color: Colors.white70, fontSize: 13),
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
                     overflow: TextOverflow.ellipsis),
               ],
             ),
@@ -195,6 +197,155 @@ class _SellerInsightsScreenState extends ConsumerState<SellerInsightsScreen> {
     );
   }
 
+  /// Forward-looking waste-risk projection over the seller's live listings —
+  /// how much stock will hit the RESCUE band within a day, so they can discount
+  /// or route it before it's waste. Hidden when there's nothing at risk.
+  Widget _buildWasteRisk() {
+    final listings = ref.watch(listingsProvider).valueOrNull ?? const <Listing>[];
+    final risk = computeWasteRisk(listings);
+    if (risk.isEmpty) return const SizedBox.shrink();
+
+    const danger = Color(0xFFF23E3E);
+    const warn = Color(0xFFF2994A);
+    final tone = risk.rescueNowCount > 0 ? danger : warn;
+    final headline = risk.rescueNowCount > 0
+        ? '${risk.rescueNowCount} listing${risk.rescueNowCount == 1 ? '' : 's'} in Rescue band now'
+        : '${risk.count} listing${risk.count == 1 ? '' : 's'} nearing Rescue';
+
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: tone.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: tone.withValues(alpha: 0.28)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(7),
+                    decoration: BoxDecoration(
+                      color: tone.withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                    child: HugeIcon(
+                        icon: HugeIcons.strokeRoundedAlert02,
+                        color: tone,
+                        size: 18),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Waste risk — next 24h',
+                            style: TextStyle(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.textPrimary)),
+                        Text(headline,
+                            style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600,
+                                color: tone)),
+                      ],
+                    ),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text('${formatKg(risk.atRiskKg)} at risk',
+                          style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w900,
+                              color: AppColors.textPrimary)),
+                      Text('${formatMoney(risk.atRiskValue)} value',
+                          style: const TextStyle(
+                              fontSize: 10.5, color: AppColors.textMuted)),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              for (final it in risk.items.take(3)) ...[
+                _wasteRow(it, tone),
+                const SizedBox(height: 7),
+              ],
+              const SizedBox(height: 2),
+              Text(
+                risk.rescueNowCount > 0
+                    ? 'Discount now or route to a rescue NGO before these expire.'
+                    : 'Prices auto-drop as they age — or route to a rescue NGO to avoid waste.',
+                style: const TextStyle(
+                    fontSize: 11, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 10),
+              InkWell(
+                onTap: () => context.push('/rescues'),
+                borderRadius: BorderRadius.circular(8),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    HugeIcon(
+                        icon: HugeIcons.strokeRoundedDeliveryTruck02,
+                        size: 15,
+                        color: tone),
+                    const SizedBox(width: 6),
+                    Text('Open the rescue network',
+                        style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            color: tone)),
+                    const SizedBox(width: 2),
+                    HugeIcon(
+                        icon: HugeIcons.strokeRoundedArrowRight01,
+                        size: 14,
+                        color: tone),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  Widget _wasteRow(WasteRiskItem it, Color tone) {
+    final emoji = _vegEmoji[it.listing.vegetable] ?? '🥗';
+    final when = it.alreadyRescue
+        ? 'Rescue now'
+        : it.hoursToRescue < 1
+            ? '< 1h'
+            : 'in ${it.hoursToRescue.round()}h';
+    return Row(
+      children: [
+        Text(emoji, style: const TextStyle(fontSize: 15)),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text('${it.listing.vegetable} · ${formatKg(it.kg)}',
+              style: const TextStyle(
+                  fontSize: 12.5, fontWeight: FontWeight.w700)),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: tone.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Text(when,
+              style: TextStyle(
+                  fontSize: 10.5, fontWeight: FontWeight.w800, color: tone)),
+        ),
+      ],
+    );
+  }
+
   Widget _buildStatCard(
       dynamic icon, Color iconColor, String title, String value, String sub) {
     return Container(
@@ -257,10 +408,85 @@ class _SellerInsightsScreenState extends ConsumerState<SellerInsightsScreen> {
             height: 160,
             width: double.infinity,
             child: earnings.hasData
-                ? CustomPaint(
-                    painter: EarningsChartPainter(
-                      labels: earnings.labels,
-                      values: earnings.values,
+                ? LineChart(
+                    LineChartData(
+                      lineTouchData: LineTouchData(
+                        touchTooltipData: LineTouchTooltipData(
+                          tooltipPadding: const EdgeInsets.all(8),
+                          tooltipMargin: 8,
+                          getTooltipItems: (touchedSpots) {
+                            return touchedSpots.map((spot) {
+                              return LineTooltipItem(
+                                '₹${spot.y.toInt()}',
+                                const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                              );
+                            }).toList();
+                          },
+                        ),
+                      ),
+                      gridData: FlGridData(
+                        show: true,
+                        drawVerticalLine: false,
+                        horizontalInterval: (earnings.values.reduce(max) <= 0 ? 500 : earnings.values.reduce(max)) / 4,
+                        getDrawingHorizontalLine: (value) {
+                          return const FlLine(color: AppColors.border, strokeWidth: 0.5);
+                        },
+                      ),
+                      titlesData: FlTitlesData(
+                        show: true,
+                        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                        bottomTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            reservedSize: 22,
+                            interval: 1,
+                            getTitlesWidget: (value, meta) {
+                              final idx = value.toInt();
+                              if (idx >= 0 && idx < earnings.labels.length) {
+                                return SideTitleWidget(
+                                  meta: meta,
+                                  child: Text(earnings.labels[idx], style: const TextStyle(fontSize: 9, color: AppColors.textSecondary)),
+                                );
+                              }
+                              return const SizedBox.shrink();
+                            },
+                          ),
+                        ),
+                        leftTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            interval: (earnings.values.reduce(max) <= 0 ? 500 : earnings.values.reduce(max)) / 4,
+                            reservedSize: 32,
+                            getTitlesWidget: (value, meta) {
+                              if (value == meta.max) return const SizedBox.shrink();
+                              final label = value >= 1000 ? '₹${(value / 1000).toStringAsFixed(1)}k' : '₹${value.toInt()}';
+                              return SideTitleWidget(
+                                meta: meta,
+                                child: Text(label, style: const TextStyle(fontSize: 9, color: AppColors.textSecondary)),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                      borderData: FlBorderData(show: false),
+                      minX: 0,
+                      maxX: (earnings.labels.length - 1).toDouble(),
+                      minY: 0,
+                      maxY: (earnings.values.reduce(max) <= 0 ? 500 : earnings.values.reduce(max)) * 1.2,
+                      lineBarsData: [
+                        LineChartBarData(
+                          spots: List.generate(
+                            earnings.values.length,
+                            (index) => FlSpot(index.toDouble(), earnings.values[index]),
+                          ),
+                          isCurved: false,
+                          color: const Color(0xFF27AE60),
+                          barWidth: 2,
+                          isStrokeCapRound: true,
+                          dotData: const FlDotData(show: false),
+                        ),
+                      ],
                     ),
                   )
                 : const Center(
@@ -300,21 +526,7 @@ class _SellerInsightsScreenState extends ConsumerState<SellerInsightsScreen> {
                       goodPct: goodPct,
                       soonPct: soonPct,
                       rescuePct: rescuePct),
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text('$total',
-                            style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold)),
-                        const Text('Active',
-                            style: TextStyle(
-                                fontSize: 10,
-                                color: AppColors.textSecondary)),
-                      ],
-                    ),
-                  ),
+                  // Removed center text as requested
                 ),
               ),
               const SizedBox(height: 24),
@@ -392,7 +604,10 @@ class _SellerInsightsScreenState extends ConsumerState<SellerInsightsScreen> {
   }
 
   Widget _buildProduceRow(MoverRow mover) {
-    final emoji = _vegEmoji[mover.vegetable] ?? '🥬';
+    final key = _vegEmoji.keys.firstWhere(
+        (k) => k.toLowerCase() == mover.vegetable.toLowerCase().trim(),
+        orElse: () => '');
+    final emoji = key.isNotEmpty ? _vegEmoji[key]! : '🥬';
     return Row(
       children: [
         Container(
@@ -651,106 +866,4 @@ class DonutChartPainter extends CustomPainter {
       old.goodPct != goodPct ||
       old.soonPct != soonPct ||
       old.rescuePct != rescuePct;
-}
-
-class EarningsChartPainter extends CustomPainter {
-  EarningsChartPainter({required this.labels, required this.values});
-  final List<String> labels;
-  final List<double> values;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (values.isEmpty) return;
-    final n = values.length;
-    final maxValue = values.reduce(max);
-
-    final paintLine = Paint()
-      ..color = const Color(0xFF27AE60)
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke;
-
-    const yCount = 5;
-    final textPainter = TextPainter(textDirection: TextDirection.ltr);
-
-    const leftPadding = 40.0;
-    const bottomPadding = 20.0;
-    final chartWidth = size.width - leftPadding;
-    final chartHeight = size.height - bottomPadding;
-
-    // Nice y-axis top: round the max up so labels read cleanly.
-    final axisTop = maxValue <= 0 ? 500.0 : _niceCeil(maxValue);
-    final yStep = axisTop / (yCount - 1);
-    for (int i = 0; i < yCount; i++) {
-      final y = chartHeight / (yCount - 1) * i;
-      final val = (yCount - 1 - i) * yStep;
-      final label = val >= 1000
-          ? '₹${(val / 1000).toStringAsFixed(1)}k'
-          : '₹${val.toInt()}';
-      textPainter.text = TextSpan(
-          text: label,
-          style: const TextStyle(fontSize: 9, color: AppColors.textSecondary));
-      textPainter.layout();
-      textPainter.paint(canvas, Offset(0, y - 6));
-
-      canvas.drawLine(
-        Offset(leftPadding, y),
-        Offset(size.width, y),
-        Paint()
-          ..color = AppColors.border
-          ..strokeWidth = 0.5,
-      );
-    }
-
-    final xStep = n > 1 ? chartWidth / (n - 1) : chartWidth;
-    for (int i = 0; i < n; i++) {
-      final x = leftPadding + i * xStep;
-      final label = i < labels.length ? labels[i] : '';
-      textPainter.text = TextSpan(
-          text: label,
-          style: const TextStyle(fontSize: 9, color: AppColors.textSecondary));
-      textPainter.layout();
-      textPainter.paint(
-          canvas, Offset(x - textPainter.width / 2, size.height - 14));
-    }
-
-    final path = Path();
-    for (int i = 0; i < n; i++) {
-      final x = leftPadding + i * xStep;
-      final y = chartHeight - (values[i] / axisTop * chartHeight);
-      if (i == 0) {
-        path.moveTo(x, y);
-      } else {
-        path.lineTo(x, y);
-      }
-    }
-    canvas.drawPath(path, paintLine);
-
-    // Mark the peak point.
-    final maxIdx = values.indexOf(maxValue);
-    if (maxIdx >= 0 && maxValue > 0) {
-      final mx = leftPadding + maxIdx * xStep;
-      final my = chartHeight - (values[maxIdx] / axisTop * chartHeight);
-      canvas.drawCircle(Offset(mx, my), 4,
-          Paint()..color = Colors.white..style = PaintingStyle.fill);
-      canvas.drawCircle(
-          Offset(mx, my),
-          4,
-          Paint()
-            ..color = const Color(0xFF27AE60)
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 2);
-    }
-  }
-
-  double _niceCeil(double v) {
-    if (v <= 0) return 500;
-    final mag = pow(10, (log(v) / ln10).floor()).toDouble();
-    final n = v / mag;
-    final nice = n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10;
-    return nice * mag;
-  }
-
-  @override
-  bool shouldRepaint(EarningsChartPainter old) =>
-      old.values != values || old.labels != labels;
 }

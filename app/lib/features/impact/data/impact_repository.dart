@@ -14,8 +14,8 @@ class InMemoryImpactRepository implements ImpactRepository {
         mealsServed: 3100,
         co2SavedKg: 3100, // ~2.5 kg CO2e avoided per kg of food saved
         moneySaved: 48600,
-        activeVendors: 18,
-        activeNgos: 6,
+        activeVendors: 6,
+        activeNgos: 3,
         mealsGoal: 5000,
       ),
       leaderboard: [

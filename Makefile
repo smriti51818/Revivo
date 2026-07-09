@@ -25,8 +25,12 @@ infra-destroy: ## Tear down all deployed stacks
 	cd infra && . .venv/bin/activate && cdk destroy --all
 
 # ─── Seed data ──────────────────────────────────────────────────
-seed: ## Load demo vendors, buyers, cooks, and listings
-	cd seed && python seed_all.py
+seed: ## Load demo accounts, listings, rescues, and orders (needs backend/.venv)
+	cd backend && . .venv/bin/activate && \
+	 DEMO_PASSWORD=$${DEMO_PASSWORD:-TestPass123} python scripts/seed_users.py && \
+	 python scripts/seed_listings.py && \
+	 python scripts/seed_rescues.py && \
+	 python scripts/seed_orders.py
 
 # ─── Flutter app ────────────────────────────────────────────────
 app-get: ## Fetch Flutter dependencies

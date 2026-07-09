@@ -16,17 +16,21 @@ AWS Student Builder Group Hackathon 2026 · `#include 1.0` · Track: **SDG 2 —
 
 ## 📖 Overview
 
-**Revivo** connects vegetable vendors with nearby hotels, restaurants, NGOs, temple kitchens, and community cooks. It treats every batch of surplus produce as a **degrading asset with a live countdown** and automatically decides whether its highest value lies in **selling** it, **rescuing** it, or **transforming** it into a hot meal.
+**Revivo** connects vegetable vendors with nearby hotels and restaurants. It
+treats every batch of surplus produce as a **degrading asset with a live
+countdown** — freshness band and price both decay continuously from the
+moment it's listed — and helps the vendor sell it before that window closes.
 
-The platform operates through three automated layers, each triggered by a freshness countdown:
+The platform operates through two layers, both grounded in the same live
+freshness countdown:
 
-| Layer | What happens | Trigger |
-|-------|--------------|---------|
-| **1 · Sell** | Vendor photographs surplus → Rekognition IDs it & screens for defects → freshness band + price → matched to nearby buyers | Vendor lists produce |
-| **2 · Rescue** | When a listing stays unsold and freshness hits the *Rescue* band, the system auto-routes it to a matched receiver | Unsold 4h+ **and** Rescue band |
-| **3 · Transform** | Community Cooking Circles (temple kitchens, hostel messes, NGOs) turn rescued produce into meals | Receiver accepts rescue |
+| Layer | What happens |
+|-------|--------------|
+| **1 · Sell** | Vendor photographs surplus → Rekognition IDs it → freshness band + auto price → live on the buyer marketplace → order tracked through a real Step Functions lifecycle |
+| **2 · Rescue** | Listings that would otherwise expire unsold are shown on a read-only Rescue board, routed to an NGO kitchen, each with a Bedrock-written "why rescue this" explanation |
 
-Pilot: **Gandhipuram Market, Coimbatore** — 15 vendors, 10 hotels, 1 temple kitchen, a local NSS unit as pickup partner.
+Pilot: **Coimbatore** — seeded with a produce vendor (GreenLeaf Farms) and a
+hotel buyer (Hotel Ashok) on the live AWS backend.
 
 ## ❗ Problem statement
 
@@ -36,32 +40,29 @@ India wastes **67 million tonnes of food annually** while **190 million people g
 
 Revivo adds **time-awareness, automation, and measurement** to surplus redistribution:
 
-- **Live freshness bands** (Good / Use Soon / Rescue) from a validated shelf-life database adjusted for storage condition and local temperature — honest ranges, not false precision.
-- **Relevance-scored matching** (proximity 40%, purchase history 30%, quantity match 20%, rating 10%) with aggregated buyer views ("18 kg tomatoes from 3 vendors within 1.5 km").
-- **Autonomous Food Rescue Mode** with matching filters (operating hours, reliability, vegetable preference, freshness window).
-- **Bedrock-generated explanations** at every rescue trigger — human-readable reasoning.
-- **Impact tracking & gamification** — personal impact cards, community leaderboard, milestone badges, all sourced from FAO/UNEP factors.
+- **Live freshness bands** (Good / Use Soon / Rescue) from a validated shelf-life database adjusted for storage condition — honest ranges, not false precision, recomputed from wall-clock time on every read.
+- **A live marketplace, not a bulletin board** — prices decay with freshness in real time, identically on client and server, so what a buyer sees is what they pay.
+- **A read-only Rescue network** for produce that would otherwise expire unsold, with a Bedrock-written explanation of why it should be rescued now.
+- **Impact tracking & gamification** — personal impact cards, community leaderboard, milestone badges, sourced from FAO/UNEP-style conversion factors.
 
 ## ✨ Features
 
-- 40-second vendor listing flow (photo → AI ID + defect scan → band → price → publish, < 3s end-to-end)
-- GPS + timestamp verified photos (5-layer trust model + Trusted Vendor badge)
-- Buyer dashboard with nearby + aggregated listings and one-tap ordering
-- Visible **Step Functions listing lifecycle**: `ACTIVE → DISCOUNTED → RESCUE → RESCUED / EXPIRED`
-- SMS-based cook workflow (Accept → Received → Meals Served) — no app install required
-- Two-tap volunteer pickup (Picked Up → Delivered)
-- Real-time impact dashboard + leaderboard + badges
+- Vendor listing flow: photo → **Rekognition** auto-ID → freshness band → auto price → publish
+- Live freshness countdown with **real-time price decay** (`market × freshness factor`), identical client + server
+- Buyer marketplace with per-vendor bands, dynamic prices, categories, filters, one-tap ordering
+- Visible **Step Functions order lifecycle**: `Confirmed → Preparing → Ready → Completed`
+- **AI insights (Bedrock Nova)** grounded in real seller data + a forward-looking **waste-risk projection** ("N kg reaches Rescue within 24h")
+- Read-only **Rescue network** — surplus → NGO, with a live Bedrock "why rescue this?"
+- Real impact dashboard (kg, meals, CO₂, ₹ saved) + leaderboard + milestone badges + rate & review
 
-## 👥 User roles (4 logins)
+## 👥 User roles
 
 | Role | Capabilities |
 |------|--------------|
-| **Vendor / Seller** | List surplus, manage inventory, approve orders, view impact & insights |
-| **Buyer / Hotel** | Browse nearby & aggregated listings, one-tap order, track orders |
-| **Cook / NGO** | Receive rescues (app or SMS), Accept → Received → Meals Served, view impact |
-| **Volunteer (NSS)** | Pickup coordination — Picked Up → Delivered |
+| **Vendor / Seller** | List surplus (Rekognition auto-ID), manage inventory, accept/advance/reject orders, **AI insights + waste-risk projection** |
+| **Buyer / Hotel** | Browse the live marketplace, one-tap order, track the Step Functions lifecycle, rate & review, Impact + Rescue network |
 
-All four use **one Amazon Cognito user pool** with a `custom:role` attribute for zero-code role-based access.
+Both use **one Amazon Cognito user pool** with a `custom:role` attribute for zero-code role-based access. The Rescue → NGO ("Transform") leg is surfaced **read-only** in-app (with a live Bedrock "why rescue this?"); the standalone cook/volunteer logins are future scope.
 
 ## 🧱 Technology stack
 
@@ -69,45 +70,45 @@ All four use **one Amazon Cognito user pool** with a `custom:role` attribute for
 |-------|------------|
 | **Frontend** | Flutter (Dart) + Riverpod · hosted on AWS Amplify |
 | **Backend** | Serverless — API Gateway + AWS Lambda (Python 3.12) |
-| **Database** | Amazon DynamoDB (single-table) + Streams + TTL |
+| **Database** | Amazon DynamoDB (single-table) + Streams |
 | **Auth** | Amazon Cognito (JWT, role-based access) |
-| **AI pipeline** | Rekognition (ID + defect) → Lambda → Bedrock → DynamoDB |
-| **Events / orchestration** | DynamoDB Streams + EventBridge + Step Functions |
-| **Notifications** | Amazon SNS (push + SMS) + SQS dead-letter queue |
+| **AI pipeline** | Rekognition (vegetable ID) · Bedrock Amazon Nova (insights + rescue explanations) |
+| **Events / orchestration** | DynamoDB Streams → Step Functions (order lifecycle) + notifier Lambda |
+| **Notifications** | Amazon SNS + in-app feed (client polls, no push infra in the pilot) |
 | **Storage** | Amazon S3 (presigned URLs + SSE encryption) |
 | **Observability** | Amazon CloudWatch |
-| **Infrastructure as Code** | AWS CDK (Python) |
+| **Infrastructure as Code** | AWS CDK (Python) — 5 stacks: Data / Auth / Api / Workflow / Notify |
 
 ## 🗺️ Architecture
 
-See [`docs/architecture.md`](docs/architecture.md) and the diagram at [`docs/architecture.png`](docs/architecture.png).
+See [`docs/architecture.md`](docs/architecture.md) and the diagram at [`docs/architecture.svg`](docs/architecture.svg).
 
 ```mermaid
 flowchart TD
-    subgraph Clients["Flutter clients (Amplify)"]
-        V[Vendor] & B[Buyer] & C[Cook/NGO] & Vol[Volunteer]
+    subgraph Clients["Flutter (Amplify)"]
+        Se[Seller] & Bu[Buyer]
     end
-    Clients --> APIGW[API Gateway + Cognito<br/>JWT · role-based]
-    APIGW --> S3[S3 + Rekognition<br/>presigned · defect scan]
-    APIGW --> L[AWS Lambda · Python<br/>business logic]
-    L --> BR[Amazon Bedrock<br/>rescue explanations]
-    L --> DDB[(DynamoDB · single table<br/>Streams · TTL)]
-    DDB -->|Streams| SF[Step Functions<br/>listing lifecycle ★]
-    DDB --> EB[EventBridge<br/>recalc every 10 min]
-    SF --> SNS[SNS · push + SMS<br/>SQS DLQ]
-    EB --> SNS
-    SNS -.push / SMS.-> Clients
+    Clients --> APIGW[API Gateway + Cognito<br/>JWT authorizer]
+    APIGW --> S3[S3 + Rekognition<br/>presigned upload · vegetable ID]
+    APIGW --> L[AWS Lambda · Python 3.12<br/>business logic]
+    L --> BR[Amazon Bedrock · Nova<br/>insights + rescue explanations]
+    L --> DDB[(DynamoDB · single table<br/>GSI1/2/3 · Streams)]
+    DDB -->|Streams| SF[Step Functions<br/>order lifecycle]
+    DDB -->|Streams| NF[Notifier Lambda]
+    NF --> SNS[SNS topic]
+    SF -.buyer polls GET /orders.-> Clients
+    NF -.in-app feed.-> Clients
 ```
 
 ## 📂 Repository structure
 
 ```
 revivo/
-├── infra/      # AWS CDK (Python) — all cloud resources, one `cdk deploy`
-├── backend/    # Lambda handlers (Python) + shared modules
-├── app/        # Flutter app (Riverpod) — 4 role experiences
-├── seed/       # demo data scripts (vendors, buyers, cooks, listings)
-├── docs/       # architecture, API spec, demo script, ADRs
+├── infra/      # AWS CDK (Python) — 5 stacks (Data/Auth/Api/Workflow/Notify), one `cdk deploy`
+├── backend/    # Lambda handlers (Python) + shared modules + demo seed scripts
+├── app/        # Flutter app (Riverpod) — Seller + Buyer experiences
+├── docs/       # architecture, demo script
+├── amplify.yml # AWS Amplify Hosting build spec for the Flutter web build
 └── .github/    # CI workflows
 ```
 
@@ -128,34 +129,52 @@ cp .env.example .env   # fill in values after deploy
 
 ### 2. Deploy the backend (AWS CDK)
 ```bash
-make infra-deploy      # cdk bootstrap + deploy all stacks
-make seed              # load demo vendors, buyers, cooks, and listings
+make infra-deploy      # cdk bootstrap + deploy all stacks (ap-south-1)
 ```
-The deploy outputs (API URL, Cognito IDs, S3 bucket) are written for the app to consume.
+Copy the stack outputs (API URL, Cognito pool + client IDs) into
+`app/lib/core/config/app_config.dart`.
 
-### 3. Run the Flutter app
+### 3. Seed the demo data
+From `backend/` with `.venv` active:
 ```bash
-make app-run           # runs on connected device / web
-make app-build-apk     # builds a release APK
+DEMO_PASSWORD='TestPass123' python scripts/seed_users.py   # 2 accounts (GreenLeaf Farms, Hotel Ashok)
+python scripts/seed_listings.py                            # 6-vendor marketplace, live freshness bands
+python scripts/seed_rescues.py                             # rescue board + delivered history
+python scripts/seed_orders.py                              # order history + live incoming orders
 ```
 
-> Full command reference: run `make help`.
+### 4. Run / build the Flutter app
+```bash
+cd app
+flutter run                                                # live AWS (useLiveApi: true)
+flutter build apk --release --target-platform android-arm64 \
+  --tree-shake-icons --obfuscate --split-debug-info=build/symbols   # ~19 MB APK
+```
+
+### 5. Host the web app on AWS Amplify
+The repo root ships an [`amplify.yml`](amplify.yml) build spec (monorepo,
+`appRoot: app`) that installs Flutter and runs `flutter build web --release`.
+Connect the GitHub repo in the Amplify console — it builds and hosts `build/web`.
+
+**Live API:** `https://j5aq1g1vbd.execute-api.ap-south-1.amazonaws.com/prod`
+· **Demo logins:** see [`DEMO_LOGINS.md`](DEMO_LOGINS.md).
 
 ## 🕹️ Usage guide
 
-1. **Sign up / log in** and pick a role (Vendor, Buyer, Cook, Volunteer).
-2. **Vendor:** tap *Add Listing* → capture a photo → confirm the AI-identified vegetable, purchase date, and storage → publish.
-3. **Buyer:** browse nearby & aggregated listings → open a product → one-tap order.
-4. Watch the listing move through **ACTIVE → DISCOUNTED → RESCUE** in the AWS Step Functions console.
-5. **Cook:** accept an incoming rescue (or via SMS), mark *Received*, enter *Meals Served*.
-6. See impact cards and the leaderboard update in real time.
+1. **Sign up / log in** and pick a role (Seller or Buyer/Hotel).
+2. **Seller:** tap *Add Listing* → capture a photo → confirm the Rekognition-identified vegetable, purchase date, and storage → the freshness band and price are computed automatically → publish. Check *Insights* for the AI (Bedrock) recommendations and waste-risk projection.
+3. **Buyer:** browse the live marketplace → open a product → one-tap order.
+4. Watch the order advance through **Confirmed → Preparing → Ready for Pickup → Completed** — live in the app (8s poll) or in the AWS Step Functions console (`revivo-order-lifecycle`).
+5. Rate the completed order, then check **Impact** for kg rescued / meals / CO₂ / ₹ saved and the leaderboard.
+6. Browse the read-only **Rescue** network to see surplus routed to an NGO kitchen with a Bedrock-written explanation.
 
 ## 📦 Deliverables
 - ✅ Source code (this repo)
-- ✅ Architecture diagram — [`docs/architecture.png`](docs/architecture.png)
+- ✅ Architecture diagram — [`docs/architecture.svg`](docs/architecture.svg)
 - ✅ Demo script — [`docs/demo-script.md`](docs/demo-script.md)
-- 🔗 Deployment link (Amplify) — *added after deploy*
-- 🎬 Demo video (YouTube) — *added after demo*
+- ✅ Live backend — `https://j5aq1g1vbd.execute-api.ap-south-1.amazonaws.com/prod` (see [`DEMO_LOGINS.md`](DEMO_LOGINS.md))
+- 🔗 Deployment link (Amplify web hosting) — *added once the Amplify app is connected*
+- 🎬 Demo video (YouTube) — *added after the live demo*
 
 ## 🔭 Future scope
 Compost/processor routing · live Agmarknet price feed · multi-vendor route optimization · weather-based demand forecasting · carbon credit tracking · DynamoDB DAX · delivery API integration (Dunzo/Porter) · payment gateway · full AI freshness modeling.

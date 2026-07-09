@@ -3,8 +3,30 @@ import 'package:hugeicons/hugeicons.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_card.dart';
 
-class SellerDocumentsScreen extends StatelessWidget {
+class SellerDocumentsScreen extends StatefulWidget {
   const SellerDocumentsScreen({super.key});
+
+  @override
+  State<SellerDocumentsScreen> createState() => _SellerDocumentsScreenState();
+}
+
+class _SellerDocumentsScreenState extends State<SellerDocumentsScreen> {
+  bool _fssaiUploaded = false;
+  bool _isUploading = false;
+
+  Future<void> _mockUpload() async {
+    setState(() => _isUploading = true);
+    // Simulate file picker and upload delay
+    await Future.delayed(const Duration(seconds: 2));
+    if (!mounted) return;
+    setState(() {
+      _fssaiUploaded = true;
+      _isUploading = false;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('FSSAI License uploaded and under review')),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,16 +61,16 @@ class SellerDocumentsScreen extends StatelessWidget {
             const SizedBox(height: 24),
             _buildDocumentCard(
               title: 'Aadhaar Card',
-              status: 'Verified',
-              statusColor: const Color(0xFF27AE60),
-              icon: HugeIcons.strokeRoundedCheckmarkBadge01,
+              status: 'Not Uploaded',
+              statusColor: AppColors.textMuted,
+              icon: HugeIcons.strokeRoundedInformationCircle,
             ),
             const SizedBox(height: 16),
             _buildDocumentCard(
               title: 'FSSAI License',
-              status: 'Pending',
-              statusColor: AppColors.warning,
-              icon: HugeIcons.strokeRoundedTime01,
+              status: _fssaiUploaded ? 'Under Review' : 'Not Uploaded',
+              statusColor: _fssaiUploaded ? const Color(0xFFF2994A) : AppColors.textMuted,
+              icon: _fssaiUploaded ? HugeIcons.strokeRoundedClock01 : HugeIcons.strokeRoundedInformationCircle,
             ),
             const SizedBox(height: 16),
             _buildDocumentCard(
@@ -59,15 +81,17 @@ class SellerDocumentsScreen extends StatelessWidget {
             ),
             const SizedBox(height: 32),
             OutlinedButton.icon(
-              onPressed: () {},
+              onPressed: _isUploading ? null : _mockUpload,
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size.fromHeight(50),
                 side: const BorderSide(color: Color(0xFF27AE60)),
               ),
-              icon: const HugeIcon(icon: HugeIcons.strokeRoundedCloudUpload, size: 20, color: Color(0xFF27AE60)),
-              label: const Text(
-                'Upload New Document',
-                style: TextStyle(color: Color(0xFF27AE60), fontWeight: FontWeight.w600),
+              icon: _isUploading 
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF27AE60)))
+                  : const HugeIcon(icon: HugeIcons.strokeRoundedCloudUpload, size: 20, color: Color(0xFF27AE60)),
+              label: Text(
+                _isUploading ? 'Uploading...' : 'Upload New Document',
+                style: const TextStyle(color: Color(0xFF27AE60), fontWeight: FontWeight.w600),
               ),
             ),
           ],
