@@ -155,8 +155,35 @@ flutter build apk --release --target-platform android-arm64 \
 
 ### 5. Host the web app on AWS Amplify
 The repo root ships an [`amplify.yml`](amplify.yml) build spec (monorepo,
-`appRoot: app`) that installs Flutter and runs `flutter build web --release`.
-Connect the GitHub repo in the Amplify console — it builds and hosts `build/web`.
+`appRoot: app`) that installs Flutter, runs `flutter build web --release`, and
+publishes `app/build/web`. In the Amplify console → **Host web app** → connect
+this GitHub repo (branch `develop`, region `ap-south-1`). Amplify auto-detects
+`amplify.yml` — **use it as-is; don't override the build settings.**
+
+> ⚠️ Amplify's build image has **no Flutter SDK**, so a bare
+> `flutter build web --release` build command fails with `flutter: command not
+> found`. The install happens in the spec's `preBuild` phase (it clones the
+> stable channel onto `PATH`) — which is why the committed `amplify.yml` must
+> drive the build rather than the console's single build-command field.
+> Output dir is `build/web` **relative to `appRoot: app`** (i.e. `app/build/web`).
+
+> ℹ️ The first build is slow (~10–15 min: it clones the Flutter SDK); raise the
+> build timeout in **App settings → Build settings**. The `amplify.yml` caches
+> the SDK so later builds are fast.
+
+**SPA rewrite (required).** Flutter web + GoRouter is a single-page app, so add
+a rewrite in **App settings → Rewrites and redirects**, or deep links / refreshes
+404. Set **Target** = `/index.html`, **Type** = `200 (Rewrite)`, and paste this
+exact **Source address** (copy verbatim — the leading/trailing `<…>` are part of
+it):
+
+```
+</^[^.]+$|\.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|woff2|ttf|map|json)$)([^.]+$)/>
+```
+
+After deploy, sanity-check from the browser console: if REST calls hit CORS
+errors, enable CORS on the API Gateway for the Amplify origin; if the add-listing
+photo upload fails, allow the origin in the uploads-bucket S3 CORS.
 
 **Live API:** `https://j5aq1g1vbd.execute-api.ap-south-1.amazonaws.com/prod`
 · **Demo logins:** see [`DEMO_LOGINS.md`](DEMO_LOGINS.md).
