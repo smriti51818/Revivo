@@ -14,7 +14,9 @@ import 'confirm_code_screen.dart';
 
 /// Registration — creates an Amazon Cognito user with `custom:role` (or a local
 /// mock when `useLiveApi` is off). The pre-sign-up trigger auto-confirms, so
-/// the user is signed straight in.
+/// the user is signed straight in. Validates name / email / password up front
+/// (matching the pool's password policy) so users get a clear message before
+/// the request, and offers to jump to login if the email already exists.
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key, this.role});
 
@@ -29,8 +31,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _email = TextEditingController();
   final _password = TextEditingController();
   bool _loading = false;
+  bool _obscure = true;
+  String? _error;
 
   UserRole get _role => widget.role ?? UserRole.vendor;
+
+  static final _emailRe = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 
   @override
   void dispose() {
@@ -40,17 +46,37 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     super.dispose();
   }
 
-  Future<void> _register() async {
+  /// Client-side checks that mirror the Cognito user-pool rules, so the user is
+  /// told exactly what's wrong before we make a network call.
+  String? _validate() {
+    if (_name.text.trim().isEmpty) return 'Please enter your name.';
     final email = _email.text.trim();
-    final password = _password.text;
-    final name = _name.text.trim().isEmpty ? _role.label : _name.text.trim();
-    if (email.isEmpty || password.isEmpty) {
-      _toast('Enter an email and password');
+    if (!_emailRe.hasMatch(email)) return 'Please enter a valid email address.';
+    final pw = _password.text;
+    if (pw.length < 8 ||
+        !pw.contains(RegExp(r'[a-z]')) ||
+        !pw.contains(RegExp(r'[0-9]'))) {
+      return 'Password must be at least 8 characters, with a lowercase '
+          'letter and a number.';
+    }
+    return null;
+  }
+
+  Future<void> _register() async {
+    final err = _validate();
+    if (err != null) {
+      setState(() => _error = err);
       return;
     }
+    final email = _email.text.trim();
+    final password = _password.text;
+    final name = _name.text.trim();
 
     final config = ref.read(appConfigProvider);
-    setState(() => _loading = true);
+    setState(() {
+      _error = null;
+      _loading = true;
+    });
     try {
       if (config.useLiveApi) {
         final result = await ref.read(cognitoServiceProvider).signUp(
@@ -88,42 +114,177 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         ),
       );
     } on AuthException catch (e) {
-      if (mounted) _toast(e.message);
+      if (!mounted) return;
+      if (e.code == 'UsernameExistsException') {
+        _showExistsDialog(email);
+      } else {
+        setState(() => _error = e.message);
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
-  void _toast(String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
+  /// A clear next step when the email is already registered — offer to log in
+  /// rather than leaving the user stuck on a failed sign-up.
+  Future<void> _showExistsDialog(String email) async {
+    final goLogin = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Account already exists'),
+        content: Text(
+          '$email is already registered. Log in instead?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+            child: const Text('Log in'),
+          ),
+        ],
+      ),
+    );
+    if (goLogin == true && mounted) context.pop(); // back to the login screen
   }
 
   @override
   Widget build(BuildContext context) {
+    final pwValid = _password.text.length >= 8 &&
+        _password.text.contains(RegExp(r'[a-z]')) &&
+        _password.text.contains(RegExp(r'[0-9]'));
+
     return Scaffold(
       appBar: AppBar(title: const Text('Create account')),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(AppSpacing.xxl),
+          padding: const EdgeInsets.fromLTRB(
+              AppSpacing.xxl, AppSpacing.xxl, AppSpacing.xxl, 40),
           children: [
-            Text(
-              'Register as ${_role.label}',
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              'Join 5,000+ others reducing food waste today.',
-              style: TextStyle(color: AppColors.textSecondary),
+            // Role the user is registering as — clear at a glance.
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(9),
+                  decoration: const BoxDecoration(
+                    color: AppColors.primarySurface,
+                    shape: BoxShape.circle,
+                  ),
+                  child: HugeIcon(
+                    icon: _role == UserRole.vendor
+                        ? HugeIcons.strokeRoundedStore02
+                        : HugeIcons.strokeRoundedRestaurant02,
+                    size: 20,
+                    color: AppColors.primaryDark,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Register as ${_role.label}',
+                        style: const TextStyle(
+                            fontSize: 19, fontWeight: FontWeight.w800),
+                      ),
+                      const SizedBox(height: 2),
+                      const Text(
+                        'Join others reducing food waste today.',
+                        style: TextStyle(
+                            fontSize: 12.5, color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 24),
-            _field(_name, 'Full name', HugeIcons.strokeRoundedUserCircle),
+
+            _field(_name, 'Full name', HugeIcons.strokeRoundedUserCircle,
+                textInputAction: TextInputAction.next),
             const SizedBox(height: AppSpacing.lg),
             _field(_email, 'Email address', HugeIcons.strokeRoundedMail01,
-                keyboard: TextInputType.emailAddress),
+                keyboard: TextInputType.emailAddress,
+                textInputAction: TextInputAction.next),
             const SizedBox(height: AppSpacing.lg),
-            _field(_password, 'Password', HugeIcons.strokeRoundedLockKey, obscure: true),
+            _field(
+              _password,
+              'Password',
+              HugeIcons.strokeRoundedLockKey,
+              obscure: _obscure,
+              onSubmit: (_) => _register(),
+              suffix: IconButton(
+                onPressed: () => setState(() => _obscure = !_obscure),
+                icon: HugeIcon(
+                  icon: _obscure
+                      ? HugeIcons.strokeRoundedView
+                      : HugeIcons.strokeRoundedViewOff,
+                  size: 20,
+                  color: AppColors.textMuted,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            // Always-visible password rules so nobody guesses (and gets rejected).
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                HugeIcon(
+                  icon: pwValid
+                      ? HugeIcons.strokeRoundedCheckmarkCircle02
+                      : HugeIcons.strokeRoundedInformationCircle,
+                  size: 15,
+                  color: pwValid ? AppColors.primary : AppColors.textMuted,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'At least 8 characters, with a lowercase letter and a number.',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: pwValid
+                          ? AppColors.primaryDark
+                          : AppColors.textMuted,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            if (_error != null) ...[
+              const SizedBox(height: AppSpacing.lg),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.dangerSurface,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const HugeIcon(
+                        icon: HugeIcons.strokeRoundedAlert02,
+                        size: 16,
+                        color: AppColors.danger),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _error!,
+                        style: const TextStyle(
+                            fontSize: 12.5,
+                            color: AppColors.danger,
+                            fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
             const SizedBox(height: AppSpacing.xxl),
             PrimaryButton(
               label: 'Create account',
@@ -163,6 +324,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     dynamic icon, {
     bool obscure = false,
     TextInputType? keyboard,
+    TextInputAction? textInputAction,
+    Widget? suffix,
+    ValueChanged<String>? onSubmit,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -171,21 +335,26 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           padding: const EdgeInsets.only(bottom: 6),
           child: Text(
             label,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-            ),
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
           ),
         ),
         TextField(
           controller: c,
           obscureText: obscure,
           keyboardType: keyboard,
+          textInputAction: textInputAction,
+          onSubmitted: onSubmit,
+          // Clear the error banner as soon as the user starts fixing things.
+          onChanged: (_) {
+            if (_error != null) setState(() => _error = null);
+            if (label == 'Password') setState(() {});
+          },
           decoration: InputDecoration(
             prefixIcon: Padding(
               padding: const EdgeInsets.all(12),
               child: HugeIcon(icon: icon, size: 20, color: AppColors.textMuted),
             ),
+            suffixIcon: suffix,
           ),
         ),
       ],

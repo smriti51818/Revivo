@@ -7,6 +7,7 @@ import '../../core/discovery/produce_category.dart';
 import '../../core/models/freshness.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/session/session_controller.dart';
 import '../../core/widgets/location_picker_sheet.dart';
 import '../../core/widgets/motion.dart';
 import '../shared/application/profile_providers.dart';
@@ -141,6 +142,13 @@ class _BuyerMarketScreenState extends ConsumerState<BuyerMarketScreen> {
     final offers = ref.watch(offersProvider);
     ref.watch(favoritesProvider);
     final details = ref.watch(profileDetailsProvider);
+    // The greeting name comes straight from the live Cognito session, so it
+    // always reflects the currently signed-in (registered) user's first name —
+    // never a stale or seeded value.
+    final sessionName = ref.watch(sessionProvider)?.name.trim() ?? '';
+    final greetName = sessionName.isNotEmpty
+        ? sessionName
+        : (details.name.trim().isEmpty ? 'there' : details.name.trim());
     final location = details.addressLine.trim().isEmpty
         ? (details.city.trim().isEmpty ? 'Set your location' : details.city)
         : '${details.addressLine}, ${details.city}';
@@ -150,7 +158,7 @@ class _BuyerMarketScreenState extends ConsumerState<BuyerMarketScreen> {
       bottomNavigationBar: const CartBar(),
       body: Column(
         children: [
-          _buildGreenHeader(details.name, location),
+          _buildGreenHeader(greetName, location),
           Expanded(
             child: RefreshIndicator(
               onRefresh: () => ref.refresh(offersProvider.future),
@@ -184,6 +192,13 @@ class _BuyerMarketScreenState extends ConsumerState<BuyerMarketScreen> {
     );
   }
 
+  String get _greeting {
+    final h = DateTime.now().hour;
+    if (h < 12) return 'Good morning';
+    if (h < 17) return 'Good afternoon';
+    return 'Good evening';
+  }
+
   Widget _buildGreenHeader(String name, String location) {
     return Container(
       width: double.infinity,
@@ -207,7 +222,7 @@ class _BuyerMarketScreenState extends ConsumerState<BuyerMarketScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Good morning, $name 👋',
+                      '$_greeting, $name 👋',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
