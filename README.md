@@ -185,7 +185,8 @@ After deploy, sanity-check from the browser console: if REST calls hit CORS
 errors, enable CORS on the API Gateway for the Amplify origin; if the add-listing
 photo upload fails, allow the origin in the uploads-bucket S3 CORS.
 
-**Live API:** `https://j5aq1g1vbd.execute-api.ap-south-1.amazonaws.com/prod`
+**Live web app:** https://develop.d7xj1rzsthnq2.amplifyapp.com
+· **Live API:** `https://j5aq1g1vbd.execute-api.ap-south-1.amazonaws.com/prod`
 · **Demo logins:** see [`DEMO_LOGINS.md`](DEMO_LOGINS.md).
 
 ## 🕹️ Usage guide
@@ -203,7 +204,7 @@ photo upload fails, allow the origin in the uploads-bucket S3 CORS.
 - ✅ Demo script — [`docs/demo-script.md`](docs/demo-script.md)
 - ✅ Live backend — `https://j5aq1g1vbd.execute-api.ap-south-1.amazonaws.com/prod` (see [`DEMO_LOGINS.md`](DEMO_LOGINS.md))
 - ✅ Release APK — `flutter build apk --release` → ~19 MB (see [Setup & installation](#-setup--installation))
-- 🔗 Deployment link (Amplify web hosting) — *added once the Amplify app is connected*
+- ✅ Live web app (AWS Amplify Hosting) — https://develop.d7xj1rzsthnq2.amplifyapp.com
 - 🎬 Demo video (YouTube) — *added after the live demo*
 
 ## 🔭 Future scope
