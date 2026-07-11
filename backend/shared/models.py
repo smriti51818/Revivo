@@ -143,6 +143,7 @@ def build_order_item(
         "GSI1SK": f"ORDER#{now}#{order_id}",
         "GSI3PK": f"VENDOR#{listing.get('vendorId')}",
         "GSI3SK": f"ORDER#{now}#{order_id}",
+        "imageKey": listing.get("imageKey", ""),
     }
 
 
@@ -165,6 +166,8 @@ def to_public_order(item: dict) -> dict:
         "rating": item.get("rating"),
         "ratingTags": item.get("ratingTags", []),
         "ratingComment": item.get("ratingComment", ""),
+        "imageKey": item.get("imageKey", ""),
+        "imageUrl": item.get("imageUrl", ""),
         "createdAt": item.get("createdAt"),
     }
 

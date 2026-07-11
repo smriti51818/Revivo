@@ -95,6 +95,9 @@ class HttpMarketplaceRepository implements MarketplaceRepository {
       marketPricePerKg: asDouble(j['marketPricePerKg']),
       band: FreshnessBand.fromValue(j['band']?.toString()),
       status: OrderStatus.fromValue(j['status']?.toString()),
+      imagePath: (j['imageUrl'] ?? '').toString().isEmpty
+          ? null
+          : (j['imageUrl']).toString(),
       placedAt: epochToDate(j['createdAt']),
       pickupSlot: (j['pickupSlot'] ?? '').toString(),
       paymentMethod: (j['paymentMethod'] ?? 'PICKUP').toString(),

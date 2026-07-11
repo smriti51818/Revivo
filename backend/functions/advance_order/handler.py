@@ -10,6 +10,7 @@ import json
 from shared.dynamo import get_table
 from shared.models import to_public_order
 from shared.responses import error, ok
+from shared.uploads import attach_image_url
 
 _ALLOWED = {"READY_FOR_PICKUP", "COMPLETED"}
 
@@ -49,4 +50,4 @@ def handler(event, context):
         ReturnValues="ALL_NEW",
     )["Attributes"]
 
-    return ok(200, {"order": to_public_order(updated)})
+    return ok(200, {"order": attach_image_url(to_public_order(updated))})

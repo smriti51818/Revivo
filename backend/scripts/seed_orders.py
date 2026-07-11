@@ -70,14 +70,16 @@ def _vendor_id(name: str, seller_sub: str) -> str:
 def _order(table, buyer, vendor_name, vendor_id, veg, kg, market, price, band,
            status, secs_ago):
     now = int(time.time()) - secs_ago
+    slug = veg.lower().replace(" ", "_")
     listing = {
-        "listingId": f"lst_seed_{veg.lower()}",
+        "listingId": f"lst_seed_{slug}",
         "vendorId": vendor_id,
         "vendorName": vendor_name,
         "vegetable": veg,
         "band": band,
         "recommendedPrice": price,
         "basePrice": market,
+        "imageKey": f"uploads/seed/{slug}.jpg",
     }
     item = build_order_item({"quantityKg": kg, "pickupSlot": "6:00-6:30 PM"},
                             buyer, listing, now=now)

@@ -20,6 +20,7 @@ from shared.profile import (
     spend_wallet,
 )
 from shared.responses import error, ok
+from shared.uploads import attach_image_url
 from shared.validation import ValidationError, validate_order_input
 
 
@@ -117,4 +118,4 @@ def handler(event, context):
     except Exception:  # pragma: no cover - best-effort side effects
         pass
 
-    return ok(201, {"order": to_public_order(item)})
+    return ok(201, {"order": attach_image_url(to_public_order(item))})

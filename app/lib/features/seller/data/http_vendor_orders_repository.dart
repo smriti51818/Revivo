@@ -37,6 +37,9 @@ class HttpVendorOrdersRepository implements VendorOrdersRepository {
       marketPricePerKg: asDouble(j['marketPricePerKg']),
       band: FreshnessBand.fromValue(j['band']?.toString()),
       status: OrderStatus.fromValue(j['status']?.toString()),
+      imagePath: (j['imageUrl'] ?? '').toString().isEmpty
+          ? null
+          : (j['imageUrl']).toString(),
       placedAt: epochToDate(j['createdAt']),
       // Buyer's post-pickup review, so the seller sees it on past orders.
       rating: j['rating'] == null ? null : asInt(j['rating']),

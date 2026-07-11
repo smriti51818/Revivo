@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -53,8 +53,10 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
   final _pickupInstructions = TextEditingController(
       text: 'Please call before arriving at the stall.');
 
-  XFile? _photo;
-  String _imageKey = '';
+  final List<XFile> _photos = [];
+  final List<Uint8List> _photoBytes = [];
+  final List<String> _imageKeys = [];
+  static const _maxPhotos = 5;
 
   String? _vegetable;
   StorageCondition _storage = StorageCondition.refrigerated;
@@ -95,43 +97,102 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
     super.dispose();
   }
 
-  Future<void> _takePhoto() async {
+  Future<void> _addPhoto() async {
+    if (_photos.length >= _maxPhotos) {
+      _toast('Maximum $_maxPhotos photos allowed');
+      return;
+    }
+
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const HugeIcon(
+                    icon: HugeIcons.strokeRoundedCamera01,
+                    color: AppColors.primary,
+                    size: 22),
+                title: const Text('Take a photo',
+                    style: TextStyle(fontWeight: FontWeight.w700)),
+                onTap: () => Navigator.pop(ctx, ImageSource.camera),
+              ),
+              ListTile(
+                leading: const HugeIcon(
+                    icon: HugeIcons.strokeRoundedImage01,
+                    color: AppColors.primary,
+                    size: 22),
+                title: const Text('Choose from gallery',
+                    style: TextStyle(fontWeight: FontWeight.w700)),
+                onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (source == null) return;
+
     XFile? file;
     try {
       file = await ImagePicker().pickImage(
-        source: ImageSource.camera,
+        source: source,
         maxWidth: 1280,
         imageQuality: 70,
       );
     } catch (_) {
-      if (mounted && _photo == null) {
-        _toast('Camera unavailable here — pick the vegetable manually');
+      if (mounted && _photos.isEmpty) {
+        _toast('Could not access ${source == ImageSource.camera ? 'camera' : 'gallery'} — pick the vegetable manually');
       }
       return;
     }
     if (file == null) return;
 
+    final bytes = await file.readAsBytes();
+    if (!mounted) return;
+
+    final idx = _photos.length;
     setState(() {
-      _photo = file;
-      _imageKey = '';
+      _photos.add(file!);
+      _photoBytes.add(bytes);
+      _imageKeys.add('');
     });
 
     final notifier = ref.read(listingsProvider.notifier);
     final key = await notifier.uploadPhoto(file.path);
     if (!mounted) return;
-    setState(() => _imageKey = key);
+    setState(() {
+      if (idx < _imageKeys.length) _imageKeys[idx] = key;
+    });
 
-    final veg = key.isEmpty ? null : await notifier.identify(key);
-    if (!mounted) return;
-    if (veg != null && mounted) {
-      setState(() {
-        _vegetable = veg;
-        _analysis = null;
-      });
+    if (idx == 0) {
+      final veg = key.isEmpty ? null : await notifier.identify(key);
+      if (!mounted) return;
+      if (veg != null) {
+        setState(() {
+          _vegetable = veg;
+          _analysis = null;
+        });
+      }
+      _scheduleAnalyze();
     }
-    _scheduleAnalyze();
   }
 
+  void _removePhoto(int index) {
+    setState(() {
+      _photos.removeAt(index);
+      _photoBytes.removeAt(index);
+      _imageKeys.removeAt(index);
+    });
+  }
+
+  bool _submitting = false;
   bool _isGeneratingDesc = false;
 
   Future<void> _generateAiDescription() async {
@@ -258,8 +319,11 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
   }
 
   Future<void> _submit() async {
+    if (_submitting) return;
     final err = _validate();
     if (err != null) return _toast(err);
+
+    setState(() => _submitting = true);
 
     final a = _analysis;
     final finalPrice = double.tryParse(_priceController.text) ?? a?.recommendedPrice ?? 0.0;
@@ -274,8 +338,10 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
       timeRange: a?.timeRange ?? '',
       storage: _storage,
       organic: _organic,
-      imagePath: _photo?.path,
-      imageKey: _imageKey.isEmpty ? null : _imageKey,
+      imagePath: _photos.isNotEmpty ? _photos.first.path : null,
+      imageKey: _imageKeys.isNotEmpty && _imageKeys.first.isNotEmpty
+          ? _imageKeys.first
+          : null,
       createdAt: DateTime.now(),
       purchasedAt: _purchasedAt,
     );
@@ -283,7 +349,10 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
     try {
       await ref.read(listingsProvider.notifier).addListing(listing);
     } catch (e) {
-      if (mounted) _toast('Could not publish: $e');
+      if (mounted) {
+        setState(() => _submitting = false);
+        _toast('Could not publish: $e');
+      }
       return;
     }
     if (!mounted) return;
@@ -296,14 +365,16 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
     _debounce?.cancel();
     _quantity.clear();
     setState(() {
-      _photo = null;
-      _imageKey = '';
+      _photos.clear();
+      _photoBytes.clear();
+      _imageKeys.clear();
       _vegetable = null;
       _storage = StorageCondition.refrigerated;
       _purchaseIdx = 0;
       _organic = true;
       _analysis = null;
       _currentStep = 1;
+      _submitting = false;
     });
   }
 
@@ -622,134 +693,200 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
 
   Widget _buildPhotoSelectorCard() {
     return AppCard(
-      padding: const EdgeInsets.all(16),
-      child: Row(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          GestureDetector(
-            onTap: _takePhoto,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: SizedBox(
-                width: 90,
-                height: 90,
-                child: _photo != null
-                    // Existing photo: show it with a small camera badge to retake.
-                    ? Stack(
-                        children: [
-                          Positioned.fill(
-                            child: Image.file(File(_photo!.path),
-                                fit: BoxFit.cover),
-                          ),
-                          Positioned(
-                            right: 5,
-                            bottom: 5,
-                            child: Container(
-                              padding: const EdgeInsets.all(5),
-                              decoration: const BoxDecoration(
-                                color: AppColors.primary,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const HugeIcon(
-                                  icon: HugeIcons.strokeRoundedCamera01,
-                                  size: 12,
-                                  color: Colors.white),
-                            ),
-                          ),
-                        ],
-                      )
-                    // Empty: a single camera prompt (no leaf behind it).
-                    : Container(
-                        color: AppColors.primarySurface,
-                        alignment: Alignment.center,
-                        child: Column(
+          // Photo gallery row
+          SizedBox(
+            height: 110,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                for (var i = 0; i < _photoBytes.length; i++) ...[
+                  _photoTile(i),
+                  const SizedBox(width: 8),
+                ],
+                if (_photos.length < _maxPhotos) _addPhotoTile(),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              '${_photos.length}/$_maxPhotos photos  •  First photo is the cover',
+              style: const TextStyle(fontSize: 10.5, color: AppColors.textMuted, fontWeight: FontWeight.w600),
+            ),
+          ),
+          const Divider(height: 20),
+          // Vegetable ID row
+          Row(
+            children: [
+              Expanded(
+                child: Row(
+                  children: [
+                    if (_vegetable != null) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEDFBF4),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            HugeIcon(
-                              icon: HugeIcons.strokeRoundedCamera01,
-                              size: 26,
-                              color: AppColors.primary.withValues(alpha: 0.85),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Add photo',
-                              style: TextStyle(
-                                fontSize: 9.5,
-                                fontWeight: FontWeight.w700,
-                                color:
-                                    AppColors.primary.withValues(alpha: 0.85),
-                              ),
-                            ),
+                            HugeIcon(icon: HugeIcons.strokeRoundedCheckmarkCircle02, size: 10, color: Color(0xFF27AE60)),
+                            SizedBox(width: 4),
+                            Text('Identified', style: TextStyle(color: Color(0xFF27AE60), fontSize: 10, fontWeight: FontWeight.w800)),
                           ],
                         ),
                       ),
+                      const SizedBox(width: 8),
+                    ],
+                    Flexible(
+                      child: Text(
+                        _vegetable ?? 'Select vegetable',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w900,
+                          color: _vegetable != null ? AppColors.textPrimary : AppColors.textMuted,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              OutlinedButton.icon(
+                onPressed: _pickVegetable,
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(0, 32),
+                  side: const BorderSide(color: Color(0xFF27AE60)),
+                  backgroundColor: const Color(0xFFEDFBF4),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                ),
+                icon: HugeIcon(
+                  icon: _vegetable != null
+                      ? HugeIcons.strokeRoundedPencilEdit01
+                      : HugeIcons.strokeRoundedSearch01,
+                  color: const Color(0xFF27AE60),
+                  size: 13,
+                ),
+                label: Text(
+                  _vegetable != null ? 'Change' : 'Choose',
+                  style: const TextStyle(color: Color(0xFF27AE60), fontSize: 12, fontWeight: FontWeight.w800),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _photoTile(int index) {
+    final isFirst = index == 0;
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: SizedBox(
+            width: 96,
+            height: 110,
+            child: Image.memory(_photoBytes[index], fit: BoxFit.cover),
+          ),
+        ),
+        if (isFirst)
+          Positioned(
+            left: 4,
+            bottom: 4,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: const Text('Cover',
+                  style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.w800)),
+            ),
+          ),
+        Positioned(
+          right: -4,
+          top: -4,
+          child: GestureDetector(
+            onTap: () => _removePhoto(index),
+            child: Container(
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.6),
+                shape: BoxShape.circle,
+              ),
+              alignment: Alignment.center,
+              child: const HugeIcon(icon: HugeIcons.strokeRoundedCancel01, size: 10, color: Colors.white),
+            ),
+          ),
+        ),
+        if (_imageKeys.length > index && _imageKeys[index].isEmpty)
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              alignment: Alignment.center,
+              child: const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
               ),
             ),
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEDFBF4),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      HugeIcon(icon: HugeIcons.strokeRoundedCheckmarkCircle02, size: 10, color: Color(0xFF27AE60)),
-                      SizedBox(width: 4),
-                      Text('Identified', style: TextStyle(color: Color(0xFF27AE60), fontSize: 10, fontWeight: FontWeight.w800)),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  _vegetable ?? 'Unknown',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
-                ),
-                const SizedBox(height: 2),
-                const Text('Looks correct?', style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
-                const SizedBox(height: 8),
-                OutlinedButton.icon(
-                  onPressed: _pickVegetable,
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(0, 28),
-                    side: const BorderSide(color: AppColors.border),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  ),
-                  icon: const HugeIcon(icon: HugeIcons.strokeRoundedPencilEdit01, color: AppColors.textSecondary, size: 12),
-                  label: const Text('Change', style: TextStyle(color: AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w700)),
-                ),
-              ],
+      ],
+    );
+  }
+
+  Widget _addPhotoTile() {
+    return GestureDetector(
+      onTap: _addPhoto,
+      child: Container(
+        width: 96,
+        height: 110,
+        decoration: BoxDecoration(
+          color: AppColors.primarySurface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.primary.withValues(alpha: 0.3), style: BorderStyle.solid),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              alignment: Alignment.center,
+              child: HugeIcon(
+                icon: _photos.isEmpty
+                    ? HugeIcons.strokeRoundedCamera01
+                    : HugeIcons.strokeRoundedPlusSign,
+                size: 18,
+                color: AppColors.primary,
+              ),
             ),
-          ),
-          Container(width: 1, height: 80, color: AppColors.border, margin: const EdgeInsets.symmetric(horizontal: 12)),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Not correct?', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
-                const SizedBox(height: 2),
-                const Text('Search and select manually', style: TextStyle(fontSize: 10.5, color: AppColors.textMuted)),
-                const SizedBox(height: 12),
-                OutlinedButton.icon(
-                  onPressed: _pickVegetable,
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(0, 32),
-                    side: const BorderSide(color: Color(0xFF27AE60)),
-                    backgroundColor: const Color(0xFFEDFBF4),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  ),
-                  icon: const HugeIcon(icon: HugeIcons.strokeRoundedSearch01, color: Color(0xFF27AE60), size: 14),
-                  label: const Text('Choose Produce', style: TextStyle(color: Color(0xFF27AE60), fontSize: 12, fontWeight: FontWeight.w800)),
-                ),
-              ],
+            const SizedBox(height: 6),
+            Text(
+              _photos.isEmpty ? 'Add photo' : 'Add more',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primary.withValues(alpha: 0.85),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -938,8 +1075,8 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
             child: SizedBox(
               width: 44,
               height: 44,
-              child: _photo != null
-                  ? Image.file(File(_photo!.path), fit: BoxFit.cover)
+              child: _photoBytes.isNotEmpty
+                  ? Image.memory(_photoBytes.first, fit: BoxFit.cover)
                   : Container(
                       color: AppColors.primarySurface,
                       alignment: Alignment.center,
@@ -1495,8 +1632,8 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
             child: SizedBox(
               width: 56,
               height: 56,
-              child: _photo != null
-                  ? Image.file(File(_photo!.path), fit: BoxFit.cover)
+              child: _photoBytes.isNotEmpty
+                  ? Image.memory(_photoBytes.first, fit: BoxFit.cover)
                   : Container(
                       color: AppColors.primarySurface,
                       alignment: Alignment.center,
@@ -1620,43 +1757,55 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
           Expanded(
             flex: 2,
             child: FilledButton(
-              onPressed: () {
-                if (_currentStep < 4) {
-                  if (_currentStep == 1) {
-                    final err = _validate();
-                    if (err != null) return _toast(err);
-                  }
-                  setState(() => _currentStep++);
-                } else {
-                  _submit();
-                }
-              },
+              onPressed: _submitting
+                  ? null
+                  : () {
+                      if (_currentStep < 4) {
+                        if (_currentStep == 1) {
+                          final err = _validate();
+                          if (err != null) return _toast(err);
+                        }
+                        setState(() => _currentStep++);
+                      } else {
+                        _submit();
+                      }
+                    },
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.primary,
+                disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.5),
                 minimumSize: const Size.fromHeight(48),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    _currentStep == 4
-                        ? 'Publish Listing'
-                        : _currentStep == 3
-                            ? 'Next: Review'
-                            : _currentStep == 2
-                                ? 'Next: Availability'
-                                : 'Next: Pricing',
-                    style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w800),
-                  ),
-                  const SizedBox(width: 6),
-                  HugeIcon(
-                    icon: _currentStep == 4 ? HugeIcons.strokeRoundedSent : HugeIcons.strokeRoundedArrowRight01,
-                    color: Colors.white,
-                    size: 16,
-                  ),
-                ],
-              ),
+              child: _submitting
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          _currentStep == 4
+                              ? 'Publish Listing'
+                              : _currentStep == 3
+                                  ? 'Next: Review'
+                                  : _currentStep == 2
+                                      ? 'Next: Availability'
+                                      : 'Next: Pricing',
+                          style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w800),
+                        ),
+                        const SizedBox(width: 6),
+                        HugeIcon(
+                          icon: _currentStep == 4 ? HugeIcons.strokeRoundedSent : HugeIcons.strokeRoundedArrowRight01,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                      ],
+                    ),
             ),
           ),
         ],
