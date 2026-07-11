@@ -36,8 +36,8 @@ def handler(event, context):
     try:
         resp = _client().detect_labels(
             Image={"S3Object": {"Bucket": _BUCKET, "Name": image_key}},
-            MaxLabels=15,
-            MinConfidence=55,
+            MaxLabels=10,
+            MinConfidence=60,
         )
     except Exception as exc:  # noqa: BLE001 - surfaced as a clean API error
         return error(502, f"could not analyze image: {exc}")

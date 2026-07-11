@@ -1,3 +1,6 @@
+import 'dart:math';
+
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,24 +9,23 @@ import 'package:go_router/go_router.dart';
 import '../../core/format.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/widgets/app_card.dart';
 import '../../core/widgets/motion.dart';
 import '../buyer/application/marketplace_providers.dart';
 import '../buyer/domain/order.dart';
 
-/// Impact constants shared with the backend engine: 2.5 meals and 2.5 kg of
-/// avoided CO₂ per kg of produce rescued.
 const double _mealsPerKg = 2.5;
 const double _co2PerKg = 2.5;
 
-/// The current buyer's own impact, derived from their real completed orders —
-/// no network-wide or fabricated numbers.
 class _MyImpact {
-  const _MyImpact(this.orders, this.kg, this.meals, this.co2, this.saved);
+  const _MyImpact(this.orders, this.kg, this.meals, this.co2, this.saved,
+      this.allOrders);
   final int orders;
   final double kg;
   final double meals;
   final double co2;
   final double saved;
+  final List<Order> allOrders;
   bool get isEmpty => orders == 0;
 
   static _MyImpact from(List<Order> all) {
@@ -31,19 +33,10 @@ class _MyImpact {
     final kg = done.fold<double>(0, (s, o) => s + o.quantityKg);
     final saved = done.fold<double>(0, (s, o) => s + o.saved);
     return _MyImpact(
-        done.length, kg, kg * _mealsPerKg, kg * _co2PerKg, saved);
+        done.length, kg, kg * _mealsPerKg, kg * _co2PerKg, saved, all);
   }
 }
 
-const _co2Accent = (
-  fg: Color(0xFF0F766E),
-  bg: Color(0xFFD5F5F1),
-  border: Color(0xFFB4EBE4),
-);
-
-/// Buyer-facing "Impact" tab — the buyer's own contribution only, styled like
-/// the seller dashboard's stats strip: a standard green header + a floating
-/// white stats card with real numbers from the buyer's completed orders.
 class ImpactScreen extends ConsumerWidget {
   const ImpactScreen({super.key});
 
@@ -70,14 +63,21 @@ class ImpactScreen extends ConsumerWidget {
                   padding: EdgeInsets.only(top: 40),
                   child: Center(child: CircularProgressIndicator()),
                 ),
-                error: (e, _) => Center(child: Text('Could not load orders: $e')),
+                error: (e, _) =>
+                    Center(child: Text('Could not load orders: $e')),
                 data: (_) => Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (m.isEmpty)
-                      _emptyState()
-                    else ...[
+                    if (m.isEmpty) ...[
+                      _emptyState(),
+                    ] else ...[
                       FadeSlideIn(child: _co2Card(m)),
+                      const SizedBox(height: AppSpacing.lg),
+                      FadeSlideIn(child: _rescueChart(m)),
+                      const SizedBox(height: AppSpacing.lg),
+                      FadeSlideIn(child: _orderBreakdown(m)),
+                      const SizedBox(height: AppSpacing.lg),
+                      FadeSlideIn(child: _topVegetables(m)),
                       const SizedBox(height: AppSpacing.lg),
                     ],
                     _rescueCta(context),
@@ -93,10 +93,6 @@ class ImpactScreen extends ConsumerWidget {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // Standard green header (flat, matches every other screen) + a floating
-  // white stats strip in the seller-dashboard style.
-  // ---------------------------------------------------------------------------
   Widget _buildHeader(BuildContext context, _MyImpact m) {
     return Container(
       width: double.infinity,
@@ -138,12 +134,17 @@ class ImpactScreen extends ConsumerWidget {
   }
 
   Widget _co2Card(_MyImpact m) {
+    const accent = (
+      fg: Color(0xFF0F766E),
+      bg: Color(0xFFD5F5F1),
+      border: Color(0xFFB4EBE4),
+    );
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: _co2Accent.bg,
+        color: accent.bg,
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: _co2Accent.border),
+        border: Border.all(color: accent.border),
       ),
       child: Row(
         children: [
@@ -155,7 +156,7 @@ class ImpactScreen extends ConsumerWidget {
             ),
             child: HugeIcon(
                 icon: HugeIcons.strokeRoundedLeaf02,
-                color: _co2Accent.fg,
+                color: accent.fg,
                 size: 22),
           ),
           const SizedBox(width: AppSpacing.md),
@@ -168,7 +169,7 @@ class ImpactScreen extends ConsumerWidget {
                   style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w800,
-                      color: _co2Accent.fg),
+                      color: accent.fg),
                 ),
                 const SizedBox(height: 2),
                 const Text(
@@ -181,6 +182,308 @@ class ImpactScreen extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _rescueChart(_MyImpact m) {
+    final completed =
+        m.allOrders.where((o) => o.status == OrderStatus.completed).toList();
+    if (completed.isEmpty) return const SizedBox.shrink();
+
+    completed.sort((a, b) => a.placedAt.compareTo(b.placedAt));
+
+    final now = DateTime.now();
+    final wd = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final labels = <String>[];
+    final values = <double>[];
+
+    for (var i = 6; i >= 0; i--) {
+      final day =
+          DateTime(now.year, now.month, now.day).subtract(Duration(days: i));
+      labels.add(wd[day.weekday - 1]);
+      final dayKg = completed
+          .where((o) =>
+              o.placedAt.year == day.year &&
+              o.placedAt.month == day.month &&
+              o.placedAt.day == day.day)
+          .fold<double>(0, (s, o) => s + o.quantityKg);
+      values.add(dayKg);
+    }
+
+    final maxVal = values.reduce(max);
+
+    return AppCard(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              HugeIcon(
+                  icon: HugeIcons.strokeRoundedChartLineData01,
+                  size: 18,
+                  color: AppColors.primary),
+              SizedBox(width: 8),
+              Text('Rescue Activity (This Week)',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+            ],
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            height: 140,
+            child: BarChart(
+              BarChartData(
+                alignment: BarChartAlignment.spaceAround,
+                maxY: maxVal > 0 ? maxVal * 1.3 : 10,
+                barTouchData: BarTouchData(
+                  touchTooltipData: BarTouchTooltipData(
+                    tooltipPadding: const EdgeInsets.all(6),
+                    tooltipMargin: 6,
+                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                      return BarTooltipItem(
+                        '${rod.toY.toStringAsFixed(1)} kg',
+                        const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 11),
+                      );
+                    },
+                  ),
+                ),
+                titlesData: FlTitlesData(
+                  show: true,
+                  rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false)),
+                  topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false)),
+                  leftTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false)),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 22,
+                      getTitlesWidget: (value, meta) {
+                        final idx = value.toInt();
+                        if (idx >= 0 && idx < labels.length) {
+                          return SideTitleWidget(
+                            meta: meta,
+                            child: Text(labels[idx],
+                                style: const TextStyle(
+                                    fontSize: 10,
+                                    color: AppColors.textMuted,
+                                    fontWeight: FontWeight.w600)),
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      },
+                    ),
+                  ),
+                ),
+                borderData: FlBorderData(show: false),
+                gridData: const FlGridData(show: false),
+                barGroups: [
+                  for (var i = 0; i < values.length; i++)
+                    BarChartGroupData(
+                      x: i,
+                      barRods: [
+                        BarChartRodData(
+                          toY: values[i],
+                          color: values[i] > 0
+                              ? AppColors.primary
+                              : AppColors.border,
+                          width: 24,
+                          borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(6)),
+                        ),
+                      ],
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _orderBreakdown(_MyImpact m) {
+    final active = m.allOrders
+        .where((o) => o.status != OrderStatus.completed)
+        .length;
+    final completed = m.orders;
+    final totalSpent = m.allOrders
+        .where((o) => o.status == OrderStatus.completed)
+        .fold<double>(0, (s, o) => s + o.total);
+
+    return AppCard(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              HugeIcon(
+                  icon: HugeIcons.strokeRoundedInvoice01,
+                  size: 18,
+                  color: AppColors.primary),
+              SizedBox(width: 8),
+              Text('Order Summary',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                  child: _miniStat(
+                      '${m.allOrders.length}', 'Total Orders',
+                      HugeIcons.strokeRoundedShoppingBag01,
+                      AppColors.primary)),
+              const SizedBox(width: 10),
+              Expanded(
+                  child: _miniStat(
+                      '$active', 'Active',
+                      HugeIcons.strokeRoundedClock01,
+                      const Color(0xFFF2994A))),
+              const SizedBox(width: 10),
+              Expanded(
+                  child: _miniStat(
+                      '$completed', 'Completed',
+                      HugeIcons.strokeRoundedCheckmarkCircle02,
+                      const Color(0xFF27AE60))),
+            ],
+          ),
+          const Divider(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Total Spent',
+                      style: TextStyle(
+                          fontSize: 11, color: AppColors.textMuted)),
+                  Text(formatMoney(totalSpent),
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.w800)),
+                ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  const Text('Total Saved',
+                      style: TextStyle(
+                          fontSize: 11, color: AppColors.textMuted)),
+                  Text(formatMoney(m.saved),
+                      style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.primary)),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _miniStat(
+      String value, String label, dynamic icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          HugeIcon(icon: icon, size: 18, color: color),
+          const SizedBox(height: 6),
+          Text(value,
+              style: TextStyle(
+                  fontSize: 18, fontWeight: FontWeight.w800, color: color)),
+          const SizedBox(height: 2),
+          Text(label,
+              style: const TextStyle(
+                  fontSize: 10,
+                  color: AppColors.textMuted,
+                  fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
+  }
+
+  Widget _topVegetables(_MyImpact m) {
+    final completed =
+        m.allOrders.where((o) => o.status == OrderStatus.completed).toList();
+    if (completed.isEmpty) return const SizedBox.shrink();
+
+    final vegMap = <String, double>{};
+    for (final o in completed) {
+      vegMap[o.vegetable] = (vegMap[o.vegetable] ?? 0) + o.quantityKg;
+    }
+    final sorted = vegMap.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    final top = sorted.take(5).toList();
+    final maxKg = top.first.value;
+
+    return AppCard(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              HugeIcon(
+                  icon: HugeIcons.strokeRoundedLeaf02,
+                  size: 18,
+                  color: AppColors.primary),
+              SizedBox(width: 8),
+              Text('Top Rescued Produce',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+            ],
+          ),
+          const SizedBox(height: 16),
+          for (var i = 0; i < top.length; i++) ...[
+            if (i > 0) const SizedBox(height: 10),
+            _produceRow(top[i].key, top[i].value, maxKg),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _produceRow(String name, double kg, double maxKg) {
+    final pct = maxKg > 0 ? kg / maxKg : 0.0;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(name,
+                style: const TextStyle(
+                    fontSize: 13, fontWeight: FontWeight.w700)),
+            Text('${kg.toStringAsFixed(1)} kg',
+                style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary)),
+          ],
+        ),
+        const SizedBox(height: 4),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: LinearProgressIndicator(
+            value: pct,
+            minHeight: 6,
+            backgroundColor: AppColors.border,
+            valueColor:
+                const AlwaysStoppedAnimation<Color>(AppColors.primary),
+          ),
+        ),
+      ],
     );
   }
 
@@ -293,9 +596,6 @@ class ImpactScreen extends ConsumerWidget {
   }
 }
 
-/// A floating white stats strip inside the header, matching the seller
-/// dashboard's `_StatsStrip` pattern exactly: three headline numbers with
-/// hairline dividers.
 class _StatsStrip extends StatelessWidget {
   const _StatsStrip({required this.m});
   final _MyImpact m;

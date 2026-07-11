@@ -432,8 +432,9 @@ class _BuyerMarketScreenState extends ConsumerState<BuyerMarketScreen> {
       (ProduceCategory.all, 'All'),
       (ProduceCategory.leafy, 'Leafy'),
       (ProduceCategory.roots, 'Roots'),
-      (ProduceCategory.fruiting, 'Gourd'),
-      (ProduceCategory.herbs, 'Others'),
+      (ProduceCategory.fruiting, 'Fruiting'),
+      (ProduceCategory.gourds, 'Gourds'),
+      (ProduceCategory.herbs, 'Herbs'),
     ];
 
     return SingleChildScrollView(

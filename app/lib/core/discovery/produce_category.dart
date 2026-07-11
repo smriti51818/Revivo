@@ -2,9 +2,10 @@
 /// against the vegetable name (the backend stores free-text names).
 enum ProduceCategory {
   all('All', null),
-  leafy('Leafy', 'leaf'),
+  leafy('Leafy Greens', 'leaf'),
+  roots('Roots & Tubers', 'root'),
   fruiting('Fruiting', 'fruit'),
-  roots('Roots', 'root'),
+  gourds('Gourds', 'gourd'),
   herbs('Herbs', 'herb');
 
   const ProduceCategory(this.label, this._tag);
@@ -21,11 +22,13 @@ const Map<String, List<String>> _keywords = {
     'potato', 'onion', 'carrot', 'radish', 'beet', 'ginger', 'garlic',
     'turnip', 'yam', 'tapioca',
   ],
+  'gourd': [
+    'gourd', 'pumpkin', 'cucumber', 'squash', 'drumstick',
+  ],
   'herb': ['coriander', 'mint', 'curry', 'basil', 'parsley', 'dill'],
   'fruit': [
-    'tomato', 'pepper', 'capsicum', 'brinjal', 'eggplant', 'okra', 'gourd',
-    'pumpkin', 'cucumber', 'bean', 'chilli', 'chili', 'drumstick', 'peas',
-    'corn', 'squash',
+    'tomato', 'pepper', 'capsicum', 'brinjal', 'eggplant', 'okra',
+    'bean', 'chilli', 'chili', 'peas', 'corn',
   ],
 };
 

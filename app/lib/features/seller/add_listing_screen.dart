@@ -48,8 +48,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
   final _quantity = TextEditingController(text: '25.0');
   final _priceController = TextEditingController(text: '28.00');
   final _variety = TextEditingController();
-  final _description = TextEditingController(
-      text: 'Fresh, firm and juicy tomatoes. Handpicked and sorted for best quality. Ideal for cooking, salads and sauces.');
+  final _description = TextEditingController();
   final _pickupInstructions = TextEditingController(
       text: 'Please call before arriving at the stall.');
 
@@ -171,15 +170,17 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
       if (idx < _imageKeys.length) _imageKeys[idx] = key;
     });
 
-    if (idx == 0) {
-      final veg = key.isEmpty ? null : await notifier.identify(key);
+    if (idx == 0 && key.isNotEmpty) {
+      setState(() => _identifying = true);
+      final veg = await notifier.identify(key);
       if (!mounted) return;
-      if (veg != null) {
-        setState(() {
+      setState(() {
+        _identifying = false;
+        if (veg != null) {
           _vegetable = veg;
           _analysis = null;
-        });
-      }
+        }
+      });
       _scheduleAnalyze();
     }
   }
@@ -193,19 +194,40 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
   }
 
   bool _submitting = false;
+  bool _identifying = false;
   bool _isGeneratingDesc = false;
 
   Future<void> _generateAiDescription() async {
+    if (_vegetable == null) {
+      _toast('Select a vegetable first');
+      return;
+    }
     setState(() => _isGeneratingDesc = true);
-    
-    // Simulate network delay for AI generation
-    await Future.delayed(const Duration(milliseconds: 800));
-    
+
+    await Future.delayed(const Duration(milliseconds: 600));
     if (!mounted) return;
-    
-    final veg = _vegetable ?? 'produce';
-    final desc = 'Fresh, high-quality $veg sourced directly from our local farm. Carefully handled and sorted to maintain optimal freshness. Perfect for both commercial kitchens and home use. Available for immediate pickup while supplies last.';
-    
+
+    final veg = _vegetable!;
+    final qty = _qty?.toInt() ?? 0;
+    final age = _purchaseOptions[_purchaseIdx].label.toLowerCase();
+    final store = _storage.label.toLowerCase();
+    final org = _organic ? 'organically grown, ' : '';
+    final band = _analysis?.band;
+
+    final quality = band == null
+        ? 'well-maintained'
+        : band == FreshnessBand.good
+            ? 'peak freshness'
+            : band == FreshnessBand.useSoon
+                ? 'good condition, best used soon'
+                : 'priced to move, ideal for immediate use';
+
+    final desc = '${org}${veg} — $quality. '
+        'Harvested $age, stored $store. '
+        '${qty > 0 ? '$qty kg available. ' : ''}'
+        'Sorted and ready for pickup. '
+        'Great for restaurants, kitchens, and bulk buyers.';
+
     setState(() {
       _description.text = desc;
       _isGeneratingDesc = false;
@@ -725,57 +747,71 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
               Expanded(
                 child: Row(
                   children: [
-                    if (_vegetable != null) ...[
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFEDFBF4),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            HugeIcon(icon: HugeIcons.strokeRoundedCheckmarkCircle02, size: 10, color: Color(0xFF27AE60)),
-                            SizedBox(width: 4),
-                            Text('Identified', style: TextStyle(color: Color(0xFF27AE60), fontSize: 10, fontWeight: FontWeight.w800)),
-                          ],
-                        ),
+                    if (_identifying) ...[
+                      const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
                       ),
                       const SizedBox(width: 8),
-                    ],
-                    Flexible(
-                      child: Text(
-                        _vegetable ?? 'Select vegetable',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w900,
-                          color: _vegetable != null ? AppColors.textPrimary : AppColors.textMuted,
+                      const Text(
+                        'Identifying…',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textMuted),
+                      ),
+                    ] else ...[
+                      if (_vegetable != null) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEDFBF4),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              HugeIcon(icon: HugeIcons.strokeRoundedCheckmarkCircle02, size: 10, color: Color(0xFF27AE60)),
+                              SizedBox(width: 4),
+                              Text('Identified', style: TextStyle(color: Color(0xFF27AE60), fontSize: 10, fontWeight: FontWeight.w800)),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                      Flexible(
+                        child: Text(
+                          _vegetable ?? 'Select vegetable',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w900,
+                            color: _vegetable != null ? AppColors.textPrimary : AppColors.textMuted,
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),
-              OutlinedButton.icon(
-                onPressed: _pickVegetable,
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(0, 32),
-                  side: const BorderSide(color: Color(0xFF27AE60)),
-                  backgroundColor: const Color(0xFFEDFBF4),
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              if (!_identifying)
+                OutlinedButton.icon(
+                  onPressed: _pickVegetable,
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(0, 32),
+                    side: const BorderSide(color: Color(0xFF27AE60)),
+                    backgroundColor: const Color(0xFFEDFBF4),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  ),
+                  icon: HugeIcon(
+                    icon: _vegetable != null
+                        ? HugeIcons.strokeRoundedPencilEdit01
+                        : HugeIcons.strokeRoundedSearch01,
+                    color: const Color(0xFF27AE60),
+                    size: 13,
+                  ),
+                  label: Text(
+                    _vegetable != null ? 'Change' : 'Choose',
+                    style: const TextStyle(color: Color(0xFF27AE60), fontSize: 12, fontWeight: FontWeight.w800),
+                  ),
                 ),
-                icon: HugeIcon(
-                  icon: _vegetable != null
-                      ? HugeIcons.strokeRoundedPencilEdit01
-                      : HugeIcons.strokeRoundedSearch01,
-                  color: const Color(0xFF27AE60),
-                  size: 13,
-                ),
-                label: Text(
-                  _vegetable != null ? 'Change' : 'Choose',
-                  style: const TextStyle(color: Color(0xFF27AE60), fontSize: 12, fontWeight: FontWeight.w800),
-                ),
-              ),
             ],
           ),
         ],
@@ -1351,7 +1387,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
     return [
       _buildHeaderPreviewCard(),
       const SizedBox(height: 16),
-      _buildSectionHeader('Pickup Preference *', 'Choose when and how buyers can pick up the produce.'),
+      _buildSectionHeader('Pickup Method *', 'How will buyers collect the produce?'),
       const SizedBox(height: 12),
       _buildPickupTypeCards(),
       const SizedBox(height: 16),
@@ -1463,8 +1499,8 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Self Pickup', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
-                        Text('Buyers will pickup', style: TextStyle(fontSize: 10, color: AppColors.textMuted)),
+                        Text('Buyer Picks Up', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
+                        Text('Buyer comes to your location', style: TextStyle(fontSize: 10, color: AppColors.textMuted)),
                       ],
                     ),
                   ),
@@ -1496,8 +1532,8 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Request Pickup', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
-                        Text('We will arrange pickup', style: TextStyle(fontSize: 10, color: AppColors.textMuted)),
+                        Text('We Deliver', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
+                        Text('You drop off or we arrange', style: TextStyle(fontSize: 10, color: AppColors.textMuted)),
                       ],
                     ),
                   ),

@@ -12,9 +12,12 @@ import '../../core/widgets/app_card.dart';
 import '../../core/widgets/section_header.dart';
 import '../../core/widgets/status_chip.dart';
 import 'application/failed_payments_providers.dart';
+import 'application/favorites_providers.dart';
 import 'application/marketplace_providers.dart';
 import 'domain/failed_payment.dart';
+import 'domain/offer.dart';
 import 'domain/order.dart';
+import 'widgets/favorite_heart.dart';
 
 class BuyerOrdersScreen extends ConsumerStatefulWidget {
   const BuyerOrdersScreen({super.key});
@@ -44,7 +47,12 @@ class _BuyerOrdersScreenState extends ConsumerState<BuyerOrdersScreen> {
   @override
   Widget build(BuildContext context) {
     final orders = ref.watch(ordersProvider);
+    final offers = ref.watch(offersProvider);
     final failed = ref.watch(failedPaymentsProvider);
+    final favIds = ref.watch(favoritesProvider);
+
+    final savedOffers = offers.whenData((all) =>
+        all.where((o) => favIds.contains(o.id)).toList());
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9FB),
@@ -73,6 +81,13 @@ class _BuyerOrdersScreenState extends ConsumerState<BuyerOrdersScreen> {
                     ),
                     data: (items) =>
                         _orders(items, hasFailed: failed.isNotEmpty),
+                  ),
+                  savedOffers.when(
+                    loading: () => const SizedBox.shrink(),
+                    error: (_, __) => const SizedBox.shrink(),
+                    data: (saved) => saved.isEmpty
+                        ? const SizedBox.shrink()
+                        : _savedSection(saved),
                   ),
                 ],
               ),
@@ -188,6 +203,38 @@ class _BuyerOrdersScreenState extends ConsumerState<BuyerOrdersScreen> {
       ),
     ),
   );
+
+  Widget _savedSection(List<Offer> saved) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: AppSpacing.lg),
+        Row(
+          children: [
+            const HugeIcon(
+              icon: HugeIcons.strokeRoundedFavourite,
+              size: 18,
+              color: Color(0xFFE11D48),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              'Saved · ${saved.length}',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        for (final offer in saved) ...[
+          _SavedCard(offer: offer),
+          const SizedBox(height: AppSpacing.md),
+        ],
+      ],
+    );
+  }
 }
 
 /// The "Payment failed" section — checkout attempts that never completed.
@@ -321,6 +368,80 @@ class _FailedCard extends ConsumerWidget {
               ),
             ],
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SavedCard extends ConsumerWidget {
+  const _SavedCard({required this.offer});
+  final Offer offer;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final saving = offer.liveSavingsPct();
+    return AppCard(
+      onTap: () => context.push('/buyer/product', extra: offer),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  offer.vegetable,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${offer.vendorName} · ${offer.availableKg.toStringAsFixed(1)} kg left',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textMuted,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Text(
+                      formatMoney(offer.livePrice()),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    const Text('/kg', style: TextStyle(
+                        fontSize: 11, color: AppColors.textMuted)),
+                    if (saving > 0) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppColors.primarySurface,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          '$saving% off',
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primaryDark,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+          ),
+          FavoriteHeart(offerId: offer.id, onSurface: false),
         ],
       ),
     );
