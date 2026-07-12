@@ -38,6 +38,16 @@ class ListingsController extends AsyncNotifier<List<Listing>> {
     ]);
   }
 
+  /// Deletes a listing and removes it from the local state.
+  Future<void> deleteListing(String id) async {
+    await ref.read(listingsRepositoryProvider).deleteListing(id);
+    final current = state.valueOrNull ?? const <Listing>[];
+    state = AsyncData([
+      for (final l in current)
+        if (l.id != id) l,
+    ]);
+  }
+
   /// Uploads a captured photo, returning its S3 key (or '' on failure).
   Future<String> uploadPhoto(String path) =>
       ref.read(listingsRepositoryProvider).uploadPhoto(path);

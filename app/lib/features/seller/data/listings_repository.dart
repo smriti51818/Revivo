@@ -14,6 +14,9 @@ abstract class ListingsRepository {
   Future<Listing> updateStock(String id, double quantityKg,
       {String? imageKey});
 
+  /// Deletes a listing. Buyers who saved it will no longer see it.
+  Future<void> deleteListing(String id);
+
   /// Uploads a captured photo to S3, returning its object key (or '' on
   /// failure). Done at capture time so Rekognition can read it.
   Future<String> uploadPhoto(String path);
@@ -90,6 +93,12 @@ class InMemoryListingsRepository implements ListingsRepository {
     await Future.delayed(const Duration(milliseconds: 400));
     _items.insert(0, draft);
     return draft;
+  }
+
+  @override
+  Future<void> deleteListing(String id) async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    _items.removeWhere((l) => l.id == id);
   }
 
   @override

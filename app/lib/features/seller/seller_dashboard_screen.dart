@@ -15,6 +15,33 @@ import 'application/vendor_orders_providers.dart';
 import 'domain/listing.dart';
 import 'widgets/listing_card.dart';
 
+void _confirmDelete(BuildContext context, WidgetRef ref, Listing listing) {
+  showDialog(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Delete listing?'),
+      content: Text(
+        '"${listing.vegetable}" will be permanently removed. '
+        'Hotels and buyers who saved this offer will no longer see it.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () {
+            Navigator.pop(ctx);
+            ref.read(listingsProvider.notifier).deleteListing(listing.id);
+          },
+          style: TextButton.styleFrom(foregroundColor: Colors.red),
+          child: const Text('Delete'),
+        ),
+      ],
+    ),
+  );
+}
+
 class SellerDashboardScreen extends ConsumerWidget {
   const SellerDashboardScreen({super.key});
 
@@ -86,6 +113,8 @@ class SellerDashboardScreen extends ConsumerWidget {
                                     onEdit: () => context.push(
                                         '/seller/update-stock',
                                         extra: list[i]),
+                                    onDelete: () => _confirmDelete(
+                                        context, ref, list[i]),
                                   ),
                                 ),
                                 const SizedBox(height: AppSpacing.md),

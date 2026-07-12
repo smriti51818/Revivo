@@ -57,6 +57,11 @@ class HttpListingsRepository implements ListingsRepository {
   }
 
   @override
+  Future<void> deleteListing(String id) async {
+    await _api.delete('/listings/$id');
+  }
+
+  @override
   Future<String> uploadPhoto(String path) async {
     if (path.isEmpty) return '';
     try {

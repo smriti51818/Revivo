@@ -15,11 +15,13 @@ class ListingCard extends StatelessWidget {
     required this.listing,
     this.onUpdateStock,
     this.onEdit,
+    this.onDelete,
   });
 
   final Listing listing;
   final VoidCallback? onUpdateStock;
   final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
 
   Color get _tint => switch (listing.liveBand()) {
     FreshnessBand.good => AppColors.successSurface,
@@ -143,6 +145,21 @@ class ListingCard extends StatelessWidget {
                         color: Color(0xFF27AE60),
                         size: 13,
                       ),
+                      if (onDelete != null) ...[
+                        const Spacer(),
+                        GestureDetector(
+                          onTap: onDelete,
+                          behavior: HitTestBehavior.opaque,
+                          child: const Padding(
+                            padding: EdgeInsets.all(4),
+                            child: HugeIcon(
+                              icon: HugeIcons.strokeRoundedDelete02,
+                              size: 16,
+                              color: AppColors.textMuted,
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                   const SizedBox(height: 4),

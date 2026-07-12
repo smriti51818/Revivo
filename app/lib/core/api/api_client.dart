@@ -34,6 +34,8 @@ class ApiClient {
   Future<dynamic> patch(String path, Map<String, dynamic> body) =>
       _send('PATCH', path, body: body);
 
+  Future<dynamic> delete(String path) => _send('DELETE', path);
+
   Future<dynamic> _send(
     String method,
     String path, {
@@ -59,6 +61,7 @@ class ApiClient {
             headers: headers, body: json.encode(body ?? const {})),
         'PATCH' => await _client.patch(uri,
             headers: headers, body: json.encode(body ?? const {})),
+        'DELETE' => await _client.delete(uri, headers: headers),
         _ => await _client.get(uri, headers: headers),
       };
     } catch (_) {
