@@ -56,8 +56,6 @@ class SellerDashboardScreen extends ConsumerWidget {
                 padding: const EdgeInsets.fromLTRB(
                     AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, 96),
                 children: [
-                  _AddListingCta(onTap: () => context.push('/seller/add')),
-                  const SizedBox(height: AppSpacing.xl),
                   _SectionHeader(
                     title: 'Your inventory',
                     count: activeCount,
@@ -355,81 +353,6 @@ class _StatDivider extends StatelessWidget {
   }
 }
 
-/// Prominent primary action to list new surplus.
-class _AddListingCta extends StatelessWidget {
-  const _AddListingCta({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Pressable(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.lg, vertical: 14),
-        decoration: BoxDecoration(
-          color: AppColors.primary,
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.35),
-              blurRadius: 18,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(7),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.18),
-                shape: BoxShape.circle,
-              ),
-              child: const HugeIcon(
-                icon: HugeIcons.strokeRoundedAddCircle,
-                color: Colors.white,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'List surplus produce',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14.5,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  SizedBox(height: 1),
-                  Text(
-                    'Reach nearby buyers before it wastes',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const HugeIcon(
-              icon: HugeIcons.strokeRoundedArrowRight01,
-              color: Colors.white,
-              size: 18,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _SectionHeader extends StatelessWidget {
   const _SectionHeader({
     required this.title,
@@ -530,7 +453,7 @@ class _EmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             const Text(
-              'Tap “List surplus produce” to get started',
+              'Tap + to add your first listing',
               style: TextStyle(fontSize: 12.5, color: AppColors.textMuted),
             ),
           ],

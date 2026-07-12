@@ -406,10 +406,26 @@ class _SellerInsightsScreenState extends ConsumerState<SellerInsightsScreen> {
   }
 
   EarningsSeries _earningsFromOrders(List<Order> orders, String period) {
-    // Bucket by day for week/today, by week for month. Revenue = order totals
-    // whose placed time falls in each bucket (paid/settled orders count).
+    // Bucket by day for week/today, by week for month, by month for year.
     final now = DateTime.now();
     const wd = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+    if (period == 'year') {
+      // 12 monthly buckets ending at current month.
+      final labels = <String>[];
+      final values = <double>[];
+      for (var i = 11; i >= 0; i--) {
+        final m = DateTime(now.year, now.month - i, 1);
+        labels.add(months[m.month - 1]);
+        final total = orders
+            .where((o) => o.placedAt.year == m.year && o.placedAt.month == m.month)
+            .fold<double>(0, (s, o) => s + o.total);
+        values.add(double.parse(total.toStringAsFixed(0)));
+      }
+      return EarningsSeries(labels: labels, values: values);
+    }
+
     final int days = switch (period) {
       'today' => 1,
       'month' => 30,

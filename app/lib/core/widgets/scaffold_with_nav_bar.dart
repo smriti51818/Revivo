@@ -18,7 +18,9 @@ class ScaffoldWithNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      child: Scaffold(
       body: navigationShell,
       // A soft, floating bar with rounded top corners — the reference look.
       bottomNavigationBar: Container(
@@ -70,6 +72,7 @@ class ScaffoldWithNavBar extends StatelessWidget {
             ),
           ),
         ),
+      ),
       ),
     );
   }

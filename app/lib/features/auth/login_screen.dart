@@ -68,6 +68,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               role: role,
               idToken: result.idToken,
               userId: result.sub,
+              refreshToken: result.refreshToken,
             );
         context.go(role.homeRoute);
       } else {

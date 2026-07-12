@@ -75,6 +75,7 @@ class _ConfirmCodeScreenState extends ConsumerState<ConfirmCodeScreen> {
             role: role,
             idToken: result.idToken,
             userId: result.sub,
+            refreshToken: result.refreshToken,
           );
       context.go(role.homeRoute);
     } on AuthException catch (e) {

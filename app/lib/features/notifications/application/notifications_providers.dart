@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/providers.dart';
+import '../../../core/notifications/local_notifications.dart';
 import '../data/http_notifications_repository.dart';
 import '../data/notifications_repository.dart';
 import '../domain/app_notification.dart';
@@ -21,9 +22,19 @@ class NotificationsController extends AsyncNotifier<List<AppNotification>> {
   }
 
   Future<void> reload() async {
+    final prev = state.valueOrNull ?? const [];
     state = await AsyncValue.guard(
       () => ref.read(notificationsRepositoryProvider).fetch(),
     );
+    // Fire a device notification for any unread items that weren't in the
+    // previous fetch (i.e., genuinely new).
+    final current = state.valueOrNull ?? const [];
+    final prevIds = prev.map((n) => n.id).toSet();
+    for (final n in current) {
+      if (!n.read && !prevIds.contains(n.id)) {
+        showLocalNotification(title: n.title, body: n.body, id: n.id.hashCode);
+      }
+    }
   }
 
   /// Marks everything read server-side, then optimistically flips local state.

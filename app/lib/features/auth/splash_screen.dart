@@ -1,24 +1,38 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/session/session_controller.dart';
 import '../../core/theme/app_colors.dart';
 
-/// Brand splash — leaf mark, name, tagline, then routes to role selection.
-class SplashScreen extends StatefulWidget {
+/// Brand splash — leaf mark, name, tagline, then checks for stored session.
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends ConsumerState<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(milliseconds: 1800), () {
-      if (mounted) context.go('/role');
-    });
+    _init();
+  }
+
+  Future<void> _init() async {
+    await Future.delayed(const Duration(milliseconds: 1200));
+    if (!mounted) return;
+    final restored =
+        await ref.read(sessionProvider.notifier).tryRestore();
+    if (!mounted) return;
+    if (restored) {
+      final session = ref.read(sessionProvider);
+      context.go(session!.role.homeRoute);
+    } else {
+      context.go('/role');
+    }
   }
 
   @override

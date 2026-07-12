@@ -40,7 +40,11 @@ class HttpListingsRepository implements ListingsRepository {
       'tempC': draft.tempC ?? 28,
       'imageKey': imageKey,
     });
-    return _fromJson((res['listing'] as Map).cast<String, dynamic>());
+    final created = _fromJson((res['listing'] as Map).cast<String, dynamic>());
+    if (draft.imagePath != null && draft.imagePath!.isNotEmpty) {
+      return created.copyWith(imagePath: draft.imagePath);
+    }
+    return created;
   }
 
   @override

@@ -28,6 +28,7 @@ class RegisterScreen extends ConsumerStatefulWidget {
 
 class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _name = TextEditingController();
+  final _phone = TextEditingController();
   final _email = TextEditingController();
   final _password = TextEditingController();
   bool _loading = false;
@@ -41,6 +42,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   @override
   void dispose() {
     _name.dispose();
+    _phone.dispose();
     _email.dispose();
     _password.dispose();
     super.dispose();
@@ -48,8 +50,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   /// Client-side checks that mirror the Cognito user-pool rules, so the user is
   /// told exactly what's wrong before we make a network call.
+  static final _phoneRe = RegExp(r'^[+]?[0-9]{10,15}$');
+
   String? _validate() {
     if (_name.text.trim().isEmpty) return 'Please enter your name.';
+    final phone = _phone.text.trim().replaceAll(' ', '').replaceAll('-', '');
+    if (phone.isEmpty || !_phoneRe.hasMatch(phone)) {
+      return 'Please enter a valid phone number.';
+    }
     final email = _email.text.trim();
     if (!_emailRe.hasMatch(email)) return 'Please enter a valid email address.';
     final pw = _password.text;
@@ -93,6 +101,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               role: _role,
               idToken: result.idToken,
               userId: result.sub,
+              refreshToken: result.refreshToken,
+              phone: _phone.text.trim(),
             );
       } else {
         await Future.delayed(const Duration(milliseconds: 500));
@@ -205,6 +215,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             const SizedBox(height: 24),
 
             _field(_name, 'Full name', HugeIcons.strokeRoundedUserCircle,
+                textInputAction: TextInputAction.next),
+            const SizedBox(height: AppSpacing.lg),
+            _field(_phone, 'Phone number *', HugeIcons.strokeRoundedCall,
+                keyboard: TextInputType.phone,
                 textInputAction: TextInputAction.next),
             const SizedBox(height: AppSpacing.lg),
             _field(_email, 'Email address', HugeIcons.strokeRoundedMail01,
