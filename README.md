@@ -55,6 +55,24 @@ Revivo adds **time-awareness, automation, and measurement** to surplus redistrib
 - Read-only **Rescue network** — surplus → NGO, with a live Bedrock "why rescue this?"
 - Real impact dashboard (kg, meals, CO₂, ₹ saved) + leaderboard + milestone badges + rate & review
 
+## 📱 Screenshots
+
+<div align="center">
+
+| Role Selection | Seller Login | Seller Dashboard |
+|:-:|:-:|:-:|
+| <img src="docs/screenshots/role-selection.png" width="220"/> | <img src="docs/screenshots/seller-login.png" width="220"/> | <img src="docs/screenshots/seller-dashboard.png" width="220"/> |
+
+| Buyer Marketplace | Product Details | Order Tracking |
+|:-:|:-:|:-:|
+| <img src="docs/screenshots/buyer-marketplace.png" width="220"/> | <img src="docs/screenshots/product-details.png" width="220"/> | <img src="docs/screenshots/order-tracking.png" width="220"/> |
+
+| AI Insights | Impact Dashboard | Rescue Network |
+|:-:|:-:|:-:|
+| <img src="docs/screenshots/ai-insights.png" width="220"/> | <img src="docs/screenshots/impact-dashboard.png" width="220"/> | <img src="docs/screenshots/rescue-network.png" width="220"/> |
+
+</div>
+
 ## 👥 User roles
 
 | Role | Capabilities |

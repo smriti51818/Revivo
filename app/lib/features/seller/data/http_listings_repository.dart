@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../../../core/api/api_client.dart';
@@ -76,7 +77,8 @@ class HttpListingsRepository implements ListingsRepository {
         body: bytes,
       );
       return put.statusCode < 300 ? key : '';
-    } catch (_) {
+    } catch (e) {
+      debugPrint('uploadPhoto error: $e');
       return '';
     }
   }
@@ -88,7 +90,8 @@ class HttpListingsRepository implements ListingsRepository {
       final res = await _api.post('/listings/identify', {'imageKey': imageKey});
       final veg = (res is Map ? res['vegetable'] : null)?.toString();
       return (veg == null || veg.isEmpty) ? null : veg;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('identify error: $e');
       return null;
     }
   }

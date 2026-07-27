@@ -76,6 +76,12 @@ class ApiStack(Stack):
         )
         table.grant_read_write_data(update_listing_fn)
 
+        # Delete listing (owner-only).
+        delete_listing_fn = self._fn(
+            "DeleteListingFn", "delete_listing", common_env, use_shared=True
+        )
+        table.grant_read_write_data(delete_listing_fn)
+
         # Seller insights — real metrics + Bedrock (Amazon Nova) recommendations.
         seller_insights_fn = self._fn(
             "SellerInsightsFn",
@@ -254,9 +260,9 @@ class ApiStack(Stack):
         self._protected(
             listings.add_resource("insights"), "GET", seller_insights_fn
         )
-        self._protected(
-            listings.add_resource("{listingId}"), "PATCH", update_listing_fn
-        )
+        listing_item = listings.add_resource("{listingId}")
+        self._protected(listing_item, "PATCH", update_listing_fn)
+        self._protected(listing_item, "DELETE", delete_listing_fn)
 
         orders = api.root.add_resource("orders")
         self._protected(orders, "POST", create_order_fn)
